@@ -1,38 +1,33 @@
-# create-svelte
+# Getting started with BoxWallet2
 
-Everything you need to build a Svelte project, powered by [`create-svelte`](https://github.com/sveltejs/kit/tree/master/packages/create-svelte).
+The best way of getting started with BoxWallet2 is to clone this repository (`git clone`), install it's dependencies via `npm install` and then run it via `npm run dev`. Don't worry if none of that makes sense, we'll go through everything, step-by-step below.
 
-## Creating a project
+## Installing `git`
 
-If you're seeing this, you've probably already done this step. Congrats!
+Installing `git` gives you the ability to clone this repository (`git clone`) and then quickly get any updates (`git pull`) with the minimum of fuss.
 
-```bash
-# create a new project in the current directory
-npm create svelte@latest
+If you're on Linux you can install `git` with your package manager, however, if you're on Windows, please head over to:
 
-# create a new project in my-app
-npm create svelte@latest my-app
-```
+[`https://git-scm.com`](https://git-scm.com) and download and install `git`
 
-## Developing
+With `git` now installed, you can change into the directory where you'd like to install (clone) BoxWallet2 and type:
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+`git clone https://github.com/richardltc/boxwallet2.git`
 
-```bash
-npm run dev
+You should now have a directory full of files.
 
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
+## Installing `NodeJS`
+Before we're able to run BoxWallet2 we need to install `NodeJS` as that will be the engine that BoxWallet2 uses in order to run.
 
-## Building
+Again, if you're running on Linux you'll be able to install `NodeJS` from your package manager, on Windows, you can go to:
+ [`www.nodejs.org`](https://www.nodejs.org).
 
-To create a production version of your app:
+With `NodeJS` now installed, the last step we need to do before running BoxWallet2 is to install some dependencies that it requires. Don't worry, as this is a simple process. Open a command prompt in your BoxWallet2 directory and run `npm install`
 
-```bash
-npm run build
-```
+After this step is complete, you're now ready to run BoxWallet2
 
-You can preview the production build with `npm run preview`.
+Type the command: `npm run dev --open`
 
-> To deploy your app, you may need to install an [adapter](https://kit.svelte.dev/docs/adapters) for your target environment.
+This should now automatically open your browser and run BoxWallet2
+
+Congratulations, and thank you for using BoxWallet2
