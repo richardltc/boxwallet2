@@ -1,0 +1,157 @@
+import type { RequestEvent } from './$types';
+import type { ApiRequest, BWAPIResponse } from '$lib/bwtypes';
+import { CoinAPIResponse, CoinMethodType, CoinType } from '$lib/bwtypes';
+import { download_file } from '$lib/web_utils';
+import * as os from 'os';
+import { exec } from 'child_process';
+import ReddCoin from '$lib/rdd';
+
+const home_dir = os.homedir();
+
+export async function POST({ request }: RequestEvent) {
+	const data_object: any = await request.json();
+
+	// method_types include: core_files_exist, start_daemon, stop_daemon
+	const method_type: CoinMethodType = data_object.method_type;
+	const redd_coin = await ReddCoin.getInstance('/home/richard/.reddcoin/reddcoin.conf');
+
+	// let bw_api_response: BWAPIResponse;
+	let coin_api_response: CoinAPIResponse = {
+		result: null,
+		error: null,
+		id: null
+	};
+	let core_files_exist = false;
+	let is_ready: boolean;
+	let is_running: boolean;
+	const bw_api_response: BWAPIResponse = {
+		core_files_exists: null,
+		is_ready: null,
+		is_running: null
+	};
+
+	// Wait for the asynchronous initialization to complete
+
+	switch (method_type) {
+		case CoinMethodType.core_files_exist: {
+			// Check that core files exist
+			let result = {};
+
+			const api_request: ApiRequest = {
+				boxwallet_dir: home_dir + '/.boxwallet/',
+				coin_type: CoinType.reddcoin,
+				method_type: CoinMethodType.core_files_exist
+			};
+
+			console.log('Talking to Go app');
+			const api_response = await fetch('http://127.0.0.1:3000/api/v1/coin', {
+				method: 'POST',
+				body: JSON.stringify(api_request)
+			});
+
+			console.log('Got response...');
+			const api_response_json: BWAPIResponse = await api_response.json();
+			console.table({ api_response_json });
+			result = JSON.stringify(api_response_json);
+			console.log('JSON response...');
+			console.log(result);
+			return new Response('true');
+
+			break;
+		}
+		// switch (platform) {
+		// 	case 'linux':
+		// 		if (fs.existsSync(home_dir + '/.boxwallet/' + cli_file_lin)) {
+		// 			// File exists in path
+		// 			console.log('file exists ' + home_dir + '/.boxwallet/' + cli_file_lin);
+		// 			return new Response('true');
+		// 		} else {
+		// 			// File doesn't exist in path
+		// 			console.log('file DOES NOT exist ' + home_dir + '/.boxwallet/' + cli_file_lin);
+		// 			return new Response('false');
+		// 		}
+		// }
+		case CoinMethodType.download_core_files:
+			// First, make sure we get the correct file for what we're running on
+			console.log('going to download core files from: ' + redd_coin.download_link);
+			await download_file(
+				redd_coin.download_link,
+				home_dir + '/.boxwallet/' + redd_coin.download_file_lin64
+			);
+			console.log('Download complete from server');
+			// decompress(home_dir + '/.boxwallet/' + download_file_lin64);
+			return new Response('download_complete');
+		case CoinMethodType.get_blockchain_info:
+			// stop the Daemon
+			console.log('Hitting get_blockchain_info...');
+			coin_api_response = await redd_coin.GetBlockchainInfo();
+			console.log(`Got ${JSON.stringify(coin_api_response)}...`);
+			return new Response(JSON.stringify(coin_api_response));
+		case CoinMethodType.get_info:
+			// stop the Daemon
+			console.log('Hitting get_info...');
+			coin_api_response = await redd_coin.GetInfo();
+			console.log(`Got ${JSON.stringify(coin_api_response)}...`);
+			return new Response(JSON.stringify(coin_api_response));
+		case CoinMethodType.get_core_status:
+			// Check whether redd Daemon is running
+			console.log('Checking if Daemon is ready...');
+			core_files_exist = await redd_coin.CoreFilesExist();
+			is_ready = await redd_coin.CoinDaemonIsReady();
+			is_running = await redd_coin.CoinDaemonIsRunning();
+			if (is_ready) {
+				console.log('Coin daemon is ready');
+			} else {
+				console.log('Coin daemon is not ready');
+			}
+			bw_api_response.core_files_exists = core_files_exist;
+			bw_api_response.is_ready = is_ready;
+			bw_api_response.is_running = is_running;
+			console.log(`Returning ${JSON.stringify(bw_api_response)})...`);
+			return new Response(JSON.stringify(bw_api_response));
+		case CoinMethodType.is_ready:
+			// Check whether redd Daemon is running
+			console.log('Checking if Daemon is ready...');
+			is_ready = await redd_coin.CoinDaemonIsReady();
+			is_running = await redd_coin.CoinDaemonIsRunning();
+			if (is_ready) {
+				console.log('Coin daemon is ready');
+			} else {
+				console.log('Coin daemon is not ready');
+			}
+			bw_api_response.is_ready = is_ready;
+			bw_api_response.is_running = is_running;
+			console.log(`Returning ${JSON.stringify(bw_api_response)})...`);
+			return new Response(JSON.stringify(bw_api_response));
+		case CoinMethodType.is_running:
+			// Check whether redd Daemon is running
+			console.log('Checking if Daemon is running...');
+			is_running = await redd_coin.CoinDaemonIsRunning();
+			if (is_running) {
+				console.log('Coin daemon is running');
+			} else {
+				console.log('Coin daemon is not running');
+			}
+			bw_api_response.is_running = is_running;
+			console.log(`Returning ${JSON.stringify(bw_api_response)})...`);
+			return new Response(JSON.stringify(bw_api_response));
+		case CoinMethodType.start_daemon:
+			// start the Daemon
+			console.log('Hitting start daemon...');
+			await redd_coin.StartDaemon();
+			console.log('reddcoin daemon is starting...');
+			bw_api_response.is_running = false;
+			return new Response(JSON.stringify(bw_api_response));
+		case CoinMethodType.stop_daemon:
+			// stop the Daemon
+			console.log('Hitting stop daemon...');
+			coin_api_response = await redd_coin.StopDaemon();
+			console.log(`Got ${coin_api_response}...`);
+			return new Response(JSON.stringify(coin_api_response));
+		default:
+			// We don't know what the method is, so..
+			return new Response('Unknown method: ' + method_type);
+	}
+
+	return new Response('Reached end of POST request');
+}
