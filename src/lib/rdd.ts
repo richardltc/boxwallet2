@@ -308,7 +308,7 @@ class ReddCoin {
 		return is_running;
 	}
 
-	public async StopDaemon(): Promise<null | StopAPIResponse> {
+	public async StopDaemon(): Promise<StopAPIResponse> {
 		const is_running = await this.CoinDaemonIsRunning();
 
 		if (!is_running) {
