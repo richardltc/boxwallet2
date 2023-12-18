@@ -1,6 +1,6 @@
 import axios, { AxiosError } from 'axios';
 import { getValueFromFile } from '$lib/string_utils';
-import type { GetInfo, GetBlockchainInfo } from '$lib/rdd_types';
+import type { GetInfo, GetBlockchainInfo, StopAPIResponse } from '$lib/rdd_types';
 // import type { CoinAPIResponse } from '$lib/bwtypes';
 import os from 'os';
 import { exec } from 'child_process';
@@ -232,7 +232,7 @@ class ReddCoin {
 		} catch (error: any | AxiosError) {
 			// console.error('Error:', error);
 			console.log('In catch...');
-			// todo Check if the error contains Loading, and if so return a good response
+			// Check if the error contains Loading, and if so return a good response
 			if (axios.isAxiosError(error) && error.response) {
 				console.log('Error detected...');
 				const json = JSON.stringify(error.response.data);
@@ -308,7 +308,7 @@ class ReddCoin {
 		return is_running;
 	}
 
-	public async StopDaemon(): Promise<null | CoinAPIResponse> {
+	public async StopDaemon(): Promise<null | StopAPIResponse> {
 		const is_running = await this.CoinDaemonIsRunning();
 
 		if (!is_running) {
@@ -327,16 +327,16 @@ class ReddCoin {
 			}
 		};
 
-		let response_data: CoinAPIResponse;
+		let response_data: StopAPIResponse;
 		try {
 			const response = await axios.post(url, body, config);
-			response_data = response.data as CoinAPIResponse;
+			response_data = response.data as StopAPIResponse;
 
-			// If we get here, it's because we didn't get any kind of error...
-			// console.log(`response: ${JSON.stringify(response_data)}`);
 			console.log(`response: ${response_data}`);
 			return response_data;
-		} catch (error: any | AxiosError) {}
+		} catch (error: any | AxiosError) {
+			console.error('Error data:', error.response.data);
+		}
 		return response_data;
 	}
 }

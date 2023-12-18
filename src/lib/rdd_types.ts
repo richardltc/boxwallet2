@@ -42,3 +42,9 @@ interface GetInfoResult {
 	relayfee: number;
 	errors: string;
 }
+
+export interface StopAPIResponse {
+	result: string;
+	error: any;
+	id: string;
+}
