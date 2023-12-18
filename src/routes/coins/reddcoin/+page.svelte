@@ -204,7 +204,9 @@
 	}
 
 	async function doStopWalletAPIRequest(cmt: CoinMethodType) {
+		// Stop all timers
 		clearInterval(getinfo_interval_id);
+		clearInterval(getblockchaininfo_interval_id);
 		const response = await fetch('http://localhost:5173/coins/reddcoin/api', {
 			method: 'POST',
 			body: JSON.stringify({
