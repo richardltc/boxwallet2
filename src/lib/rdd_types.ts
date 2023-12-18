@@ -4,7 +4,7 @@ export interface GetBlockchainInfo {
 	id: string;
 }
 
-export interface GetBlockchainInfoResult {
+interface GetBlockchainInfoResult {
 	chain: string;
 	blocks: number;
 	headers: number;
