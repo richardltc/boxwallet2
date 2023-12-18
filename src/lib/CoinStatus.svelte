@@ -50,15 +50,17 @@
                 icon_is_ready_class = "fa-solid fa-face-smile fa-2x disabled-icon"
                 icon_is_ready_title = "Core wallet is not ready."
             }
-            if (wallet_verification_progress > 0.99) {
+            if (wallet_verification_progress < 0.9999) {
                 console.log(`verification progress = ${wallet_verification_progress}`)
-                icon_is_syncing_class = "fa-solid fa-rotate fa-2x"
+                icon_is_syncing_class = "fa-solid fa-rotate fa-2x fa-spin"
                 icon_is_syncing_title = "Blockchain is syncing."
             } else {
-                if (!is_ready) {
-                    icon_is_syncing_class = "fa-solid fa-rotate fa-2x fa-spin-stop disabled-icon"
-                    icon_is_syncing_title = "Not syncing."
-                }
+                icon_is_syncing_class = "fa-solid fa-rotate fa-2x fa-spin-stop"
+                icon_is_syncing_title = "Blockchain is synced."
+                // if (!is_ready) {
+                //     icon_is_syncing_class = "fa-solid fa-rotate fa-2x fa-spin-stop disabled-icon"
+                //     icon_is_syncing_title = "Not syncing."
+                // }
             }
 
 
