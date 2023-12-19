@@ -86,30 +86,6 @@
 		}
 		result = JSON.stringify(bw_api_response);
 	};
-	// async function doCoreAPIRequest(cmt: CoinMethodType) {
-	// 	if (cmt === CoinMethodType.start_daemon) {
-	// 		is_working = true;
-	// 		is_ready_interval_id = setInterval(isReady, 2000);
-	// 	}
-	//
-	// 	const response = await fetch('http://localhost:5173/coins/reddcoin/api', {
-	// 		method: 'POST',
-	// 		body: JSON.stringify({
-	// 			coin_type: CoinType.reddcoin,
-	// 			method_type: cmt //CoinMethodType.is_running
-	// 		})
-	// 	});
-	//
-	// 	bw_api_response = await response.json();
-	// 	const json_result = JSON.stringify(bw_api_response);
-	// 	console.log(`doPost json response: ${json_result}`);
-	// 	console.log(`doPost is_running response: ${bw_api_response.is_running}`);
-	// 	daemon_is_ready = bw_api_response.is_ready;
-	// 	daemon_is_running = bw_api_response.is_running;
-	// 	if (bw_api_response.core_files_exists) {
-	// 		core_files_downloaded = true;
-	// 	}
-	// }
 
 	async function doGetBlockchainInfoAPIRequest(cmt: CoinMethodType) {
 		const response = await fetch('http://localhost:5173/coins/reddcoin/api', {
