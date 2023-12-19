@@ -1,4 +1,4 @@
-export interface GetBlockchainInfo {
+export interface GetBlockchainInfoResponse {
 	result: GetBlockchainInfoResult;
 	error: any;
 	id: string;
@@ -14,7 +14,7 @@ interface GetBlockchainInfoResult {
 	chainwork: string;
 }
 
-export interface GetInfo {
+export interface GetInfoResponse {
 	result: GetInfoResult;
 	error: any;
 	id: string;
@@ -43,7 +43,7 @@ interface GetInfoResult {
 	errors: string;
 }
 
-export interface StopAPIResponse {
+export interface StopResponse {
 	result: string;
 	error: any;
 	id: string;

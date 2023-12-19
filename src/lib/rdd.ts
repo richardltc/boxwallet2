@@ -1,6 +1,6 @@
 import axios, { AxiosError } from 'axios';
 import { getValueFromFile } from '$lib/string_utils';
-import type { GetInfo, GetBlockchainInfo, StopAPIResponse } from '$lib/rdd_types';
+import type { GetInfoResponse, GetBlockchainInfoResponse, StopResponse } from '$lib/rdd_types';
 // import type { CoinAPIResponse } from '$lib/bwtypes';
 import os from 'os';
 import { exec } from 'child_process';
@@ -66,7 +66,6 @@ class ReddCoin {
 	private async initialize(): Promise<void> {
 		try {
 			this.rpc_password = await getValueFromFile(this.conf_file, 'rpcpassword=');
-			// console.error(`rpcpassword detected as: ${this.rpc_password}`);
 		} catch (error) {
 			console.error('Error processing file:', error);
 		}
@@ -91,10 +90,10 @@ class ReddCoin {
 			}
 		};
 
-		let response_data: GetInfo;
+		let response_data: GetInfoResponse;
 		try {
 			const response = await axios.post(url, body, config);
-			response_data = response.data as GetInfo;
+			response_data = response.data as GetInfoResponse;
 
 			// If we get here, it's because we didn't get any kind of error...
 			return true;
@@ -166,7 +165,7 @@ class ReddCoin {
 		}
 	}
 
-	public async GetBlockchainInfo(): Promise<GetBlockchainInfo> {
+	public async GetBlockchainInfo(): Promise<GetBlockchainInfoResponse> {
 		const body = '{"jsonrpc":"1.0","id":"curltext","method":"getblockchaininfo","params":[]}';
 		const url = `http://${this.ip_address}:${this.rpc_port}`;
 		const config = {
@@ -179,10 +178,10 @@ class ReddCoin {
 			}
 		};
 
-		let response_data: GetBlockchainInfo;
+		let response_data: GetBlockchainInfoResponse;
 		try {
 			const response = await axios.post(url, body, config);
-			response_data = response.data as GetBlockchainInfo;
+			response_data = response.data as GetBlockchainInfoResponse;
 
 			// If we get here, it's because we didn't get any kind of error...
 			console.log('response', JSON.stringify(response_data)); //log(`response: ${response_data}`);
@@ -207,7 +206,7 @@ class ReddCoin {
 		}
 	}
 
-	public async GetInfo(): Promise<GetInfo> {
+	public async GetInfo(): Promise<GetInfoResponse> {
 		const body = '{"jsonrpc":"1.0","id":"curltext","method":"getinfo","params":[]}';
 		const url = `http://${this.ip_address}:${this.rpc_port}`;
 		const config = {
@@ -220,10 +219,10 @@ class ReddCoin {
 			}
 		};
 
-		let response_data: GetInfo;
+		let response_data: GetInfoResponse;
 		try {
 			const response = await axios.post(url, body, config);
-			response_data = response.data as GetInfo;
+			response_data = response.data as GetInfoResponse;
 
 			// If we get here, it's because we didn't get any kind of error...
 			// console.log(`response: ${JSON.stringify(response_data)}`);
@@ -308,11 +307,16 @@ class ReddCoin {
 		return is_running;
 	}
 
-	public async StopDaemon(): Promise<StopAPIResponse> {
+	public async StopDaemon(): Promise<StopResponse> {
 		const is_running = await this.CoinDaemonIsRunning();
+		let response_data: StopResponse = {
+			result: '',
+			error: null,
+			id: ''
+		};
 
 		if (!is_running) {
-			return null;
+			return response_data;
 		}
 
 		const body = '{"jsonrpc":"1.0","id":"curltext","method":"stop","params":[]}';
@@ -327,10 +331,9 @@ class ReddCoin {
 			}
 		};
 
-		let response_data: StopAPIResponse;
 		try {
 			const response = await axios.post(url, body, config);
-			response_data = response.data as StopAPIResponse;
+			response_data = response.data as StopResponse;
 
 			console.log(`response: ${response_data}`);
 			return response_data;

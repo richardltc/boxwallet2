@@ -1,14 +1,15 @@
 <script lang="ts">
-	import {type BWAPIResponse, CoinMethodType, CoinType} from '$lib/bwtypes';
+	import { type BWAPIResponse, CoinMethodType, CoinType } from '$lib/bwtypes';
 	import CoinStatus from '$lib/CoinStatus.svelte';
-	import {onMount} from 'svelte';
-	import type {CoinAPIResponse} from '$lib/bwtypes.js';
-	import type {GetBlockchainInfo, GetInfo} from '$lib/rdd_types.js';
+	import { onMount } from 'svelte';
+	// import type { CoinAPIResponse } from '$lib/bwtypes.js';
+	import type { GetBlockchainInfoResponse, GetInfoResponse } from '$lib/rdd_types.js';
 
+	let block_height: number;
 	let bw_api_response: BWAPIResponse;
-	let coin_getblockchaininfo: GetBlockchainInfo;
-	let coin_getinfo_response: GetInfo;
-	let coin_api_response: CoinAPIResponse;
+	let coin_getblockchaininfo: GetBlockchainInfoResponse;
+	let coin_getinfo_response: GetInfoResponse;
+	// let coin_api_response: CoinAPIResponse;
 	let core_files_downloaded = false;
 	let result = {};
 	let getblockchaininfo_interval_id: ReturnType<typeof setInterval>;
@@ -35,8 +36,6 @@
 			is_ready = false;
 		}
 	}
-
-
 
 	onMount(async () => {
 		await doGetCoreStatusAPIRequest(CoinMethodType.get_core_status);
@@ -99,6 +98,7 @@
 		coin_getblockchaininfo = await response.json();
 		const json_result = JSON.stringify(coin_getblockchaininfo);
 		console.log(`doPost json response: ${json_result}`);
+		block_height = coin_getblockchaininfo.result.blocks;
 		wallet_verification_progress = coin_getblockchaininfo.result.verificationprogress;
 	}
 
@@ -114,7 +114,7 @@
 		coin_getinfo_response = await response.json();
 		const json_result = JSON.stringify(coin_getinfo_response);
 		console.log(`doPost json response: ${json_result}`);
-		wallet_connections = coin_getinfo_response.result.connections
+		wallet_connections = coin_getinfo_response.result.connections;
 		if (wallet_connections > 0) {
 			getinfo_interval_id = setInterval(async () => {
 				await doGetBlockchainInfoAPIRequest(CoinMethodType.get_blockchain_info);
@@ -143,7 +143,7 @@
 		if (bw_api_response.core_files_exists) {
 			core_files_downloaded = true;
 		}
-		await isReady()
+		await isReady();
 	}
 
 	// async function doButtons() {
@@ -166,10 +166,12 @@
 		});
 
 		bw_api_response = await response.json();
-		const json_result = JSON.stringify		// if (bw_api_response.core_files_exists) {
-		// 	core_files_downloaded = true;
-		// }
-(bw_api_response);
+		const json_result = JSON.stringify(
+			// if (bw_api_response.core_files_exists) {
+			// 	core_files_downloaded = true;
+			// }
+			bw_api_response
+		);
 		console.log(`doPost json response: ${json_result}`);
 		console.log(`doPost is_running response: ${bw_api_response.is_running}`);
 		// daemon_is_ready = bw_api_response.is_ready;
@@ -200,7 +202,6 @@
 		const json_result = JSON.stringify(bw_api_response);
 		console.log(`doPost json response: ${json_result}`);
 	}
-
 </script>
 
 <div class="container mx-auto p-8 space-y-4">
@@ -210,7 +211,15 @@
 		anywhere.
 	</p>
 	<section>
-		<CoinStatus {core_files_downloaded} {is_ready} {is_working} {wallet_verification_progress} {wallet_connections} {wallet_offline}/>
+		<CoinStatus
+			{block_height}
+			{core_files_downloaded}
+			{is_ready}
+			{is_working}
+			{wallet_verification_progress}
+			{wallet_connections}
+			{wallet_offline}
+		/>
 	</section>
 	<section>
 		<button
@@ -236,9 +245,9 @@
 		>
 			Stop
 		</button>
-		<p>Result:</p>
-		<pre>
-{result}
-</pre>
+<!--		<p>Result:</p>-->
+<!--		<pre>-->
+<!--{result}-->
+<!--</pre>-->
 	</section>
 </div>
