@@ -101,13 +101,15 @@
 </script>
 
 <main>
-    <span title={icon_is_working_title}><i class={icon_is_working_class}></i></span>
-    <span title={icon_core_files_downloaded_title}><i class={icon_core_files_downloaded_class}></i></span>
-    <span title={icon_is_ready_title}><i class={icon_is_ready_class}></i></span>
-    <span title={icon_wallet_connections_title}><i class={icon_wallet_connections_class} ></i></span>
-    <span title={icon_is_syncing_title}><i class={icon_is_syncing_class}></i></span>
-    <i class="fa-solid fa-lock-open fa-2x fa-spin-stop disabled-icon"></i>
-    <i class="fa-solid fa-microchip fa-2x fa-spin-stop disabled-icon"></i>
+    <div class="wrapper">
+        <div class="flex-item"><span title={icon_is_working_title}><i class={icon_is_working_class}></i></span></div>
+        <div class="flex-item"><span title={icon_core_files_downloaded_title}><i class={icon_core_files_downloaded_class}></i></span></div>
+        <div class="flex-item"><span title={icon_is_ready_title}><i class={icon_is_ready_class}></i></span></div>
+        <div class="flex-item"><span title={icon_wallet_connections_title}><i class={icon_wallet_connections_class} ></i></span></div>
+        <div class="flex-item"><span title={icon_is_syncing_title}><i class={icon_is_syncing_class}></i></span></div>
+        <div class="flex-item"><i class="fa-solid fa-lock-open fa-2x fa-spin-stop disabled-icon"></i></div>
+        <div class="flex-item"><i class="fa-solid fa-microchip fa-2x fa-spin-stop disabled-icon"></i></div>
+    </div>
 </main>
 
 <style>
@@ -119,5 +121,13 @@
 
     i {
         padding-right: 0px;
+    }
+
+    .wrapper {
+        display: flex;
+    }
+
+    .flex-item {
+        margin: 0 15px 0 0;
     }
 </style>
