@@ -26,8 +26,10 @@ With `NodeJS` now installed, the last step we need to do before running BoxWalle
 
 After this step is complete, you're now ready to run BoxWallet2
 
-Type the command: `npm run dev --open`
+If you want to run BoxWallet locally on the machine you've just installed it on type the command: `npm run dev --open`
 
 This should now automatically open your browser and run BoxWallet2
+
+If you want to run BoxWallet and access it from another machine on your local network run the command: `npm run host`
 
 Congratulations, and thank you for using BoxWallet2
