@@ -1,6 +1,7 @@
 <script lang="ts">
     import { IconStatusType } from '$lib/bwtypes';
 
+    export let block_height: number;
     export let core_files_downloaded = false;
     export let is_ready = false
     export let is_syncing = false
@@ -50,13 +51,13 @@
                 icon_is_ready_class = "fa-solid fa-face-smile fa-2x disabled-icon"
                 icon_is_ready_title = "Core wallet is not ready."
             }
-            if (wallet_verification_progress < 0.9999) {
+            if ((wallet_verification_progress < 0.9999) && (wallet_connections > 0)) {
                 console.log(`verification progress = ${wallet_verification_progress}`)
                 icon_is_syncing_class = "fa-solid fa-rotate fa-2x fa-spin"
-                icon_is_syncing_title = "Blockchain is syncing."
-            } else {
+                icon_is_syncing_title = `Blockchain is syncing... Blocks: ${block_height}`
+            } else if (wallet_connections > 0) {
                 icon_is_syncing_class = "fa-solid fa-rotate fa-2x fa-spin-stop"
-                icon_is_syncing_title = "Blockchain is synced."
+                icon_is_syncing_title = `Blockchain is synced. Blocks: ${block_height}`
                 // if (!is_ready) {
                 //     icon_is_syncing_class = "fa-solid fa-rotate fa-2x fa-spin-stop disabled-icon"
                 //     icon_is_syncing_title = "Not syncing."
