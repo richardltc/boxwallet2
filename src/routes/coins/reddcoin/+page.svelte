@@ -228,7 +228,7 @@
 </script>
 
 <div class="container mx-auto p-8 space-y-4">
-	<h1 class="h1">Reddcoin - The social currency</h1>
+	<h1 class="h1">ReddCoin - The social currency</h1>
 	<p>
 		With over 60,000 users in 50+ countries, Redd allows you to share, tip, and donate to anyone,
 		anywhere.
