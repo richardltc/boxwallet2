@@ -6,6 +6,7 @@
     export let is_ready = false
     export let is_syncing = false
     export let is_working: boolean
+    export let unlocked_until: number;
     export let wallet_verification_progress: number;
     export let wallet_connections: number;
     export let wallet_offline = true
@@ -13,12 +14,16 @@
     let icon_is_ready_title = ""
     let icon_wallet_connections_class = ""
     let icon_wallet_connections_title = ""
+    let icon_is_staking_class = ""
+    let icon_is_staking_title = ""
     let icon_is_syncing_class = ""
     let icon_is_syncing_title = ""
     let icon_is_working_class = ""
     let icon_is_working_title = ""
     let icon_core_files_downloaded_class = ""
     let icon_core_files_downloaded_title = ""
+    let icon_wallet_security_class = ""
+    let icon_wallet_security_title = ""
 
     // function convertBCVerification(verificationPG: number): string {
     //     let sProg: string;
@@ -38,11 +43,14 @@
         if (wallet_offline) {
             icon_is_ready_class = "fa-solid fa-face-smile fa-2x disabled-icon"
             icon_is_ready_title = "Offline"
+            icon_is_staking_class = "fa-solid fa-microchip fa-2x fa-spin-stop disabled-icon"
+            icon_is_staking_title = "Offline"
             icon_is_syncing_class = "fa-solid fa-rotate fa-2x fa-spin-stop disabled-icon"
             icon_is_syncing_title = "Offline"
             icon_wallet_connections_title = "Offline"
             icon_wallet_connections_class = "fa-solid fa-network-wired fa-2x disabled-icon"
-
+            icon_wallet_security_class = "fa-solid fa-lock-open fa-2x disabled-icon"
+            icon_wallet_security_title = "Offline"
         } else {
             if (is_ready) {
                 icon_is_ready_class = "fa-solid fa-face-smile fa-2x"
@@ -62,6 +70,16 @@
                 //     icon_is_syncing_class = "fa-solid fa-rotate fa-2x fa-spin-stop disabled-icon"
                 //     icon_is_syncing_title = "Not syncing."
                 // }
+            }
+            if (unlocked_until === 0) {
+                icon_wallet_security_class = "fa-sold fa-lock-closed fa-2x"
+                icon_wallet_connections_title = "Wallet locked"
+            } else if (unlocked_until === -1) {
+                icon_wallet_security_class = "fa-sold fa-lock-open fa-2x"
+                icon_wallet_connections_title = "Wallet unlocked"
+            } else if (unlocked_until > 0) {
+                icon_wallet_security_class = "fa-sold fa-lock-closed fa-2x"
+                icon_wallet_connections_title = "Wallet unlocked and staking."
             }
 
 
@@ -108,8 +126,8 @@
         <div class="flex-item"><span title={icon_is_ready_title}><i class={icon_is_ready_class}></i></span></div>
         <div class="flex-item"><span title={icon_wallet_connections_title}><i class={icon_wallet_connections_class} ></i></span></div>
         <div class="flex-item"><span title={icon_is_syncing_title}><i class={icon_is_syncing_class}></i></span></div>
-        <div class="flex-item"><i class="fa-solid fa-lock-open fa-2x fa-spin-stop disabled-icon"></i></div>
-        <div class="flex-item"><i class="fa-solid fa-microchip fa-2x fa-spin-stop disabled-icon"></i></div>
+        <div class="flex-item"><span title={icon_wallet_security_title}><i class={icon_wallet_security_class}></i></span></div>
+        <div class="flex-item"><span title={icon_is_staking_title}><i class={icon_is_staking_class}></i></span></div>
     </div>
 </main>
 
