@@ -44,24 +44,6 @@
 		await doGetCoreStatusAPIRequest(CoinMethodType.get_core_status);
 	});
 
-	// const doCoinAPIRequest = async () => {
-	// 	const response = await fetch('http://localhost:5173/coins/reddcoin/api', {
-	// 		method: 'POST',
-	// 		body: JSON.stringify({
-	// 			coin_type: CoinType.reddcoin,
-	// 			method_type: CoinMethodType.get_info
-	// 		})
-	// 	});
-	//
-	// 	coin_getinfo_response = await response.json();
-	// 	wallet_connections = coin_getinfo_response.result.connections;
-	// 	if (bw_api_response.is_ready === true) {
-	// 		is_working = false;
-	// 		clearInterval(is_ready_interval_id);
-	// 	}
-	// 	result = JSON.stringify(bw_api_response);
-	// };
-
 	const isReady = async () => {
 		console.log(`isReady fired...`);
 		const response = await fetch('http://localhost:5173/coins/reddcoin/api', {
