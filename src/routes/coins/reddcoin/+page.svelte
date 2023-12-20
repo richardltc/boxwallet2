@@ -4,6 +4,8 @@
 	import { onMount } from 'svelte';
 	// import type { CoinAPIResponse } from '$lib/bwtypes.js';
 	import type { GetBlockchainInfoResponse, GetInfoResponse } from '$lib/rdd_types.js';
+	import { unlocked_until } from '$lib/rdd_getinfo_store';
+
 
 	let block_height: number;
 	let bw_api_response: BWAPIResponse;
@@ -20,6 +22,7 @@
 	let is_running = false;
 	let wallet_connections: number;
 	let wallet_offline: boolean;
+	let wallet_unlocked_until: number;
 	let wallet_verification_progress: number;
 	let daemon_is_ready: null | boolean = false;
 	let daemon_is_running: null | boolean = false;
@@ -115,6 +118,8 @@
 		const json_result = JSON.stringify(coin_getinfo_response);
 		console.log(`doPost json response: ${json_result}`);
 		wallet_connections = coin_getinfo_response.result.connections;
+		wallet_unlocked_until = coin_getinfo_response.result.unlocked_until;
+		unlocked_until.set(coin_getinfo_response.result.unlocked_until);
 		if (wallet_connections > 0) {
 			getinfo_interval_id = setInterval(async () => {
 				await doGetBlockchainInfoAPIRequest(CoinMethodType.get_blockchain_info);
@@ -216,6 +221,7 @@
 			{core_files_downloaded}
 			{is_ready}
 			{is_working}
+			{wallet_unlocked_until}
 			{wallet_verification_progress}
 			{wallet_connections}
 			{wallet_offline}
