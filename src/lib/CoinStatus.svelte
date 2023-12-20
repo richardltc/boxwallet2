@@ -5,7 +5,6 @@
     export let block_height: number;
     export let core_files_downloaded = false;
     export let is_ready = false
-    export let is_syncing = false
     export let is_working: boolean
 
     let icon_wallet_security_class = ""
