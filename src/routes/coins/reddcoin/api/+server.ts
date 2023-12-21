@@ -4,7 +4,7 @@ import { CoinMethodType, CoinType } from '$lib/bwtypes';
 import { download_file } from '$lib/web_utils';
 import * as os from 'os';
 import ReddCoin from '$lib/rdd';
-import type { GetBlockchainInfo, GetInfoResponse, StopAPIResponse } from '$lib/rdd_types';
+import type { GetBlockchainInfoResponse, GetInfoResponse, StopResponse } from '$lib/rdd_types';
 
 const home_dir = os.homedir();
 
@@ -21,7 +21,7 @@ export async function POST({ request }: RequestEvent) {
 	// 	error: null,
 	// 	id: null
 	// };
-	let get_blockchain_info_api_response: GetBlockchainInfo;
+	let get_blockchain_info_api_response: GetBlockchainInfoResponse;
 	let get_info_api_response: GetInfoResponse;
 	let core_files_exist = false;
 	const bw_api_response: BWAPIResponse = {
@@ -31,7 +31,7 @@ export async function POST({ request }: RequestEvent) {
 	};
 	let is_ready: boolean;
 	let is_running: boolean;
-	let stop_api_response: StopAPIResponse;
+	let stop_api_response: StopResponse;
 
 	// Wait for the asynchronous initialization to complete
 
@@ -126,6 +126,8 @@ export async function POST({ request }: RequestEvent) {
 			bw_api_response.is_running = is_running;
 			console.log(`Returning ${JSON.stringify(bw_api_response)})...`);
 			return new Response(JSON.stringify(bw_api_response));
+		//////////////////////////////
+		// IN_RUNNING
 		case CoinMethodType.is_running:
 			// Check whether redd Daemon is running
 			console.log('Checking if Daemon is running...');

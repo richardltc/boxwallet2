@@ -4,8 +4,8 @@
 	import { onMount } from 'svelte';
 	// import type { CoinAPIResponse } from '$lib/bwtypes.js';
 	import type { GetBlockchainInfoResponse, GetInfoResponse } from '$lib/rdd_types.js';
-	import { unlocked_until } from '$lib/rdd_getinfo_store';
-
+	import { walletUnlockedUntil } from '$lib/rdd_getinfo_store';
+	import { walletConnections } from '$lib/rdd_getinfo_store';
 
 	let block_height: number;
 	let bw_api_response: BWAPIResponse;
@@ -20,7 +20,7 @@
 	let is_ready = false;
 	let is_working = false;
 	let is_running = false;
-	let wallet_connections: number;
+	// let wallet_connections: number;
 	let wallet_offline: boolean;
 	let wallet_unlocked_until: number;
 	let wallet_verification_progress: number;
@@ -99,10 +99,10 @@
 		coin_getinfo_response = await response.json();
 		const json_result = JSON.stringify(coin_getinfo_response);
 		console.log(`doPost json response: ${json_result}`);
-		wallet_connections = coin_getinfo_response.result.connections;
+		walletConnections.set(coin_getinfo_response.result.connections);
 		wallet_unlocked_until = coin_getinfo_response.result.unlocked_until;
-		unlocked_until.set(coin_getinfo_response.result.unlocked_until);
-		if (wallet_connections > 0) {
+		walletUnlockedUntil.set(coin_getinfo_response.result.unlocked_until);
+		if (coin_getinfo_response.result.connections > 0) {
 			getinfo_interval_id = setInterval(async () => {
 				await doGetBlockchainInfoAPIRequest(CoinMethodType.get_blockchain_info);
 			}, 3000);
@@ -132,12 +132,7 @@
 		}
 		await isReady();
 	}
-
-	// async function doButtons() {
-	// 	// await doPost(CoinMethodType.is_running)
-	// 	await doCoreAPIRequest(CoinMethodType.get_core_status);
-	// }
-
+	
 	async function doStartWalletAPIRequest(cmt: CoinMethodType) {
 		if (cmt === CoinMethodType.start_daemon) {
 			is_working = true;
@@ -181,7 +176,8 @@
 		});
 
 		if (cmt === CoinMethodType.stop_daemon) {
-			wallet_connections = 0;
+			walletConnections.set(0);
+			walletUnlockedUntil.set(-5)
 			wallet_offline = true;
 		}
 
@@ -203,9 +199,7 @@
 			{core_files_downloaded}
 			{is_ready}
 			{is_working}
-			{wallet_unlocked_until}
 			{wallet_verification_progress}
-			{wallet_connections}
 			{wallet_offline}
 		/>
 	</section>

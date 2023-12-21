@@ -1,6 +1,6 @@
 <script lang="ts">
     import { IconStatusType } from '$lib/bwtypes';
-    import { unlocked_until } from '$lib/rdd_getinfo_store';
+    import { walletUnlockedUntil, walletConnections } from '$lib/rdd_getinfo_store';
 
     export let block_height: number;
     export let core_files_downloaded = false;
@@ -9,9 +9,37 @@
 
     let icon_wallet_security_class = ""
     let icon_wallet_security_title = ""
+    export let wallet_verification_progress: number;
+    export let wallet_offline = true
+    let icon_is_ready_class = ""
+    let icon_is_ready_title = ""
+    let icon_wallet_connections_class = ""
+    let icon_wallet_connections_title = ""
+    let icon_is_staking_class = ""
+    let icon_is_staking_title = ""
+    let icon_is_syncing_class = ""
+    let icon_is_syncing_title = ""
+    let icon_is_working_class = ""
+    let icon_is_working_title = ""
+    let icon_core_files_downloaded_class = ""
+    let icon_core_files_downloaded_title = ""
+
+    let wallet_connections_value: number;
+    const unsub_wallet_connections = walletConnections.subscribe((value) => {
+        wallet_connections_value = value
+
+        if (wallet_connections_value > 0) {
+            icon_wallet_connections_title = `${wallet_connections_value} connections`
+            icon_wallet_connections_class = "fa-solid fa-network-wired fa-2x"
+        } else {
+            icon_wallet_connections_title = "Not connected"
+            icon_wallet_connections_class = "fa-solid fa-network-wired fa-2x disabled-icon"
+        }
+
+    })
 
     let unlocked_until_value: number;
-    const unsubscribe =  unlocked_until.subscribe((value) => {
+    const unsubscribe =  walletUnlockedUntil.subscribe((value) => {
         unlocked_until_value = value
 
         if (unlocked_until_value === -5) {
@@ -32,21 +60,6 @@
             console.log("wallet status unlocked for staking")
         }
         });
-    export let wallet_verification_progress: number;
-    export let wallet_connections: number;
-    export let wallet_offline = true
-    let icon_is_ready_class = ""
-    let icon_is_ready_title = ""
-    let icon_wallet_connections_class = ""
-    let icon_wallet_connections_title = ""
-    let icon_is_staking_class = ""
-    let icon_is_staking_title = ""
-    let icon_is_syncing_class = ""
-    let icon_is_syncing_title = ""
-    let icon_is_working_class = ""
-    let icon_is_working_title = ""
-    let icon_core_files_downloaded_class = ""
-    let icon_core_files_downloaded_title = ""
 
     // function convertBCVerification(verificationPG: number): string {
     //     let sProg: string;
@@ -70,8 +83,8 @@
             icon_is_staking_title = "Offline"
             icon_is_syncing_class = "fa-solid fa-rotate fa-2x fa-spin-stop disabled-icon"
             icon_is_syncing_title = "Offline"
-            icon_wallet_connections_title = "Offline"
-            icon_wallet_connections_class = "fa-solid fa-network-wired fa-2x disabled-icon"
+            // icon_wallet_connections_title = "Offline"
+            // icon_wallet_connections_class = "fa-solid fa-network-wired fa-2x disabled-icon"
             // icon_wallet_security_class = "fa-solid fa-lock-open fa-2x disabled-icon"
             // icon_wallet_security_title = "Offline"
         } else {
@@ -82,31 +95,14 @@
                 icon_is_ready_class = "fa-solid fa-face-smile fa-2x disabled-icon"
                 icon_is_ready_title = "Core wallet is not ready."
             }
-            if ((wallet_verification_progress < 0.9999) && (wallet_connections > 0)) {
+            if ((wallet_verification_progress < 0.9999) && (wallet_connections_value > 0)) {
                 console.log(`verification progress = ${wallet_verification_progress}`)
                 icon_is_syncing_class = "fa-solid fa-rotate fa-2x fa-spin"
                 icon_is_syncing_title = `Blockchain is syncing... Blocks: ${block_height}`
-            } else if (wallet_connections > 0) {
+            } else if (wallet_connections_value > 0) {
                 icon_is_syncing_class = "fa-solid fa-rotate fa-2x fa-spin-stop"
                 icon_is_syncing_title = `Blockchain is synced. Blocks: ${block_height}`
-                // if (!is_ready) {
-                //     icon_is_syncing_class = "fa-solid fa-rotate fa-2x fa-spin-stop disabled-icon"
-                //     icon_is_syncing_title = "Not syncing."
-                // }
             }
-            // if (wallet_unlocked_until === 0) {
-            //     icon_wallet_security_class = "fa-sold fa-lock fa-2x"
-            //     icon_wallet_connections_title = "Wallet locked"
-            //     console.log("wallet locked")
-            // } else if (wallet_unlocked_until === -1) {
-            //     icon_wallet_security_class = "fa-sold fa-lock-open fa-2x"
-            //     icon_wallet_connections_title = "Wallet unlocked"
-            //     console.log("wallet unlocked")
-            // } else if (wallet_unlocked_until > 0) {
-            //     icon_wallet_security_class = "fa-sold fa-lock fa-2x"
-            //     icon_wallet_connections_title = "Wallet unlocked for staking."
-            //     console.log("wallet unlocked for staking")
-            // }
         }
 
         if (is_working) {
@@ -122,13 +118,6 @@
         } else {
             icon_core_files_downloaded_class = "fa-solid fa-download fa-2x disabled-icon"
             icon_core_files_downloaded_title = "Core files need to be downloaded"
-        }
-        if (wallet_connections > 0) {
-            icon_wallet_connections_title = `${wallet_connections} connections`
-            icon_wallet_connections_class = "fa-solid fa-network-wired fa-2x"
-        } else {
-            icon_wallet_connections_title = "Not connected"
-            icon_wallet_connections_class = "fa-solid fa-network-wired fa-2x disabled-icon"
         }
     }
 

@@ -1,3 +1,5 @@
 import { writable } from 'svelte/store';
 
-export const unlocked_until = writable(-5);
+// From GetInfo
+export const walletConnections = writable(0);
+export const walletUnlockedUntil = writable(-5);
