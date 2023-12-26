@@ -5,10 +5,15 @@
 	// import '@skeletonlabs/skeleton/styles/skeleton.css';
 	// Most of your app wide CSS should be put in this file
 	import '../app.postcss';
-	import { AppShell, AppBar } from '@skeletonlabs/skeleton';
+	import { AppShell, AppBar, Modal } from '@skeletonlabs/skeleton';
 	import '@fortawesome/fontawesome-free/css/all.min.css'
+	import { initializeStores } from '@skeletonlabs/skeleton';
+
+	initializeStores();
 
 </script>
+
+<Modal />
 
 <!-- App Shell -->
 <AppShell slotSidebarLeft="bg-surface-500/5 w-56 p-4">
