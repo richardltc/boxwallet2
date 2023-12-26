@@ -6,6 +6,24 @@
 	import type { GetBlockchainInfoResponse, GetInfoResponse } from '$lib/rdd_types.js';
 	import { walletUnlockedUntil } from '$lib/rdd_getinfo_store';
 	import { walletConnections } from '$lib/rdd_getinfo_store';
+	import PasswordInputModal from '$lib/PasswordInputModal.svelte';
+	import { getModalStore } from '@skeletonlabs/skeleton';
+	import type { ModalSettings, ModalComponent, ModalStore } from '@skeletonlabs/skeleton';
+	import type { PageData } from './$types';
+
+	const modalStore = getModalStore();
+	const modal: ModalSettings = {
+		type: 'prompt',
+		// Data
+		title: 'Enter Password',
+		body: 'Provide your password to unlock your wallet',
+		// Populates the input value and attributes
+		value: '',
+		valueAttr: { type: 'password', minlength: 1, maxlength: 10, required: true },
+		// Returns the updated response value
+		response: (r: string) => console.log('response:', r),
+	};
+	// modalStore.trigger(modal);
 
 	let block_height: number;
 	let bw_api_response: BWAPIResponse;
@@ -26,6 +44,7 @@
 	let wallet_verification_progress: number;
 	let daemon_is_ready: null | boolean = false;
 	let daemon_is_running: null | boolean = false;
+
 	// $: is_running = daemon_is_running
 	$: {
 		if (daemon_is_running) {
@@ -132,7 +151,7 @@
 		}
 		await isReady();
 	}
-	
+
 	async function doStartWalletAPIRequest(cmt: CoinMethodType) {
 		if (cmt === CoinMethodType.start_daemon) {
 			is_working = true;
@@ -185,6 +204,7 @@
 		const json_result = JSON.stringify(bw_api_response);
 		console.log(`doPost json response: ${json_result}`);
 	}
+
 </script>
 
 <div class="container mx-auto p-8 space-y-4">
@@ -206,19 +226,16 @@
 	<section>
 		<button
 			disabled={is_running}
-			class="btn variant-filled-secondary"
+			class="btn variant-filled-tertiary"
 			type="button"
 			on:click={() => doStartWalletAPIRequest(CoinMethodType.start_daemon)}
 		>
 			Start
 		</button>
-		<button
-			class="btn variant-filled-primary"
-			type="button"
-			on:click={() => doGetCoreStatusAPIRequest(CoinMethodType.is_running)}
-		>
-			Is Running?
-		</button>
+<!--		<button on:click={() => (show_password_modal = true)}> unlock for staking</button>-->
+		<button on:click={() => (modalStore.trigger(modal))}> unlock for staking</button>
+
+
 		<button
 			disabled={!is_running}
 			class="btn variant-filled-tertiary"
