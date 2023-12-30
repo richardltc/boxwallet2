@@ -32,6 +32,7 @@
 		valueAttr: { type: 'password', minlength: 1, maxlength: 10, required: true },
 
 	}
+
 	let password: string | undefined;
 
 	async function getPasswordClick() {
@@ -39,7 +40,7 @@
 			const modal: ModalSettings = {
 				type: 'prompt',
 				title: 'Enter Password',
-				body: 'Please enter your password:',
+				body: 'Please enter your password to unlock your wallet:',
 				valueAttr: { type: 'password', minlength: 1, maxlength: 10, required: true },
 				response: (password: string) => {
 					resolve(password);
@@ -47,7 +48,6 @@
 			};
 			modalStore.trigger(modal);
 		});
-
 
 		// Proceed with actions based on the response
 		console.log('Entered password:', password);
@@ -259,14 +259,18 @@
 		>
 			Start
 		</button>
-<!--		<button on:click={() => (show_password_modal = true)}> unlock for staking</button>-->
-<!--		<button on:click={() => (modalStore.trigger(modal))}> unlock for staking</button>-->
-				<button on:click={getPasswordClick}> unlock for staking</button>
+
+		<button
+			class="btn variant-filled-tertiary"
+			disabled={!is_running}
+			type="button"
+			on:click={getPasswordClick}> unlock for staking
+		</button>
 
 
 		<button
-			disabled={!is_running}
 			class="btn variant-filled-tertiary"
+			disabled={!is_running}
 			type="button"
 			on:click={() => doStopWalletAPIRequest(CoinMethodType.stop_daemon)}
 		>
