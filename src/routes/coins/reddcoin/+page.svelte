@@ -6,25 +6,52 @@
 	import type { GetBlockchainInfoResponse, GetInfoResponse } from '$lib/rdd_types.js';
 	import { walletUnlockedUntil } from '$lib/rdd_getinfo_store';
 	import { walletConnections } from '$lib/rdd_getinfo_store';
-	import PasswordInputModal from '$lib/PasswordInputModal.svelte';
+	import GetPassword from '$lib/GetPassword.svelte';
 	import { getModalStore } from '@skeletonlabs/skeleton';
 	import type { ModalSettings, ModalComponent, ModalStore } from '@skeletonlabs/skeleton';
 	import type { PageData } from './$types';
 
 	const modalStore = getModalStore();
-	const modal: ModalSettings = {
-		type: 'prompt',
-		// Data
-		title: 'Enter Password',
-		body: 'Provide your password to unlock your wallet',
-		// Populates the input value and attributes
-		value: '',
-		valueAttr: { type: 'password', minlength: 1, maxlength: 10, required: true },
-		// Returns the updated response value
-		response: (r: string) => console.log('response:', r),
-	};
-	// modalStore.trigger(modal);
+	// const modal: ModalSettings = {
+	// 	type: 'prompt',
+	// 	// Data
+	// 	title: 'Enter Password',
+	// 	body: 'Provide your password to unlock your wallet',
+	// 	// Populates the input value and attributes
+	// 	value: '',
+	// 	valueAttr: { type: 'password', minlength: 1, maxlength: 10, required: true },
+	// 	// Returns the updated response value
+	// 	response: (r: string) => console.log('response:', r),
+	// };
 
+	interface ModalSettings {
+		type: 'prompt';
+		title: string;
+		body: string;
+		response: (password: string) => void;
+		valueAttr: { type: 'password', minlength: 1, maxlength: 10, required: true },
+
+	}
+	let password: string | undefined;
+
+	async function getPasswordClick() {
+		const password = await new Promise<string>((resolve) => {
+			const modal: ModalSettings = {
+				type: 'prompt',
+				title: 'Enter Password',
+				body: 'Please enter your password:',
+				valueAttr: { type: 'password', minlength: 1, maxlength: 10, required: true },
+				response: (password: string) => {
+					resolve(password);
+				},
+			};
+			modalStore.trigger(modal);
+		});
+
+
+		// Proceed with actions based on the response
+		console.log('Entered password:', password);
+	}
 	let block_height: number;
 	let bw_api_response: BWAPIResponse;
 	let coin_getblockchaininfo: GetBlockchainInfoResponse;
@@ -233,7 +260,8 @@
 			Start
 		</button>
 <!--		<button on:click={() => (show_password_modal = true)}> unlock for staking</button>-->
-		<button on:click={() => (modalStore.trigger(modal))}> unlock for staking</button>
+<!--		<button on:click={() => (modalStore.trigger(modal))}> unlock for staking</button>-->
+				<button on:click={getPasswordClick}> unlock for staking</button>
 
 
 		<button
