@@ -43,7 +43,7 @@ interface GetInfoResult {
 	errors: string;
 }
 
-export interface StopResponse {
+export interface GenericResponse {
 	result: string;
 	error: any;
 	id: string;

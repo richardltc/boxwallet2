@@ -4,7 +4,7 @@ import { CoinMethodType, CoinType } from '$lib/bwtypes';
 import { download_file } from '$lib/web_utils';
 import * as os from 'os';
 import ReddCoin from '$lib/rdd';
-import type { GetBlockchainInfoResponse, GetInfoResponse, StopResponse } from '$lib/rdd_types';
+import type { GetBlockchainInfoResponse, GetInfoResponse, GenericResponse } from '$lib/rdd_types';
 
 const home_dir = os.homedir();
 
@@ -31,7 +31,7 @@ export async function POST({ request }: RequestEvent) {
 	};
 	let is_ready: boolean;
 	let is_running: boolean;
-	let stop_api_response: StopResponse;
+	let stop_api_response: GenericResponse;
 
 	// Wait for the asynchronous initialization to complete
 
