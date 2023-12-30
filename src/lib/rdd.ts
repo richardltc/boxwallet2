@@ -206,6 +206,8 @@ class ReddCoin {
 		}
 	}
 
+	//************************************************
+	// GetInfo
 	public async GetInfo(): Promise<GetInfoResponse> {
 		const body = '{"jsonrpc":"1.0","id":"curltext","method":"getinfo","params":[]}';
 		const url = `http://${this.ip_address}:${this.rpc_port}`;
