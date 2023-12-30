@@ -28,7 +28,8 @@ export enum CoinMethodType {
 	get_info,
 	is_ready,
 	get_core_status = 7,
-	get_blockchain_info
+	get_blockchain_info,
+	wallet_unlockfs
 }
 
 export enum CoinType {
