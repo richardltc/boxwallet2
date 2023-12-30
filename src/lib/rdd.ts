@@ -1,6 +1,11 @@
 import axios, { AxiosError } from 'axios';
 import { getValueFromFile } from '$lib/string_utils';
-import type { GetInfoResponse, GetBlockchainInfoResponse, StopResponse } from '$lib/rdd_types';
+import type {
+	GetInfoResponse,
+	GetBlockchainInfoResponse,
+	StopResponse,
+	GenericResponse
+} from '$lib/rdd_types';
 // import type { CoinAPIResponse } from '$lib/bwtypes';
 import os from 'os';
 import { exec } from 'child_process';
@@ -336,6 +341,31 @@ class ReddCoin {
 		try {
 			const response = await axios.post(url, body, config);
 			response_data = response.data as StopResponse;
+
+			console.log(`response: ${response_data}`);
+			return response_data;
+		} catch (error: any | AxiosError) {
+			console.error('Error data:', error.response.data);
+		}
+		return response_data;
+	}
+
+	public async WalletUnlockFS(pw: string): Promise<GenericResponse> {
+		const body = `{"jsonrpc":"1.0","id":"curltext","method":"walletpassphrase","params":["${pw}",999999,true]}`;
+		const url = `http://${this.ip_address}:${this.rpc_port}`;
+		const config = {
+			auth: {
+				username: rpc_user,
+				password: this.rpc_password
+			},
+			headers: {
+				'Content-Type': 'text/plain'
+			}
+		};
+
+		try {
+			const response = await axios.post(url, body, config);
+			response_data = response.data as GenericResponse;
 
 			console.log(`response: ${response_data}`);
 			return response_data;
