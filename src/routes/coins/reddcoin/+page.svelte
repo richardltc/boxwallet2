@@ -29,8 +29,7 @@
 		title: string;
 		body: string;
 		response: (password: string) => void;
-		valueAttr: { type: 'password', minlength: 1, maxlength: 10, required: true },
-
+		valueAttr: { type: 'password'; minlength: 1; maxlength: 10; required: true };
 	}
 
 	let password: string | undefined;
@@ -44,7 +43,7 @@
 				valueAttr: { type: 'password', minlength: 1, maxlength: 10, required: true },
 				response: (password: string) => {
 					resolve(password);
-				},
+				}
 			};
 			modalStore.trigger(modal);
 		});
@@ -223,7 +222,7 @@
 
 		if (cmt === CoinMethodType.stop_daemon) {
 			walletConnections.set(0);
-			walletUnlockedUntil.set(-5)
+			walletUnlockedUntil.set(-5);
 			wallet_offline = true;
 		}
 
@@ -231,7 +230,6 @@
 		const json_result = JSON.stringify(bw_api_response);
 		console.log(`doPost json response: ${json_result}`);
 	}
-
 </script>
 
 <div class="container mx-auto p-8 space-y-4">
@@ -264,9 +262,10 @@
 			class="btn variant-filled-tertiary"
 			disabled={!is_running}
 			type="button"
-			on:click={getPasswordClick}> unlock for staking
+			on:click={getPasswordClick}
+		>
+			unlock for staking
 		</button>
-
 
 		<button
 			class="btn variant-filled-tertiary"
@@ -276,9 +275,9 @@
 		>
 			Stop
 		</button>
-<!--		<p>Result:</p>-->
-<!--		<pre>-->
-<!--{result}-->
-<!--</pre>-->
+		<!--		<p>Result:</p>-->
+		<!--		<pre>-->
+		<!--{result}-->
+		<!--</pre>-->
 	</section>
 </div>
