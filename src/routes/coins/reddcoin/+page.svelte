@@ -3,7 +3,7 @@
 	import CoinStatus from '$lib/CoinStatus.svelte';
 	import { onMount } from 'svelte';
 	// import type { CoinAPIResponse } from '$lib/bwtypes.js';
-	import type { GetBlockchainInfoResponse, GetInfoResponse } from '$lib/rdd_types.js';
+	import type { GenericResponse, GetBlockchainInfoResponse, GetInfoResponse } from '$lib/rdd_types.js';
 	import { walletUnlockedUntil } from '$lib/rdd_getinfo_store';
 	import { walletConnections } from '$lib/rdd_getinfo_store';
 	import GetPassword from '$lib/GetPassword.svelte';
@@ -34,7 +34,7 @@
 
 	let password: string | undefined;
 
-	async function getPasswordClick() {
+	async function walletUnlockFS() {
 		const password = await new Promise<string>((resolve) => {
 			const modal: ModalSettings = {
 				type: 'prompt',
@@ -67,6 +67,7 @@
 	// let wallet_connections: number;
 	let wallet_offline: boolean;
 	let wallet_unlocked_until: number;
+	let wallet_unlockfs_response: GenericResponse
 	let wallet_verification_progress: number;
 	let daemon_is_ready: null | boolean = false;
 	let daemon_is_running: null | boolean = false;
@@ -230,6 +231,22 @@
 		const json_result = JSON.stringify(bw_api_response);
 		console.log(`doPost json response: ${json_result}`);
 	}
+
+	async function doUnlockWalletAPIRequest() {
+		// Stop all timers
+		const response = await fetch('http://localhost:5173/coins/reddcoin/api', {
+			method: 'POST',
+			body: JSON.stringify({
+				coin_type: CoinType.reddcoin,
+				method_type: CoinMethodType.wallet_unlockfs
+			})
+		});
+
+		wallet_unlockfs_response = await response.json();
+		const json_result = JSON.stringify(bw_api_response);
+		console.log(`doPost json response: ${json_result}`);
+	}
+
 </script>
 
 <div class="container mx-auto p-8 space-y-4">
@@ -262,7 +279,7 @@
 			class="btn variant-filled-tertiary"
 			disabled={!is_running}
 			type="button"
-			on:click={getPasswordClick}
+			on:click={walletUnlockFS}
 		>
 			unlock for staking
 		</button>
