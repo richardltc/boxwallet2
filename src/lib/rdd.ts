@@ -362,6 +362,11 @@ class ReddCoin {
 				'Content-Type': 'text/plain'
 			}
 		};
+		let response_data: GenericResponse = {
+			result: '',
+			error: null,
+			id: ''
+		};
 
 		try {
 			const response = await axios.post(url, body, config);
