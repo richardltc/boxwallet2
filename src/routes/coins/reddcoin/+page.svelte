@@ -3,15 +3,24 @@
 	import CoinStatus from '$lib/CoinStatus.svelte';
 	import { onMount } from 'svelte';
 	// import type { CoinAPIResponse } from '$lib/bwtypes.js';
-	import type { GenericResponse, GetBlockchainInfoResponse, GetInfoResponse } from '$lib/rdd_types.js';
+	import type {
+		GenericResponse,
+		GetBlockchainInfoResponse,
+		GetInfoResponse
+	} from '$lib/rdd_types.js';
 	import { walletUnlockedUntil } from '$lib/rdd_getinfo_store';
 	import { walletConnections } from '$lib/rdd_getinfo_store';
-	import GetPassword from '$lib/GetPassword.svelte';
-	import { getModalStore } from '@skeletonlabs/skeleton';
-	import type { ModalSettings, ModalComponent, ModalStore } from '@skeletonlabs/skeleton';
+	import { getModalStore, getToastStore } from '@skeletonlabs/skeleton';
+	import type {
+		ModalSettings,
+		ToastSettings,
+		ModalComponent,
+		ModalStore
+	} from '@skeletonlabs/skeleton';
 	import type { PageData } from './$types';
 
 	const modalStore = getModalStore();
+	const toastStore = getToastStore();
 	// const modal: ModalSettings = {
 	// 	type: 'prompt',
 	// 	// Data
@@ -49,8 +58,32 @@
 		});
 
 		// Proceed with actions based on the response
-		console.log('Entered password:', password);
+		if (password) {
+			console.log(`password sent: ${password}`)
+			const response = await fetch('http://localhost:5173/coins/reddcoin/api', {
+				method: 'POST',
+				body: JSON.stringify({
+					coin_type: CoinType.reddcoin,
+					method_type: CoinMethodType.wallet_unlockfs,
+					password: password
+				})
+			});
+
+			wallet_unlockfs_response = await response.json();
+			const json_result = JSON.stringify(wallet_unlockfs_response);
+			console.log(`doPost json response: ${json_result}`);
+
+			// const t: ToastSettings = {
+			// 	message: 'This message will auto-hide after 10 seconds.',
+			// 	timeout: 3000,
+			// 	hideDismiss: true
+			// };
+			// toastStore.trigger(t);
+		} else {
+			console.log('Password not entered...');
+		}
 	}
+
 	let block_height: number;
 	let bw_api_response: BWAPIResponse;
 	let coin_getblockchaininfo: GetBlockchainInfoResponse;
@@ -67,7 +100,7 @@
 	// let wallet_connections: number;
 	let wallet_offline: boolean;
 	let wallet_unlocked_until: number;
-	let wallet_unlockfs_response: GenericResponse
+	let wallet_unlockfs_response: GenericResponse;
 	let wallet_verification_progress: number;
 	let daemon_is_ready: null | boolean = false;
 	let daemon_is_running: null | boolean = false;
@@ -112,7 +145,7 @@
 			clearInterval(is_ready_interval_id);
 			getinfo_interval_id = setInterval(async () => {
 				await doGetCoinInfoAPIRequest(CoinMethodType.get_info);
-			}, 3000);
+			}, 10000);
 		}
 		result = JSON.stringify(bw_api_response);
 	};
@@ -151,7 +184,7 @@
 		if (coin_getinfo_response.result.connections > 0) {
 			getinfo_interval_id = setInterval(async () => {
 				await doGetBlockchainInfoAPIRequest(CoinMethodType.get_blockchain_info);
-			}, 3000);
+			}, 10000);
 		}
 	}
 
@@ -231,22 +264,6 @@
 		const json_result = JSON.stringify(bw_api_response);
 		console.log(`doPost json response: ${json_result}`);
 	}
-
-	async function doUnlockWalletAPIRequest() {
-		// Stop all timers
-		const response = await fetch('http://localhost:5173/coins/reddcoin/api', {
-			method: 'POST',
-			body: JSON.stringify({
-				coin_type: CoinType.reddcoin,
-				method_type: CoinMethodType.wallet_unlockfs
-			})
-		});
-
-		wallet_unlockfs_response = await response.json();
-		const json_result = JSON.stringify(bw_api_response);
-		console.log(`doPost json response: ${json_result}`);
-	}
-
 </script>
 
 <div class="container mx-auto p-8 space-y-4">
