@@ -1,11 +1,6 @@
 import axios, { AxiosError } from 'axios';
 import { getValueFromFile } from '$lib/string_utils';
-import type {
-	GetInfoResponse,
-	GetBlockchainInfoResponse,
-	StopResponse,
-	GenericResponse
-} from '$lib/rdd_types';
+import type { GetInfoResponse, GetBlockchainInfoResponse, GenericResponse } from '$lib/rdd_types';
 // import type { CoinAPIResponse } from '$lib/bwtypes';
 import os from 'os';
 import { exec } from 'child_process';
@@ -22,15 +17,18 @@ const daemon_file_win = 'reddcoind.exe';
 
 const coin_name = 'ReddCoin';
 const coin_name_abbrev = 'RDD';
-const coin_core_version = '3.10.3';
+const coin_core_version = '4.22.7';
 
 const download_file_arm32 = 'reddcoin-' + coin_core_version + '-armhf.zip';
-const download_file_lin64: string = 'reddcoin-' + coin_core_version + '-linux64.tar.gz';
+const download_file_lin64: string = 'reddcoin-9aad2b74847c-x86_64-linux-gnu.tar.gz';
 const download_file_win: string = 'reddcoin-' + coin_core_version + '-win64.zip';
 const download_file_bs = 'blockchain-latest.zip';
 
-const download_url: string =
-	'https://download.reddcoin.com/bin/reddcoin-core-' + coin_core_version + '/';
+const download_url_lin: string =
+	'https://download.reddcoin.com/bin/reddcoin-core-' +
+	coin_core_version +
+	'/' +
+	'x86_64-linux-gnu/';
 const download_url_arm: string =
 	'https://sourceforge.net/projects/reddpi/files/update/reddcoin-' +
 	coin_core_version +
@@ -56,7 +54,7 @@ class ReddCoin {
 	private conf_file: string;
 
 	public download_file_lin64: string = 'reddcoin-' + coin_core_version + '-linux64.tar.gz';
-	public download_link = download_url + download_file_lin64;
+	public download_link = download_url_lin + download_file_lin64;
 
 	public ip_address = '127.0.0.1';
 	private rpc_password: string;
@@ -308,15 +306,15 @@ class ReddCoin {
 				});
 			} else {
 				// Unsupported platform
-				reject(new Error('Unsupported platform'));
+				new Error('Unsupported platform');
 			}
 		}
 		return is_running;
 	}
 
-	public async StopDaemon(): Promise<StopResponse> {
+	public async StopDaemon(): Promise<GenericResponse> {
 		const is_running = await this.CoinDaemonIsRunning();
-		let response_data: StopResponse = {
+		let response_data: GenericResponse = {
 			result: '',
 			error: null,
 			id: ''
@@ -351,7 +349,9 @@ class ReddCoin {
 	}
 
 	public async WalletUnlockFS(pw: string): Promise<GenericResponse> {
+		console.log(`RDD: password received: ${pw}`);
 		const body = `{"jsonrpc":"1.0","id":"curltext","method":"walletpassphrase","params":["${pw}",999999,true]}`;
+		console.log(`body: ${body}`);
 		const url = `http://${this.ip_address}:${this.rpc_port}`;
 		const config = {
 			auth: {
