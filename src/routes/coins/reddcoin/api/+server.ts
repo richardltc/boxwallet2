@@ -15,12 +15,6 @@ export async function POST({ request }: RequestEvent) {
 	const method_type: CoinMethodType = data_object.method_type;
 	const redd_coin = await ReddCoin.getInstance('/home/richard/.reddcoin/reddcoin.conf');
 
-	// let bw_api_response: BWAPIResponse;
-	// let coin_api_response: CoinAPIResponse = {
-	// 	result: null,
-	// 	error: null,
-	// 	id: null
-	// };
 	let get_blockchain_info_api_response: GetBlockchainInfoResponse;
 	let get_info_api_response: GetInfoResponse;
 	let core_files_exist = false;
@@ -31,7 +25,7 @@ export async function POST({ request }: RequestEvent) {
 	};
 	let is_ready: boolean;
 	let is_running: boolean;
-	let stop_api_response: GenericResponse;
+	let generic_api_response: GenericResponse;
 
 	// Wait for the asynchronous initialization to complete
 
@@ -74,6 +68,9 @@ export async function POST({ request }: RequestEvent) {
 		// 			return new Response('false');
 		// 		}
 		// }
+
+		//////////////////////////////
+		// DOWNLOAD_CORE_FILES
 		case CoinMethodType.download_core_files:
 			// First, make sure we get the correct file for what we're running on
 			console.log('going to download core files from: ' + redd_coin.download_link);
@@ -84,17 +81,20 @@ export async function POST({ request }: RequestEvent) {
 			console.log('Download complete from server');
 			// decompress(home_dir + '/.boxwallet/' + download_file_lin64);
 			return new Response('download_complete');
+
+		//////////////////////////////
+		// GET_BLOCKCHAIN_INFO
 		case CoinMethodType.get_blockchain_info:
 			// stop the Daemon
-			console.log('Hitting get_blockchain_info...');
+			// console.log('Hitting get_blockchain_info...');
 			get_blockchain_info_api_response = await redd_coin.GetBlockchainInfo();
-			console.log(`Got ${JSON.stringify(get_blockchain_info_api_response)}...`);
+			// console.log(`Got ${JSON.stringify(get_blockchain_info_api_response)}...`);
 			return new Response(JSON.stringify(get_blockchain_info_api_response));
+
+		//////////////////////////////
+		// GET_INFO
 		case CoinMethodType.get_info:
-			// stop the Daemon
-			console.log('Hitting get_info...');
 			get_info_api_response = await redd_coin.GetInfo();
-			console.log(`Got ${JSON.stringify(get_info_api_response)}...`);
 			return new Response(JSON.stringify(get_info_api_response));
 		case CoinMethodType.get_core_status:
 			// Check whether redd Daemon is running
@@ -110,8 +110,11 @@ export async function POST({ request }: RequestEvent) {
 			bw_api_response.core_files_exists = core_files_exist;
 			bw_api_response.is_ready = is_ready;
 			bw_api_response.is_running = is_running;
-			console.log(`Returning ${JSON.stringify(bw_api_response)})...`);
+			// console.log(`Returning ${JSON.stringify(bw_api_response)})...`);
 			return new Response(JSON.stringify(bw_api_response));
+
+		//////////////////////////////
+		// IS_READY
 		case CoinMethodType.is_ready:
 			// Check whether redd Daemon is running
 			console.log('Checking if Daemon is ready...');
@@ -124,10 +127,11 @@ export async function POST({ request }: RequestEvent) {
 			}
 			bw_api_response.is_ready = is_ready;
 			bw_api_response.is_running = is_running;
-			console.log(`Returning ${JSON.stringify(bw_api_response)})...`);
+			// console.log(`Returning ${JSON.stringify(bw_api_response)})...`);
 			return new Response(JSON.stringify(bw_api_response));
+
 		//////////////////////////////
-		// IN_RUNNING
+		// IS_RUNNING
 		case CoinMethodType.is_running:
 			// Check whether redd Daemon is running
 			console.log('Checking if Daemon is running...');
@@ -138,7 +142,7 @@ export async function POST({ request }: RequestEvent) {
 				console.log('Coin daemon is not running');
 			}
 			bw_api_response.is_running = is_running;
-			console.log(`Returning ${JSON.stringify(bw_api_response)})...`);
+			// console.log(`Returning ${JSON.stringify(bw_api_response)})...`);
 			return new Response(JSON.stringify(bw_api_response));
 
 		//////////////////////////////
@@ -156,9 +160,17 @@ export async function POST({ request }: RequestEvent) {
 		case CoinMethodType.stop_daemon:
 			// stop the Daemon
 			console.log('Hitting stop daemon...');
-			stop_api_response = await redd_coin.StopDaemon();
-			console.log(`Got ${stop_api_response}...`);
-			return new Response(JSON.stringify(stop_api_response));
+			generic_api_response = await redd_coin.StopDaemon();
+			console.log(`Got ${generic_api_response}...`);
+			return new Response(JSON.stringify(generic_api_response));
+
+		//////////////////////////////
+		// WALLET_UNLOCKFS
+		case CoinMethodType.wallet_unlockfs:
+			console.log(`Hitting wallet_unlockfs, password received 1: ${data_object.password}...`);
+			generic_api_response = await redd_coin.WalletUnlockFS(data_object.password);
+			console.log(`Got ${generic_api_response}...`);
+			return new Response(JSON.stringify(generic_api_response));
 		default:
 			// We don't know what the method is, so..
 			return new Response('Unknown method: ' + method_type);
