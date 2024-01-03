@@ -74,10 +74,7 @@ export async function POST({ request }: RequestEvent) {
 		case CoinMethodType.download_core_files:
 			// First, make sure we get the correct file for what we're running on
 			console.log('going to download core files from: ' + redd_coin.download_link);
-			await download_file(
-				redd_coin.download_link,
-				home_dir + '/.boxwallet/' + redd_coin.download_file_lin64
-			);
+			await redd_coin.DownloadCoreFiles();
 			console.log('Download complete from server');
 			// decompress(home_dir + '/.boxwallet/' + download_file_lin64);
 			return new Response('download_complete');
