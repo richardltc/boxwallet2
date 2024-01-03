@@ -90,6 +90,7 @@
 	let coin_getinfo_response: GetInfoResponse;
 	// let coin_api_response: CoinAPIResponse;
 	let core_files_downloaded = false;
+	let download_disabled = false;
 	let result = {};
 	let getblockchaininfo_interval_id: ReturnType<typeof setInterval>;
 	let getinfo_interval_id: ReturnType<typeof setInterval>;
@@ -149,6 +150,27 @@
 		}
 		result = JSON.stringify(bw_api_response);
 	};
+
+	async function doDownloadCoreFilesAPIRequest() {
+		download_disabled = true;
+		is_working = true;
+		const response = await fetch('http://localhost:5173/coins/reddcoin/api', {
+			method: 'POST',
+			body: JSON.stringify({
+				coin_type: CoinType.reddcoin,
+				method_type: CoinMethodType.download_core_files
+			})
+		});
+
+		download_disabled = false;
+		is_working = false;
+		bw_api_response = await response.json();
+		const json_result = JSON.stringify(
+			bw_api_response
+		);
+		console.log(`doPost json response: ${json_result}`);
+		console.log(`doPost is_running response: ${bw_api_response.is_running}`);
+	}
 
 	async function doGetBlockchainInfoAPIRequest(cmt: CoinMethodType) {
 		const response = await fetch('http://localhost:5173/coins/reddcoin/api', {
@@ -284,6 +306,14 @@
 	</section>
 	<section>
 		<button
+			disabled={download_disabled}
+			class="btn variant-filled-tertiary"
+			type="button"
+			on:click={() => doDownloadCoreFilesAPIRequest()}
+		>
+			Download
+		</button>
+		<button
 			disabled={is_running}
 			class="btn variant-filled-tertiary"
 			type="button"
@@ -309,9 +339,5 @@
 		>
 			Stop
 		</button>
-		<!--		<p>Result:</p>-->
-		<!--		<pre>-->
-		<!--{result}-->
-		<!--</pre>-->
 	</section>
 </div>
