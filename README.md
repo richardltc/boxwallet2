@@ -23,10 +23,19 @@ You should now have a directory full of files.
 ## Installing `NodeJS`
 Before we're able to run BoxWallet we need to install `NodeJS` as that will be the engine that BoxWallet uses in order to run.
 
-Again, if you're running on Linux you'll be able to install `NodeJS` from your package manager, on Windows, you can go to:
+Again, if you're running on Linux you'll be able to install `NodeJS` from your package manager (`sudo apt install nodejs`), on Windows, you can go to:
  [`www.nodejs.org`](https://www.nodejs.org).
 
-With `NodeJS` now installed, the last step we need to do before running BoxWallet2 is to install some dependencies that it requires. Don't worry, as this is a simple process. Open a command prompt in your BoxWallet2 directory and run `npm install`
+With `NodeJS` now installed, the last step we need to do before running BoxWallet is to install some dependencies that 
+it requires. Don't worry, as this is a simple process. Open a command prompt in your BoxWallet directory and 
+run `npm install`
+
+One final step is to tell BoxWallet what it's server IP address is.  To do this, you need to create a file called `.env`
+in the same directory as this README.md file. Then, if your doing all of this on a single machine, that is, you're 
+going to be running your browser on the same machine that's you're also running the server on, you need to add 
+exactly `PUBLIC_HOST_IP=localhost` into the `.env`, otherwise, if the server is running on a different machine than
+your browser is running, you need to enter that IP address as `PUBLIC_HOST_IP=your_server_ip` so, if the IP address of
+your server was 192.168.1.1 you'd enter `PUBLIC_HOST_IP=192.168.1.1`
 
 After this step is complete, you're now ready to run BoxWallet
 
