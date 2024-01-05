@@ -9,20 +9,21 @@ import * as child_process from 'child_process';
 import path from 'path';
 import { error } from '@sveltejs/kit';
 import fs from 'fs';
+import { download_file } from '$lib/web_utils';
 
 const cli_file_lin = 'reddcoin-cli';
-const cli_file_win = 'reddcoin-cli.exe';
+// const cli_file_win = 'reddcoin-cli.exe';
 const daemon_file_lin = 'reddcoind';
 const daemon_file_win = 'reddcoind.exe';
 
-const coin_name = 'ReddCoin';
-const coin_name_abbrev = 'RDD';
+// const coin_name = 'ReddCoin';
+// const coin_name_abbrev = 'RDD';
 const coin_core_version = '4.22.7';
 
-const download_file_arm32 = 'reddcoin-' + coin_core_version + '-armhf.zip';
-const download_file_lin64: string = 'reddcoin-9aad2b74847c-x86_64-linux-gnu.tar.gz';
-const download_file_win: string = 'reddcoin-' + coin_core_version + '-win64.zip';
-const download_file_bs = 'blockchain-latest.zip';
+// const download_file_arm32 = 'reddcoin-' + coin_core_version + '-armhf.zip';
+const download_file_lin64 = 'reddcoin-9aad2b74847c-x86_64-linux-gnu.tar.gz';
+// const download_file_win: string = 'reddcoin-' + coin_core_version + '-win64.zip';
+// const download_file_bs = 'blockchain-latest.zip';
 
 const download_url_lin: string =
 	'https://download.reddcoin.com/bin/reddcoin-core-' +
@@ -43,7 +44,7 @@ const home_dir_boxwallet = '.boxwallet';
 const home_dir_lin = '.reddcoin';
 const home_dir_win = 'REDDCOIN';
 
-const min_tx_fee = 0.004;
+// const min_tx_fee = 0.004;
 
 const rpc_user = 'reddcoinrpc';
 const rpc_port = '45443';
@@ -166,6 +167,22 @@ class ReddCoin {
 			// Unsupported platform
 			throw new Error('Unsupported platform');
 		}
+	}
+
+	public async DownloadCoreFiles(): Promise<void> {
+		await download_file(
+			download_url_lin + download_file_lin64,
+			path.join(home_dir, home_dir_boxwallet, download_file_lin64)
+		)
+			.then(() => {
+				console.log(
+					'File downloaded successfully to:',
+					path.join(home_dir, home_dir_boxwallet, download_file_lin64)
+				);
+			})
+			.catch((error) => {
+				console.error('Error downloading file:', error);
+			});
 	}
 
 	public async GetBlockchainInfo(): Promise<GetBlockchainInfoResponse> {
@@ -338,7 +355,7 @@ class ReddCoin {
 
 		try {
 			const response = await axios.post(url, body, config);
-			response_data = response.data as StopResponse;
+			response_data = response.data as GenericResponse;
 
 			console.log(`response: ${response_data}`);
 			return response_data;
