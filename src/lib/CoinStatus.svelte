@@ -95,7 +95,7 @@
                 icon_is_ready_class = "fa-solid fa-face-smile fa-2x disabled-icon"
                 icon_is_ready_title = "Core wallet is not ready."
             }
-            if ((wallet_verification_progress < 0.9999) && (wallet_connections_value > 0)) {
+            if ((wallet_verification_progress < 0.99999) && (wallet_connections_value > 0)) {
                 console.log(`verification progress = ${wallet_verification_progress}`)
                 icon_is_syncing_class = "fa-solid fa-rotate fa-2x fa-spin"
                 icon_is_syncing_title = `Blockchain is syncing... Blocks: ${block_height}`
