@@ -55,7 +55,7 @@ class ReddCoin {
 	private conf_file: string;
 
 	public download_file_lin64: string = 'reddcoin-' + coin_core_version + '-linux64.tar.gz';
-	public download_link = download_url_lin + download_file_lin64;
+	public download_link = download_url_lin64 + download_file_lin64;
 
 	public ip_address = '127.0.0.1';
 	private rpc_password: string;
@@ -190,7 +190,7 @@ class ReddCoin {
 			.then(() => {
 				console.log(
 					'File downloaded successfully to:',
-					path.join(home_dir, home_dir_boxwallet, download_file_lin64)
+					path.join(home_dir, home_dir_boxwallet, dl_file)
 				);
 			})
 			.catch((error) => {
