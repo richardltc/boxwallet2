@@ -10,6 +10,7 @@ import path from 'path';
 import { error } from '@sveltejs/kit';
 import fs from 'fs';
 import { download_file } from '$lib/web_utils';
+import { platform } from 'node:os';
 
 const cli_file_lin = 'reddcoin-cli';
 // const cli_file_win = 'reddcoin-cli.exe';
@@ -20,20 +21,19 @@ const daemon_file_win = 'reddcoind.exe';
 // const coin_name_abbrev = 'RDD';
 const coin_core_version = '4.22.7';
 
-// const download_file_arm32 = 'reddcoin-' + coin_core_version + '-armhf.zip';
+const download_file_arm32 = 'reddcoin-9aad2b74847c-arm-linux-gnueabihf.tar.gz';
+const download_file_arm64 = 'reddcoin-9aad2b74847c-aarch64-linux-gnu.tar.gz';
 const download_file_lin64 = 'reddcoin-9aad2b74847c-x86_64-linux-gnu.tar.gz';
 // const download_file_win: string = 'reddcoin-' + coin_core_version + '-win64.zip';
 // const download_file_bs = 'blockchain-latest.zip';
 
-const download_url_lin: string =
-	'https://download.reddcoin.com/bin/reddcoin-core-' +
-	coin_core_version +
-	'/' +
-	'x86_64-linux-gnu/';
-const download_url_arm: string =
-	'https://sourceforge.net/projects/reddpi/files/update/reddcoin-' +
-	coin_core_version +
-	'-armhf.zip/download';
+const download_url_lin64: string =
+	'https://download.reddcoin.com/bin/reddcoin-core-' + coin_core_version + '/x86_64-linux-gnu/';
+const download_url_arm32: string =
+	'https://download.reddcoin.com/bin/reddcoin-core-' + coin_core_version + '/arm-linux-gnueabihf/';
+const download_url_arm64: string =
+	'https://download.reddcoin.com/bin/reddcoin-core-' + coin_core_version + '/aarch64-linux-gnu/';
+
 const download_url_bs = 'https://download.reddcoin.com/bin/bootstrap/';
 
 const extracted_dir_lin: string = 'reddcoin-' + coin_core_version + '/';
@@ -170,10 +170,23 @@ class ReddCoin {
 	}
 
 	public async DownloadCoreFiles(): Promise<void> {
-		await download_file(
-			download_url_lin + download_file_lin64,
-			path.join(home_dir, home_dir_boxwallet, download_file_lin64)
-		)
+		let dl_url = '';
+		let dl_file = '';
+		switch (process.arch) {
+			case 'arm':
+				dl_url = download_url_arm32 + download_file_arm32;
+				dl_file = download_file_arm32;
+				break;
+			case 'arm64':
+				dl_url = download_url_arm64 + download_file_arm64;
+				dl_file = download_file_arm64;
+				break;
+			case 'x64':
+				dl_url = download_url_lin64 + download_file_lin64;
+				dl_file = download_file_lin64;
+				break;
+		}
+		await download_file(dl_url, path.join(home_dir, home_dir_boxwallet, dl_file))
 			.then(() => {
 				console.log(
 					'File downloaded successfully to:',
