@@ -36,7 +36,7 @@ const download_url_arm64: string =
 
 const download_url_bs = 'https://download.reddcoin.com/bin/bootstrap/';
 
-const extracted_dir_lin: string = 'reddcoin-' + coin_core_version + '/';
+const extracted_dir_lin: string = 'reddcoin-9aad2b74847c' + '/';
 const extracted_dir_win: string = 'reddcoin-' + coin_core_version + '\\';
 
 const home_dir = os.homedir();
