@@ -1,4 +1,5 @@
 import axios, { AxiosError } from 'axios';
+import compressing from 'compressing';
 import { getValueFromFile } from '$lib/string_utils';
 import type { GetInfoResponse, GetBlockchainInfoResponse, GenericResponse } from '$lib/rdd_types';
 // import type { CoinAPIResponse } from '$lib/bwtypes';
@@ -195,6 +196,23 @@ class ReddCoin {
 			})
 			.catch((error) => {
 				console.error('Error downloading file:', error);
+			});
+		// uncompress a file
+		await compressing.tgz
+			.uncompress(
+				path.join(home_dir, home_dir_boxwallet, dl_file),
+				path.join(home_dir, home_dir_boxwallet)
+			)
+			.then(() => {
+				console.log('File uncompressed.');
+				try {
+					// Tidy un-needed files
+				} catch (error) {
+					console.error('Error tidying files:', error);
+				}
+			})
+			.catch((error: any) => {
+				console.error('Error while uncompressing file:', error);
 			});
 	}
 
