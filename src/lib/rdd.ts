@@ -11,7 +11,6 @@ import path from 'path';
 import { error } from '@sveltejs/kit';
 import fs from 'fs';
 import { download_file } from '$lib/web_utils';
-import { platform } from 'node:os';
 
 const cli_file_lin = 'reddcoin-cli';
 // const cli_file_win = 'reddcoin-cli.exe';
