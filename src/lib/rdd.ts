@@ -11,6 +11,8 @@ import path from 'path';
 import { error } from '@sveltejs/kit';
 import fs from 'fs';
 import { download_file } from '$lib/web_utils';
+import { copyFileSync, rmdirSync } from 'node:fs';
+import * as coin_utils from '$lib/coin_utils';
 
 const cli_file_lin = 'reddcoin-cli';
 // const cli_file_win = 'reddcoin-cli.exe';
@@ -36,7 +38,7 @@ const download_url_arm64: string =
 
 const download_url_bs = 'https://download.reddcoin.com/bin/bootstrap/';
 
-const extracted_dir_lin = 'reddcoin-9aad2b74847c' + '/';
+const extracted_dir_lin = 'reddcoin-9aad2b74847c';
 const extracted_dir_win = 'reddcoin-' + coin_core_version + '\\';
 
 const home_dir = os.homedir();
@@ -46,6 +48,7 @@ const home_dir_win = 'REDDCOIN';
 
 // const min_tx_fee = 0.004;
 
+const conf_file = 'reddcoin.conf';
 const rpc_user = 'reddcoinrpc';
 const rpc_port = '45443';
 
@@ -205,13 +208,51 @@ class ReddCoin {
 			.then(() => {
 				console.log('File uncompressed.');
 				try {
+					// Copy files to correct location...
+					const src_cli_file = path.join(
+						home_dir,
+						home_dir_boxwallet,
+						extracted_dir_lin,
+						'bin',
+						cli_file_lin
+					);
+					const dest_cli_file = path.join(home_dir, home_dir_boxwallet, cli_file_lin);
+					const src_daemon_file = path.join(
+						home_dir,
+						home_dir_boxwallet,
+						extracted_dir_lin,
+						'bin',
+						daemon_file_lin
+					);
+					const dest_daemon_file = path.join(home_dir, home_dir_boxwallet, daemon_file_lin);
+					console.log(`Attempting to copy: ${src_cli_file} to ${dest_cli_file}`);
+					copyFileSync(src_cli_file, dest_cli_file);
+					console.log(`Attempting to copy: ${src_daemon_file} to ${dest_daemon_file}`);
+					copyFileSync(src_daemon_file, dest_daemon_file);
+
 					// Tidy un-needed files
+					fs.rmSync(path.join(home_dir, home_dir_boxwallet, extracted_dir_lin), {
+						recursive: true,
+						force: true
+					});
+
+					// Populate reddcoin.conf file.
+					try {
+						coin_utils.PopulateConfFile(
+							conf_file,
+							path.join(os.homedir(), home_dir_lin),
+							rpc_user,
+							rpc_port
+						);
+					} catch (error) {
+						console.error('Error populating conf file:', error);
+					}
 				} catch (error) {
 					console.error('Error tidying files:', error);
 				}
 			})
 			.catch((error: any) => {
-				console.error('Error while uncompressing file:', error);
+				console.error('Error while un-compressing file:', error);
 			});
 	}
 
