@@ -2,13 +2,14 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
 
-function populateConfFile(
+export function PopulateConfFile(
 	confFile: string,
 	homeDir: string,
 	rpcUserCoin: string,
 	rpcPortCoin: string
 ): { rpcUser: string; rpcPassword: string } | Error {
 	try {
+		console.log(`Creating ${confFile} in homeDir: ${homeDir}`);
 		// Create home directory if it doesn't exist
 		fs.mkdirSync(homeDir, { recursive: true });
 
@@ -50,5 +51,8 @@ function getConfigValue(config: string, key: string): string | undefined {
 }
 
 function generateRandomPassword(): string {
-	return crypto.randomBytes(20).toString('hex'); // Use crypto module for secure password generation
+	const random_bytes = crypto.randomBytes(10); // Generate 10 bytes for a 20-character hex string
+	const random_pw = random_bytes.toString('hex').slice(0.2); //crypto.randomBytes(20).toString('hex'); // Use crypto module for secure password generation
+	console.log(`Password generated at: ${random_pw}`);
+	return random_pw;
 }
