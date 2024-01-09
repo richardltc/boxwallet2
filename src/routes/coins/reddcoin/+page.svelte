@@ -95,7 +95,6 @@
 	// let coin_api_response: CoinAPIResponse;
 	let core_files_downloaded = false;
 	let download_disabled = false;
-	let result = {};
 	let getblockchaininfo_interval_id: ReturnType<typeof setInterval>;
 	let getinfo_interval_id: ReturnType<typeof setInterval>;
 	let is_ready_interval_id: ReturnType<typeof setInterval>;
@@ -172,6 +171,8 @@
 		const json_result = JSON.stringify(
 			bw_api_response
 		);
+		await doGetCoreStatusAPIRequest(CoinMethodType.get_core_status);
+
 		console.log(`doPost json response: ${json_result}`);
 		console.log(`doPost is_running response: ${bw_api_response.is_running}`);
 	}
