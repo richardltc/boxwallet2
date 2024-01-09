@@ -9,7 +9,7 @@ export function PopulateConfFile(
 	rpcPortCoin: string
 ): { rpcUser: string; rpcPassword: string } | Error {
 	try {
-		console.log(`Creating ${confFile} in homeDir: ${homeDir}`);
+		console.log(`Populating conf file if required...`);
 		// Create home directory if it doesn't exist
 		fs.mkdirSync(homeDir, { recursive: true });
 
@@ -21,10 +21,17 @@ export function PopulateConfFile(
 			? fs.readFileSync(fullConfFilePath, 'utf-8').trim()
 			: '';
 
+		let rpc_pw = getConfigValue(existingConfig, 'rpcpassword');
+		if (rpc_pw == '') {
+			console.log('Password is blank so generating...');
+			rpc_pw = generateRandomPassword();
+		} else {
+			console.log('Password already exists');
+		}
 		// Construct updated configuration with necessary properties
 		const updatedConfig = [
 			`rpcuser=${rpcUserCoin || getConfigValue(existingConfig, 'rpcuser')}`,
-			`rpcpassword=${generateRandomPassword()}`,
+			`rpcpassword=${rpc_pw}`,
 			'daemon=1',
 			'server=1',
 			'rpcallowip=192.168.1.0/255.255.255.0',
@@ -53,6 +60,6 @@ function getConfigValue(config: string, key: string): string | undefined {
 function generateRandomPassword(): string {
 	const random_bytes = crypto.randomBytes(10); // Generate 10 bytes for a 20-character hex string
 	const random_pw = random_bytes.toString('hex').slice(0.2); //crypto.randomBytes(20).toString('hex'); // Use crypto module for secure password generation
-	console.log(`Password generated at: ${random_pw}`);
+	console.log(`Password generated as: ${random_pw}`);
 	return random_pw;
 }
