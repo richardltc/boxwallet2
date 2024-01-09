@@ -72,6 +72,18 @@ class ReddCoin {
 
 	private async initialize(): Promise<void> {
 		try {
+			// Populate reddcoin.conf file, if required...
+			try {
+				coin_utils.PopulateConfFile(
+					conf_file,
+					path.join(os.homedir(), home_dir_lin),
+					rpc_user,
+					rpc_port
+				);
+			} catch (error) {
+				console.error('Error populating conf file:', error);
+			}
+
 			this.rpc_password = await getValueFromFile(this.conf_file, 'rpcpassword=');
 		} catch (error) {
 			console.error('Error processing file:', error);
@@ -235,18 +247,6 @@ class ReddCoin {
 						recursive: true,
 						force: true
 					});
-
-					// Populate reddcoin.conf file.
-					try {
-						coin_utils.PopulateConfFile(
-							conf_file,
-							path.join(os.homedir(), home_dir_lin),
-							rpc_user,
-							rpc_port
-						);
-					} catch (error) {
-						console.error('Error populating conf file:', error);
-					}
 				} catch (error) {
 					console.error('Error tidying files:', error);
 				}
