@@ -167,11 +167,22 @@
 
 		download_disabled = false;
 		is_working = false;
+
+		await doGetCoreStatusAPIRequest(CoinMethodType.get_core_status);
+
+		const t: ToastSettings = {
+			message: 'Core files downloaded successfully.',
+			timeout: 5000,
+			hideDismiss: true,
+			background: 'variant-filled-success'
+		};
+		toastStore.trigger(t);
+
 		bw_api_response = await response.json();
 		const json_result = JSON.stringify(
 			bw_api_response
 		);
-		await doGetCoreStatusAPIRequest(CoinMethodType.get_core_status);
+
 
 		console.log(`doPost json response: ${json_result}`);
 		console.log(`doPost is_running response: ${bw_api_response.is_running}`);
