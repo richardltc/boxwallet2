@@ -4,7 +4,11 @@ import { CoinMethodType, CoinType } from '$lib/bwtypes';
 import { download_file } from '$lib/web_utils';
 import * as os from 'os';
 import ReddCoin from '$lib/rdd';
-import type { GetBlockchainInfoResponse, GetInfoResponse, GenericResponse } from '$lib/rdd_types';
+import type {
+	GetBlockchainInfoResponse,
+	GetNetworkInfoResponse,
+	GenericResponse
+} from '$lib/rdd_types';
 
 const home_dir = os.homedir();
 
@@ -16,7 +20,7 @@ export async function POST({ request }: RequestEvent) {
 	const redd_coin = await ReddCoin.getInstance('/home/richard/.reddcoin/reddcoin.conf');
 
 	let get_blockchain_info_api_response: GetBlockchainInfoResponse;
-	let get_info_api_response: GetInfoResponse;
+	let get_network_info_api_response: GetNetworkInfoResponse;
 	let core_files_exist = false;
 	const bw_api_response: BWAPIResponse = {
 		core_files_exists: null,
@@ -84,15 +88,14 @@ export async function POST({ request }: RequestEvent) {
 		// GET_BLOCKCHAIN_INFO
 		case CoinMethodType.get_blockchain_info:
 			// stop the Daemon
-			// console.log('Hitting get_blockchain_info...');
 			get_blockchain_info_api_response = await redd_coin.GetBlockchainInfo();
 			return new Response(JSON.stringify(get_blockchain_info_api_response));
 
 		//////////////////////////////
 		// GET_INFO
 		case CoinMethodType.get_info:
-			get_info_api_response = await redd_coin.GetInfo();
-			return new Response(JSON.stringify(get_info_api_response));
+			get_network_info_api_response = await redd_coin.GetInfo();
+			return new Response(JSON.stringify(get_network_info_api_response));
 		//////////////////////////////
 		// GET_CORE_STATUS
 		case CoinMethodType.get_core_status:

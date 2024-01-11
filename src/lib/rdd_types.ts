@@ -48,3 +48,36 @@ export interface GenericResponse {
 	error: any;
 	id: string;
 }
+
+export interface GetNetworkInfoResponse {
+	result: GetNetworkInfoResult;
+	error: any;
+	id: string;
+}
+
+export interface GetNetworkInfoResult {
+	version: number;
+	subversion: string;
+	protocolversion: number;
+	localservices: string;
+	localservicesnames: string[];
+	localrelay: boolean;
+	timeoffset: number;
+	networkactive: boolean;
+	connections: number;
+	connections_in: number;
+	connections_out: number;
+	networks: Network[];
+	relayfee: number;
+	incrementalfee: number;
+	localaddresses: any[];
+	warnings: string;
+}
+
+export interface Network {
+	name: string;
+	limited: boolean;
+	reachable: boolean;
+	proxy: string;
+	proxy_randomize_credentials: boolean;
+}

@@ -1,7 +1,11 @@
 import axios, { AxiosError } from 'axios';
 import compressing from 'compressing';
 import { getValueFromFile } from '$lib/string_utils';
-import type { GetInfoResponse, GetBlockchainInfoResponse, GenericResponse } from '$lib/rdd_types';
+import type {
+	GetNetworkInfoResponse,
+	GetBlockchainInfoResponse,
+	GenericResponse
+} from '$lib/rdd_types';
 // import type { CoinAPIResponse } from '$lib/bwtypes';
 import os from 'os';
 import { exec } from 'child_process';
@@ -97,7 +101,7 @@ class ReddCoin {
 	}
 
 	public async CoinDaemonIsReady(): Promise<boolean> {
-		const body = '{"jsonrpc":"1.0","id":"curltext","method":"getinfo","params":[]}';
+		const body = '{"jsonrpc":"1.0","id":"curltext","method":"getnetworkinfo","params":[]}';
 		const url = `http://${this.ip_address}:${this.rpc_port}`;
 		const config = {
 			auth: {
@@ -109,12 +113,12 @@ class ReddCoin {
 			}
 		};
 
-		let response_data: GetInfoResponse;
+		let response_data: GetNetworkInfoResponse;
 		try {
 			const response = await axios.post(url, body, config);
-			response_data = response.data as GetInfoResponse;
+			response_data = response.data as GetNetworkInfoResponse;
 
-			// If we get here, it's because we didn't get any kind of error...
+			// If we get here, it's because we didn't get any kind of error.
 			return true;
 		} catch (error: any | AxiosError) {
 			if (axios.isAxiosError(error) && error.response) {
@@ -299,8 +303,8 @@ class ReddCoin {
 
 	//************************************************
 	// GetInfo
-	public async GetInfo(): Promise<GetInfoResponse> {
-		const body = '{"jsonrpc":"1.0","id":"curltext","method":"getinfo","params":[]}';
+	public async GetInfo(): Promise<GetNetworkInfoResponse> {
+		const body = '{"jsonrpc":"1.0","id":"curltext","method":"getnetworkinfo","params":[]}';
 		const url = `http://${this.ip_address}:${this.rpc_port}`;
 		const config = {
 			auth: {
@@ -312,10 +316,10 @@ class ReddCoin {
 			}
 		};
 
-		let response_data: GetInfoResponse;
+		let response_data: GetNetworkInfoResponse;
 		try {
 			const response = await axios.post(url, body, config);
-			response_data = response.data as GetInfoResponse;
+			response_data = response.data as GetNetworkInfoResponse;
 
 			// If we get here, it's because we didn't get any kind of error...
 			// console.log(`response: ${JSON.stringify(response_data)}`);
