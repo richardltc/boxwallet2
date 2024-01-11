@@ -13,7 +13,6 @@ export function PopulateConfFile(
 		// Create home directory if it doesn't exist
 		fs.mkdirSync(homeDir, { recursive: true });
 
-		// Ensure consistent path handling
 		const fullConfFilePath = path.join(homeDir, confFile);
 
 		// Read existing configuration, if any
@@ -22,7 +21,7 @@ export function PopulateConfFile(
 			: '';
 
 		let rpc_pw = getConfigValue(existingConfig, 'rpcpassword');
-		if (rpc_pw == '') {
+		if (rpc_pw == '' || rpc_pw === undefined) {
 			console.log('Password is blank so generating...');
 			rpc_pw = generateRandomPassword();
 		} else {
