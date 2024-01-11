@@ -73,11 +73,12 @@ export async function POST({ request }: RequestEvent) {
 		// DOWNLOAD_CORE_FILES
 		case CoinMethodType.download_core_files:
 			// First, make sure we get the correct file for what we're running on
-			console.log('going to download core files from: ' + redd_coin.download_link);
+			console.log('Attempting to download core files from: ' + redd_coin.download_link);
 			await redd_coin.DownloadCoreFiles();
 			console.log('Download complete from server');
-			// decompress(home_dir + '/.boxwallet/' + download_file_lin64);
-			return new Response('download_complete');
+			core_files_exist = await redd_coin.CoreFilesExist();
+			bw_api_response.core_files_exists = core_files_exist;
+			return new Response(JSON.stringify(bw_api_response));
 
 		//////////////////////////////
 		// GET_BLOCKCHAIN_INFO
@@ -85,7 +86,6 @@ export async function POST({ request }: RequestEvent) {
 			// stop the Daemon
 			// console.log('Hitting get_blockchain_info...');
 			get_blockchain_info_api_response = await redd_coin.GetBlockchainInfo();
-			// console.log(`Got ${JSON.stringify(get_blockchain_info_api_response)}...`);
 			return new Response(JSON.stringify(get_blockchain_info_api_response));
 
 		//////////////////////////////
@@ -93,6 +93,8 @@ export async function POST({ request }: RequestEvent) {
 		case CoinMethodType.get_info:
 			get_info_api_response = await redd_coin.GetInfo();
 			return new Response(JSON.stringify(get_info_api_response));
+		//////////////////////////////
+		// GET_CORE_STATUS
 		case CoinMethodType.get_core_status:
 			// Check whether redd Daemon is running
 			console.log('Checking if Daemon is ready...');

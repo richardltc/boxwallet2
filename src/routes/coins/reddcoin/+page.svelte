@@ -20,7 +20,9 @@
 		ModalStore
 	} from '@skeletonlabs/skeleton';
 	import type { PageData } from './$types';
+	import * as trace_events from 'trace_events';
 
+	const coin_name = 'ReddCoin';
 	const modalStore = getModalStore();
 	const toastStore = getToastStore();
 	// const modal: ModalSettings = {
@@ -43,16 +45,12 @@
 		valueAttr: { type: 'password'; minlength: 1; maxlength: 10; required: true };
 	}
 
-	console.log(PUBLIC_HOST_IP)
-
-	let password: string | undefined;
-
 	async function walletUnlockFS() {
 		const password = await new Promise<string>((resolve) => {
 			const modal: ModalSettings = {
 				type: 'prompt',
 				title: 'Enter Password',
-				body: 'Please enter your password to unlock your wallet:',
+				body: `Please enter your password to unlock your ${coin_name} wallet:`,
 				valueAttr: { type: 'password', minlength: 1, maxlength: 10, required: true },
 				response: (password: string) => {
 					resolve(password);
@@ -128,7 +126,6 @@
 	});
 
 	const isReady = async () => {
-		console.log(`isReady fired...`);
 		const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/reddcoin/api`, {
 			method: 'POST',
 			body: JSON.stringify({
@@ -151,10 +148,32 @@
 				await doGetCoinInfoAPIRequest(CoinMethodType.get_info);
 			}, 10000);
 		}
-		result = JSON.stringify(bw_api_response);
+		// result = JSON.stringify(bw_api_response);
 	};
 
 	async function doDownloadCoreFilesAPIRequest() {
+		// Confirm if core files are already downloaded.
+		let confirmed = false;
+		if (core_files_downloaded) {
+			await new Promise<boolean>((resolve) => {
+				const confirm_modal: ModalSettings = {
+					type: 'confirm',
+					title: 'Please Confirm',
+					body: `The ${coin_name} core files are already downloaded. Would you like to re-download them?`,
+					response: (r: boolean) => {
+						resolve(r);
+					}
+				};
+				modalStore.trigger(confirm_modal);
+			}).then((r: boolean) => {
+				confirmed = r;
+			});
+		}
+
+		if ((!confirmed) && (core_files_downloaded)){
+			return
+		}
+
 		download_disabled = true;
 		is_working = true;
 		const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/reddcoin/api`, {
@@ -168,10 +187,8 @@
 		download_disabled = false;
 		is_working = false;
 
-		await doGetCoreStatusAPIRequest(CoinMethodType.get_core_status);
-
 		const t: ToastSettings = {
-			message: 'Core files downloaded successfully.',
+			message: `The ${coin_name} core files downloaded successfully.`,
 			timeout: 5000,
 			hideDismiss: true,
 			background: 'variant-filled-success'
@@ -179,13 +196,9 @@
 		toastStore.trigger(t);
 
 		bw_api_response = await response.json();
-		const json_result = JSON.stringify(
-			bw_api_response
-		);
-
-
-		console.log(`doPost json response: ${json_result}`);
-		console.log(`doPost is_running response: ${bw_api_response.is_running}`);
+		if (bw_api_response.core_files_exists) {
+			core_files_downloaded = true
+		}
 	}
 
 	async function doGetBlockchainInfoAPIRequest(cmt: CoinMethodType) {
@@ -237,13 +250,6 @@
 
 		bw_api_response = await response.json();
 		const json_result = JSON.stringify(bw_api_response);
-		console.log(`doPost json response: ${json_result}`);
-		console.log(`doPost is_running response: ${bw_api_response.is_running}`);
-		// daemon_is_ready = bw_api_response.is_ready;
-		// daemon_is_running = bw_api_response.is_running;
-		// if (daemon_is_ready) {
-		// 	wallet_offline = false;
-		// }
 		if (bw_api_response.core_files_exists) {
 			core_files_downloaded = true;
 		}
@@ -330,7 +336,7 @@
 			Download
 		</button>
 		<button
-			disabled={is_running}
+			disabled={((is_running) || (!core_files_downloaded))}
 			class="btn variant-filled-tertiary"
 			type="button"
 			on:click={() => doStartWalletAPIRequest(CoinMethodType.start_daemon)}

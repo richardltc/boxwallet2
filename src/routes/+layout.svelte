@@ -37,7 +37,7 @@
 		<!-- App Bar -->
 		<AppBar>
 			<svelte:fragment slot="lead">
-				<strong class="text-xl">BoxWallet</strong>
+				<strong class="text-xl">BoxWallet v0.01 BETA </strong>
 			</svelte:fragment>
 			<svelte:fragment slot="trail">
 				<a
