@@ -1,5 +1,6 @@
 <script lang="ts">
     import { headers } from '$lib/rdd_getblockchaininfo_store.js';
+		import { CoinMethodType } from '$lib/bwtypes';
 
     let header_height: number;
 
@@ -11,6 +12,12 @@
 </script>
 
 <main>
+	<div class="container mx-auto p-8 space-y-4">
+		<p>
+			Headers: {header_height}
+		</p>
+	</div>
+
 </main>
 
 <style>
