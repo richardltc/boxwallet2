@@ -1,6 +1,6 @@
 <script lang="ts">
     import { IconStatusType } from '$lib/bwtypes';
-    import { walletUnlockedUntil, walletConnections } from '$lib/rdd_getinfo_store';
+    import { walletUnlockedUntil, walletConnections } from '$lib/rdd_getnetworkinfo_store';
 
     export let block_height: number;
     export let core_files_downloaded = false;
@@ -45,7 +45,6 @@
         if (unlocked_until_value === -5) {
             icon_wallet_security_class = "fa-solid fa-lock-open fa-2x disabled-icon"
             icon_wallet_security_title = "Offline"
-            console.log("wallet status unlocked")
         } else if (unlocked_until_value === 0) {
             icon_wallet_security_class = "fa-solid fa-lock fa-2x"
             icon_wallet_security_title = "Wallet locked"
@@ -96,7 +95,6 @@
                 icon_is_ready_title = "Core wallet is not ready."
             }
             if ((wallet_verification_progress < 0.99999) && (wallet_connections_value > 0)) {
-                console.log(`verification progress = ${wallet_verification_progress}`)
                 icon_is_syncing_class = "fa-solid fa-rotate fa-2x fa-spin"
                 icon_is_syncing_title = `Blockchain is syncing... Blocks: ${block_height}`
             } else if (wallet_connections_value > 0) {
