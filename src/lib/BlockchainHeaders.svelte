@@ -14,7 +14,7 @@
 <main>
 	<div class="container mx-auto p-8 space-y-4">
 		<p>
-			Headers: {header_height}
+			Headers: {header_height.toLocaleString()}
 		</p>
 	</div>
 
