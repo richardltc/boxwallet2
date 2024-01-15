@@ -10,8 +10,9 @@
 		GetBlockchainInfoResponse,
 		GetInfoResponse
 	} from '$lib/rdd_types.js';
-	import { walletUnlockedUntil } from '$lib/rdd_getinfo_store';
-	import { walletConnections } from '$lib/rdd_getinfo_store';
+	import { headers } from '$lib/rdd_getblockchaininfo_store';
+	import { walletUnlockedUntil } from '$lib/rdd_getnetworkinfo_store';
+	import { walletConnections } from '$lib/rdd_getnetworkinfo_store';
 	import { getModalStore, getToastStore } from '@skeletonlabs/skeleton';
 	import type {
 		ModalSettings,
@@ -21,6 +22,7 @@
 	} from '@skeletonlabs/skeleton';
 	import type { PageData } from './$types';
 	import * as trace_events from 'trace_events';
+	import BlockchainHeaders from '$lib/BlockchainHeaders.svelte';
 
 	const coin_name = 'ReddCoin';
 	const modalStore = getModalStore();
@@ -214,6 +216,9 @@
 		const json_result = JSON.stringify(coin_getblockchaininfo);
 		console.log(`doPost json response: ${json_result}`);
 		block_height = coin_getblockchaininfo.result.blocks;
+		headers.set(coin_getblockchaininfo.result.headers);
+
+
 		wallet_verification_progress = coin_getblockchaininfo.result.verificationprogress;
 	}
 
@@ -233,6 +238,7 @@
 		wallet_unlocked_until = coin_getinfo_response.result.unlocked_until;
 		walletUnlockedUntil.set(coin_getinfo_response.result.unlocked_until);
 		if (coin_getinfo_response.result.connections > 0) {
+			console.log('Setting GetBlockchainInfo timer')
 			getinfo_interval_id = setInterval(async () => {
 				await doGetBlockchainInfoAPIRequest(CoinMethodType.get_blockchain_info);
 			}, 10000);
@@ -361,5 +367,8 @@
 		>
 			Stop
 		</button>
+	</section>
+	<section>
+		<BlockchainHeaders/>
 	</section>
 </div>
