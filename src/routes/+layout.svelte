@@ -37,7 +37,14 @@
 		<!-- App Bar -->
 		<AppBar>
 			<svelte:fragment slot="lead">
-				<strong class="text-xl">BoxWallet v0.01 BETA </strong>
+				<div class ="flex items-center">
+					<img src="../BoxWallet.png" alt="logo" class="mr-3 h-20">
+					<div class="flew flex-col">
+						<strong class="text-2xl mr-3">BoxWallet</strong>
+						<div class="text-xs">v0.02 BETA</div>
+
+					</div>
+				</div>
 			</svelte:fragment>
 			<svelte:fragment slot="trail">
 				<a
