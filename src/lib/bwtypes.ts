@@ -10,22 +10,13 @@ export interface BWAPIResponse {
 	is_running: boolean | null;
 }
 
-// export interface CoinAPIResponse {
-// 	result: any; // Adjust the type based on the actual response structure
-// 	error: {
-// 		code: number;
-// 		message: string;
-// 	} | null;
-// 	id: string | null; // Adjust the type based on the actual response structure
-// }
-
 export enum CoinMethodType {
 	core_files_exist,
 	download_core_files,
 	start_daemon,
 	stop_daemon,
 	is_running,
-	get_info,
+	get_network_info,
 	is_ready,
 	get_core_status = 7,
 	get_blockchain_info,

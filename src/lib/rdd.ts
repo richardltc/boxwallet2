@@ -6,7 +6,6 @@ import type {
 	GetBlockchainInfoResponse,
 	GenericResponse
 } from '$lib/rdd_types';
-// import type { CoinAPIResponse } from '$lib/bwtypes';
 import os from 'os';
 import { exec } from 'child_process';
 import type { ChildProcess } from 'child_process';
@@ -174,8 +173,6 @@ class ReddCoin {
 		} else if (process.platform === 'darwin' || process.platform === 'linux') {
 			// For macOS and Linux
 			if (fs.existsSync(path.join(home_dir, home_dir_boxwallet, daemon_file_lin))) {
-				// File exists in path
-				console.log('file exists ' + home_dir + '/.boxwallet/' + cli_file_lin);
 				return true;
 			} else {
 				console.log('file does not exist ' + home_dir + '/.boxwallet/' + cli_file_lin);
@@ -303,7 +300,7 @@ class ReddCoin {
 
 	//************************************************
 	// GetInfo
-	public async GetInfo(): Promise<GetNetworkInfoResponse> {
+	public async GetNetworkInfo(): Promise<GetNetworkInfoResponse> {
 		const body = '{"jsonrpc":"1.0","id":"curltext","method":"getnetworkinfo","params":[]}';
 		const url = `http://${this.ip_address}:${this.rpc_port}`;
 		const config = {
