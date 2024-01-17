@@ -60,18 +60,6 @@ export async function POST({ request }: RequestEvent) {
 
 			break;
 		}
-		// switch (platform) {
-		// 	case 'linux':
-		// 		if (fs.existsSync(home_dir + '/.boxwallet/' + cli_file_lin)) {
-		// 			// File exists in path
-		// 			console.log('file exists ' + home_dir + '/.boxwallet/' + cli_file_lin);
-		// 			return new Response('true');
-		// 		} else {
-		// 			// File doesn't exist in path
-		// 			console.log('file DOES NOT exist ' + home_dir + '/.boxwallet/' + cli_file_lin);
-		// 			return new Response('false');
-		// 		}
-		// }
 
 		//////////////////////////////
 		// DOWNLOAD_CORE_FILES
@@ -92,9 +80,9 @@ export async function POST({ request }: RequestEvent) {
 			return new Response(JSON.stringify(get_blockchain_info_api_response));
 
 		//////////////////////////////
-		// GET_INFO
-		case CoinMethodType.get_info:
-			get_network_info_api_response = await redd_coin.GetInfo();
+		// GET_NETWORK_INFO
+		case CoinMethodType.get_network_info:
+			get_network_info_api_response = await redd_coin.GetNetworkInfo();
 			return new Response(JSON.stringify(get_network_info_api_response));
 		//////////////////////////////
 		// GET_CORE_STATUS
