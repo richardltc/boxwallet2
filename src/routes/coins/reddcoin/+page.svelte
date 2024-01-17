@@ -3,13 +3,15 @@
 	import CoinStatus from '$lib/CoinStatus.svelte';
 	import { PUBLIC_HOST_IP } from '$env/static/public';
 	import { onMount } from 'svelte';
-	import path from "path";
+	import path from 'path';
 	// import type { CoinAPIResponse } from '$lib/bwtypes.js';
 	import type {
 		GenericResponse,
 		GetBlockchainInfoResponse,
 		GetInfoResponse
 	} from '$lib/rdd_types.js';
+	import { blocks } from '$lib/rdd_getblockchaininfo_store';
+	import { difficulty } from '$lib/rdd_getblockchaininfo_store';
 	import { headers } from '$lib/rdd_getblockchaininfo_store';
 	import { walletUnlockedUntil } from '$lib/rdd_getnetworkinfo_store';
 	import { walletConnections } from '$lib/rdd_getnetworkinfo_store';
@@ -22,7 +24,9 @@
 	} from '@skeletonlabs/skeleton';
 	import type { PageData } from './$types';
 	import * as trace_events from 'trace_events';
-	import BlockchainHeaders from '$lib/BlockchainHeaders.svelte';
+	import BlockchainHeaders from '$lib/BlockchainInfoHeaders.svelte';
+	import BlockchainBlocks from '$lib/BlockchainInfoBlocks.svelte';
+	import BlockchainInfo from '$lib/BlockchainInfo.svelte';
 
 	const coin_name = 'ReddCoin';
 	const modalStore = getModalStore();
@@ -63,7 +67,7 @@
 
 		// Proceed with actions based on the response
 		if (password) {
-			console.log(`password sent: ${password}`)
+			console.log(`password sent: ${password}`);
 			const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/reddcoin/api`, {
 				method: 'POST',
 				body: JSON.stringify({
@@ -90,8 +94,8 @@
 
 	let block_height: number;
 	let bw_api_response: BWAPIResponse;
-	let coin_getblockchaininfo: GetBlockchainInfoResponse;
-	let coin_getinfo_response: GetInfoResponse;
+	let coin_get_blockchain_info: GetBlockchainInfoResponse;
+	let coin_get_network_info_response: GetInfoResponse;
 	// let coin_api_response: CoinAPIResponse;
 	let core_files_downloaded = false;
 	let download_disabled = false;
@@ -102,6 +106,8 @@
 	let is_working = false;
 	let is_running = false;
 	// let wallet_connections: number;
+	let timer_get_blockchain_info_running = false;
+	let timer_get_network_info_running = false;
 	let wallet_offline: boolean;
 	let wallet_unlocked_until: number;
 	let wallet_unlockfs_response: GenericResponse;
@@ -137,7 +143,6 @@
 		});
 
 		bw_api_response = await response.json();
-		console.log(`isReady json response: ${bw_api_response}`);
 		const json_result = JSON.stringify(bw_api_response);
 		console.log(`isReady json response: ${json_result}`);
 		daemon_is_ready = bw_api_response.is_ready;
@@ -146,11 +151,14 @@
 			is_working = false;
 			wallet_offline = false;
 			clearInterval(is_ready_interval_id);
-			getinfo_interval_id = setInterval(async () => {
-				await doGetCoinInfoAPIRequest(CoinMethodType.get_info);
-			}, 10000);
+			if (!timer_get_network_info_running) {
+				timer_get_network_info_running = true
+				getinfo_interval_id = setInterval(async () => {
+					await doGetNetworkInfoAPIRequest(CoinMethodType.get_network_info);
+				}, 10000);
+				await doGetNetworkInfoAPIRequest(CoinMethodType.get_network_info)
+			}
 		}
-		// result = JSON.stringify(bw_api_response);
 	};
 
 	async function doDownloadCoreFilesAPIRequest() {
@@ -172,8 +180,8 @@
 			});
 		}
 
-		if ((!confirmed) && (core_files_downloaded)){
-			return
+		if (!confirmed && core_files_downloaded) {
+			return;
 		}
 
 		download_disabled = true;
@@ -199,7 +207,7 @@
 
 		bw_api_response = await response.json();
 		if (bw_api_response.core_files_exists) {
-			core_files_downloaded = true
+			core_files_downloaded = true;
 		}
 	}
 
@@ -212,17 +220,18 @@
 			})
 		});
 
-		coin_getblockchaininfo = await response.json();
-		const json_result = JSON.stringify(coin_getblockchaininfo);
+		coin_get_blockchain_info = await response.json();
+		const json_result = JSON.stringify(coin_get_blockchain_info);
 		console.log(`doPost json response: ${json_result}`);
-		block_height = coin_getblockchaininfo.result.blocks;
-		headers.set(coin_getblockchaininfo.result.headers);
+		block_height = coin_get_blockchain_info.result.blocks;
+		headers.set(coin_get_blockchain_info.result.headers);
+		blocks.set(coin_get_blockchain_info.result.blocks);
+		difficulty.set(coin_get_blockchain_info.result.difficulty);
 
-
-		wallet_verification_progress = coin_getblockchaininfo.result.verificationprogress;
+		wallet_verification_progress = coin_get_blockchain_info.result.verificationprogress;
 	}
 
-	async function doGetCoinInfoAPIRequest(cmt: CoinMethodType) {
+	async function doGetNetworkInfoAPIRequest(cmt: CoinMethodType) {
 		const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/reddcoin/api`, {
 			method: 'POST',
 			body: JSON.stringify({
@@ -231,17 +240,21 @@
 			})
 		});
 
-		coin_getinfo_response = await response.json();
-		const json_result = JSON.stringify(coin_getinfo_response);
+		coin_get_network_info_response = await response.json();
+		const json_result = JSON.stringify(coin_get_network_info_response);
 		console.log(`doPost json response: ${json_result}`);
-		walletConnections.set(coin_getinfo_response.result.connections);
-		wallet_unlocked_until = coin_getinfo_response.result.unlocked_until;
-		walletUnlockedUntil.set(coin_getinfo_response.result.unlocked_until);
-		if (coin_getinfo_response.result.connections > 0) {
-			console.log('Setting GetBlockchainInfo timer')
-			getinfo_interval_id = setInterval(async () => {
-				await doGetBlockchainInfoAPIRequest(CoinMethodType.get_blockchain_info);
-			}, 10000);
+		walletConnections.set(coin_get_network_info_response.result.connections);
+		wallet_unlocked_until = coin_get_network_info_response.result.unlocked_until;
+		walletUnlockedUntil.set(coin_get_network_info_response.result.unlocked_until);
+		if (coin_get_network_info_response.result.connections > 0) {
+			if (!timer_get_blockchain_info_running) {
+				timer_get_blockchain_info_running = true;
+				console.log('Setting GetBlockchainInfo timer');
+				getinfo_interval_id = setInterval(async () => {
+					await doGetBlockchainInfoAPIRequest(CoinMethodType.get_blockchain_info);
+				}, 10000);
+				await doGetBlockchainInfoAPIRequest(CoinMethodType.get_blockchain_info)
+			}
 		}
 	}
 
@@ -317,7 +330,10 @@
 </script>
 
 <div class="container mx-auto p-8 space-y-4">
-	<h1 class="h1">ReddCoin - The social currency</h1>
+	<div class="flex items-center">
+		<img src="../rdd_logo.png" alt="rdd_logo" class="mr-3 h-20" />
+		<h1 class="h1">ReddCoin - The social currency</h1>
+	</div>
 	<p>
 		With over 60,000 users in 50+ countries, Redd allows you to share, tip, and donate to anyone,
 		anywhere.
@@ -342,7 +358,7 @@
 			Download
 		</button>
 		<button
-			disabled={((is_running) || (!core_files_downloaded))}
+			disabled={is_running || !core_files_downloaded}
 			class="btn variant-filled-tertiary"
 			type="button"
 			on:click={() => doStartWalletAPIRequest(CoinMethodType.start_daemon)}
@@ -356,7 +372,7 @@
 			type="button"
 			on:click={walletUnlockFS}
 		>
-			unlock for staking
+			Unlock for staking
 		</button>
 
 		<button
@@ -369,6 +385,8 @@
 		</button>
 	</section>
 	<section>
-		<BlockchainHeaders/>
+		<BlockchainInfo />
+		<!--		<BlockchainHeaders/>-->
+		<!--		<BlockchainBlocks/>-->
 	</section>
 </div>
