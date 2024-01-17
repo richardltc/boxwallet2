@@ -13,7 +13,6 @@
 	});
 </script>
 
-main
 <main>
 	<figure class="bg-opacity-90 rounded-xl p-2 dark:bg-opacity-90">
 		<div class="label">
