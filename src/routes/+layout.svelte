@@ -19,7 +19,7 @@
 <!-- <AppShell>...</AppShell> -->
 
 <!-- App Shell -->
-<AppShell slotSidebarLeft="bg-surface-500/5 w-56 p-4">
+<AppShell slotSidebarLeft="bg-surface-500/5 w-55 p-4">
 	<svelte:fragment slot="sidebarLeft">
 		<!-- Insert the list: -->
 		<nav class="list-nav">
@@ -41,7 +41,7 @@
 					<img src="../BoxWallet.png" alt="logo" class="mr-3 h-20">
 					<div class="flew flex-col">
 						<strong class="text-2xl mr-3">BoxWallet</strong>
-						<div class="text-xs">v0.02 BETA</div>
+						<div class="text-xs">v0.03 BETA</div>
 
 					</div>
 				</div>
