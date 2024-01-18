@@ -100,7 +100,7 @@
 	let core_files_downloaded = false;
 	let download_disabled = false;
 	let getblockchaininfo_interval_id: ReturnType<typeof setInterval>;
-	let getinfo_interval_id: ReturnType<typeof setInterval>;
+	let getnetworkinfo_interval_id: ReturnType<typeof setInterval>;
 	let is_ready_interval_id: ReturnType<typeof setInterval>;
 	let is_ready = false;
 	let is_working = false;
@@ -115,7 +115,6 @@
 	let daemon_is_ready: null | boolean = false;
 	let daemon_is_running: null | boolean = false;
 
-	// $: is_running = daemon_is_running
 	$: {
 		if (daemon_is_running) {
 			is_running = true;
@@ -153,7 +152,7 @@
 			clearInterval(is_ready_interval_id);
 			if (!timer_get_network_info_running) {
 				timer_get_network_info_running = true
-				getinfo_interval_id = setInterval(async () => {
+				getnetworkinfo_interval_id = setInterval(async () => {
 					await doGetNetworkInfoAPIRequest(CoinMethodType.get_network_info);
 				}, 10000);
 				await doGetNetworkInfoAPIRequest(CoinMethodType.get_network_info)
@@ -250,7 +249,7 @@
 			if (!timer_get_blockchain_info_running) {
 				timer_get_blockchain_info_running = true;
 				console.log('Setting GetBlockchainInfo timer');
-				getinfo_interval_id = setInterval(async () => {
+				getblockchaininfo_interval_id = setInterval(async () => {
 					await doGetBlockchainInfoAPIRequest(CoinMethodType.get_blockchain_info);
 				}, 10000);
 				await doGetBlockchainInfoAPIRequest(CoinMethodType.get_blockchain_info)
@@ -307,7 +306,7 @@
 
 	async function doStopWalletAPIRequest(cmt: CoinMethodType) {
 		// Stop all timers
-		clearInterval(getinfo_interval_id);
+		clearInterval(getnetworkinfo_interval_id);
 		clearInterval(getblockchaininfo_interval_id);
 		const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/reddcoin/api`, {
 			method: 'POST',
@@ -320,6 +319,10 @@
 		if (cmt === CoinMethodType.stop_daemon) {
 			walletConnections.set(0);
 			walletUnlockedUntil.set(-5);
+			headers.set(0);
+			blocks.set(0);
+			difficulty.set(0);
+
 			wallet_offline = true;
 		}
 
