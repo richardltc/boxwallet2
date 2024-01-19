@@ -7,7 +7,7 @@
 	import type {
 		GenericResponse,
 		GetBlockchainInfoResponse,
-		GetInfoResponse
+		GetNetworkInfoResponse
 	} from '$lib/rdd_types.js';
 	import { blocks } from '$lib/rdd_getblockchaininfo_store';
 	import { difficulty } from '$lib/rdd_getblockchaininfo_store';
@@ -94,7 +94,7 @@
 	let block_height: number;
 	let bw_api_response: BWAPIResponse;
 	let coin_get_blockchain_info: GetBlockchainInfoResponse;
-	let coin_get_network_info_response: GetInfoResponse;
+	let coin_get_network_info_response: GetNetworkInfoResponse;
 	// let coin_api_response: CoinAPIResponse;
 	let core_files_downloaded = false;
 	let download_disabled = false;
@@ -225,6 +225,7 @@
 		headers.set(coin_get_blockchain_info.result.headers);
 		blocks.set(coin_get_blockchain_info.result.blocks);
 		difficulty.set(coin_get_blockchain_info.result.difficulty);
+		// walletUnlockedUntil.set(coin_get_blockchain_info)
 
 		wallet_verification_progress = coin_get_blockchain_info.result.verificationprogress;
 	}
@@ -242,8 +243,8 @@
 		const json_result = JSON.stringify(coin_get_network_info_response);
 		console.log(`doPost json response: ${json_result}`);
 		walletConnections.set(coin_get_network_info_response.result.connections);
-		wallet_unlocked_until = coin_get_network_info_response.result.unlocked_until;
-		walletUnlockedUntil.set(coin_get_network_info_response.result.unlocked_until);
+		// wallet_unlocked_until = coin_get_network_info_response.result.unlocked_until;
+		// walletUnlockedUntil.set(coin_get_network_info_response.result.unlocked_until);
 		if (coin_get_network_info_response.result.connections > 0) {
 			if (!timer_get_blockchain_info_running) {
 				timer_get_blockchain_info_running = true;
