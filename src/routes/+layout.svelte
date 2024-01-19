@@ -40,7 +40,7 @@
 				<div class ="flex items-center">
 					<img src="../BoxWallet.png" alt="logo" class="mr-3 h-20">
 					<div class="flew flex-col">
-						<strong class="text-3xl mr-3 sm:text-4xl">BoxWallet</strong>
+						<strong class="text-2xl mr-3 sm:text-4xl">BoxWallet</strong>
 						<div class="text-xs">v0.03 BETA</div>
 
 					</div>
