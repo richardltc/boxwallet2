@@ -14,7 +14,8 @@
 </script>
 
 <main>
-	<figure class="bg-opacity-90 rounded-xl p-2 dark:bg-opacity-90">
+<!--	<figure class="bg-opacity-90 rounded-xl p-2 dark:bg-opacity-90">-->
+	<figure class="p-2 pr-10">
 		<div class="label">
 			{#if $blocks_height === 0}
 				Blocks: <div class="blocks">...</div>
