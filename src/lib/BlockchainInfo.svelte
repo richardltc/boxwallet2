@@ -5,7 +5,8 @@ import BlockchainInfoDifficulty from '$lib/BlockchainInfoDifficulty.svelte';
 </script>
 
 <main>
-	<div class="flex items-center space-x-10">
+<!--	Make work for mobile-->
+	<div class="flex flex-wrap space-x-10 items-center">
 		<BlockchainHeaders/>
 		<BlockchainBlocks/>
 		<BlockchainInfoDifficulty/>

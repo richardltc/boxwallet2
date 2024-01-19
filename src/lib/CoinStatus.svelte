@@ -122,14 +122,14 @@
 </script>
 
 <main>
-    <div class="wrapper">
-        <div class="flex-item"><span title={icon_is_working_title}><i class={icon_is_working_class}></i></span></div>
-        <div class="flex-item"><span title={icon_core_files_downloaded_title}><i class={icon_core_files_downloaded_class}></i></span></div>
-        <div class="flex-item"><span title={icon_is_ready_title}><i class={icon_is_ready_class}></i></span></div>
-        <div class="flex-item"><span title={icon_wallet_connections_title}><i class={icon_wallet_connections_class} ></i></span></div>
-        <div class="flex-item"><span title={icon_is_syncing_title}><i class={icon_is_syncing_class}></i></span></div>
-        <div class="flex-item"><span title={icon_wallet_security_title}><i class={icon_wallet_security_class}></i></span></div>
-        <div class="flex-item"><span title={icon_is_staking_title}><i class={icon_is_staking_class}></i></span></div>
+    <div class="flex flex-wrap -mx-2 items-start">
+        <div class="px-2 py-2"><span title={icon_is_working_title}><i class={icon_is_working_class}></i></span></div>
+        <div class="px-2 py-2"><span title={icon_core_files_downloaded_title}><i class={icon_core_files_downloaded_class}></i></span></div>
+        <div class="px-2 py-2"><span title={icon_is_ready_title}><i class={icon_is_ready_class}></i></span></div>
+        <div class="px-2 py-2"><span title={icon_wallet_connections_title}><i class={icon_wallet_connections_class} ></i></span></div>
+        <div class="px-2 py-2"><span title={icon_is_syncing_title}><i class={icon_is_syncing_class}></i></span></div>
+        <div class="px-2 py-2"><span title={icon_wallet_security_title}><i class={icon_wallet_security_class}></i></span></div>
+        <div class="px-2 py-2"><span title={icon_is_staking_title}><i class={icon_is_staking_class}></i></span></div>
     </div>
 </main>
 
@@ -141,7 +141,7 @@
     }
 
     i {
-        padding-right: 0px;
+        padding-right: 0;
     }
 
     .wrapper {

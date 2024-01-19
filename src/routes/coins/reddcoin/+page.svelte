@@ -3,7 +3,6 @@
 	import CoinStatus from '$lib/CoinStatus.svelte';
 	import { PUBLIC_HOST_IP } from '$env/static/public';
 	import { onMount } from 'svelte';
-	import path from 'path';
 	// import type { CoinAPIResponse } from '$lib/bwtypes.js';
 	import type {
 		GenericResponse,
@@ -333,9 +332,12 @@
 </script>
 
 <div class="container mx-auto p-8 space-y-4">
-	<div class="flex items-center">
+	<div class="flex flex-wrap items-center sm:space-x-5">
 		<img src="../rdd_logo.png" alt="rdd_logo" class="mr-3 h-20" />
-		<h1 class="h1">ReddCoin - The social currency</h1>
+		<div class="flex-wrap items-center">
+		<h1 class="h1 pt-3 sm:pt-0">ReddCoin</h1>
+		<h2 class="h2">The social currency</h2>
+		</div>
 	</div>
 	<p>
 		With over 60,000 users in 50+ countries, Redd allows you to share, tip, and donate to anyone,
