@@ -81,3 +81,14 @@ export interface Network {
 	proxy: string;
 	proxy_randomize_credentials: boolean;
 }
+
+export interface GetWalletInfo {
+	result: any;
+	error: Error;
+	id: string;
+}
+
+export interface Error {
+	code: number;
+	message: string;
+}
