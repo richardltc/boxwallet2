@@ -24,11 +24,11 @@ const daemon_file_win = 'reddcoind.exe';
 
 // const coin_name = 'ReddCoin';
 // const coin_name_abbrev = 'RDD';
-const coin_core_version = '4.22.7';
+const coin_core_version = '4.22.8';
 
-const download_file_arm32 = 'reddcoin-9aad2b74847c-arm-linux-gnueabihf.tar.gz';
-const download_file_arm64 = 'reddcoin-9aad2b74847c-aarch64-linux-gnu.tar.gz';
-const download_file_lin64 = 'reddcoin-9aad2b74847c-x86_64-linux-gnu.tar.gz';
+const download_file_arm32 = 'reddcoin-1d0e612e3f0c-arm-linux-gnueabihf.tar.gz';
+const download_file_arm64 = 'reddcoin-1d0e612e3f0c-aarch64-linux-gnu.tar.gz';
+const download_file_lin64 = 'reddcoin-1d0e612e3f0c-x86_64-linux-gnu.tar.gz';
 // const download_file_win: string = 'reddcoin-' + coin_core_version + '-win64.zip';
 // const download_file_bs = 'blockchain-latest.zip';
 
@@ -41,7 +41,7 @@ const download_url_arm64: string =
 
 const download_url_bs = 'https://download.reddcoin.com/bin/bootstrap/';
 
-const extracted_dir_lin = 'reddcoin-9aad2b74847c';
+const extracted_dir_lin = 'reddcoin-1d0e612e3f0c';
 const extracted_dir_win = 'reddcoin-' + coin_core_version + '\\';
 
 const home_dir = os.homedir();
