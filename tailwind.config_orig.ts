@@ -1,5 +1,7 @@
 import { join } from 'path';
+import plugin from 'tailwindcss/plugin';
 import type { Config } from 'tailwindcss';
+import typography from '@tailwindcss/typography';
 
 // 1. Import the Skeleton plugin
 import { skeleton } from '@skeletonlabs/tw-plugin';
