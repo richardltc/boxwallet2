@@ -7,14 +7,15 @@
 	import '../app.postcss';
 	import { AppShell, AppBar, Modal, Toast } from '@skeletonlabs/skeleton';
 	import '@fortawesome/fontawesome-free/css/all.min.css'
+	import '$lib/styles/app.scss'
 	import { initializeStores } from '@skeletonlabs/skeleton';
 
 	initializeStores();
 
 </script>
 
-<Modal />
 <Toast />
+<Modal position="items-center" />
 
 <!-- <AppShell>...</AppShell> -->
 
@@ -76,3 +77,4 @@
 	<!-- Page Route Content -->
 	<slot />
 </AppShell>
+
