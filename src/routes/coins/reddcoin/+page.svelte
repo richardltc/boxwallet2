@@ -1,31 +1,16 @@
 <script lang="ts">
-	import { type BWAPIResponse, CoinMethodType, CoinType } from '$lib/bwtypes';
+	import { type BWAPIResponse, CoinMethodType, CoinType, CoreFileStatusType } from '$lib/bwtypes';
 	import CoinStatus from '$lib/CoinStatus.svelte';
 	import { PUBLIC_HOST_IP } from '$env/static/public';
 	import { onMount } from 'svelte';
-	// import type { CoinAPIResponse } from '$lib/bwtypes.js';
-	import type {
-		GenericResponse,
-		GetBlockchainInfoResponse,
-		GetNetworkInfoResponse
-	} from '$lib/rdd_types.js';
-	import { blocks } from '$lib/rdd_getblockchaininfo_store';
-	import { difficulty } from '$lib/rdd_getblockchaininfo_store';
-	import { headers } from '$lib/rdd_getblockchaininfo_store';
-	import { walletUnlockedUntil } from '$lib/rdd_getnetworkinfo_store';
-	import { walletConnections } from '$lib/rdd_getnetworkinfo_store';
+	import type { GenericResponse, GetBlockchainInfoResponse, GetNetworkInfoResponse } from '$lib/rdd_types.js';
+	import { blocks, difficulty, headers } from '$lib/rdd_getblockchaininfo_store';
+	import { coreFileStatus } from '$lib/bw_store';
+	import { walletConnections, walletUnlockedUntil } from '$lib/rdd_getnetworkinfo_store';
+	import type { ModalSettings, ToastSettings } from '@skeletonlabs/skeleton';
 	import { getModalStore, getToastStore } from '@skeletonlabs/skeleton';
-	import type {
-		ModalSettings,
-		ToastSettings,
-		ModalComponent,
-		ModalStore
-	} from '@skeletonlabs/skeleton';
-	import type { PageData } from './$types';
-	import * as trace_events from 'trace_events';
-	import BlockchainHeaders from '$lib/BlockchainInfoHeaders.svelte';
-	import BlockchainBlocks from '$lib/BlockchainInfoBlocks.svelte';
 	import BlockchainInfo from '$lib/BlockchainInfo.svelte';
+	import Toolbar from '$lib/components/Toolbar.svelte';
 
 	const coin_name = 'ReddCoin';
 	const modalStore = getModalStore();
@@ -270,6 +255,7 @@
 		const json_result = JSON.stringify(bw_api_response);
 		if (bw_api_response.core_files_exists) {
 			core_files_downloaded = true;
+			coreFileStatus.set(CoreFileStatusType.cfst_installed)
 		}
 		await isReady();
 	}
@@ -352,6 +338,9 @@
 			{is_working}
 			{wallet_verification_progress}
 			{wallet_offline}
+		/>
+		<Toolbar
+			{coin_name}
 		/>
 	</section>
 	<section>

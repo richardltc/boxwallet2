@@ -23,6 +23,17 @@ export enum CoinMethodType {
 	wallet_unlockfs
 }
 
+export enum CoreFileStatusType {
+	cfst_not_installed,
+	cfst_downloading,
+	cfst_installed
+}
+
+export enum WalletRunningStatusType {
+	wrst_starting,
+	wrst_stopping,
+	wrst_stopped
+}
 export enum CoinType {
 	divi,
 	pivx,

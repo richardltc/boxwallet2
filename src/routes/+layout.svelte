@@ -39,10 +39,9 @@
 			<svelte:fragment slot="lead">
 				<div class ="flex items-center">
 					<img src="../BoxWallet.png" alt="logo" class="mr-3 h-20">
-					<div class="flew flex-col">
+					<div class="flex flex-col">
 						<strong class="text-2xl mr-3 sm:text-4xl">BoxWallet</strong>
-						<div class="text-xs">v0.03 BETA</div>
-
+						<div class="text-xs">v0.04 BETA</div>
 					</div>
 				</div>
 			</svelte:fragment>
