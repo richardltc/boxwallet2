@@ -1,0 +1,20 @@
+html,
+body {
+  @apply h-full overflow-hidden;
+}
+
+@font-face {
+  font-family: 'CourierPrime';
+  src: url('/fonts/CourierPrime-Regular.ttf');
+}
+
+@font-face {
+  font-family: 'Poppins';
+  src: url('/fonts/Poppins-Regular.ttf'),url('/fonts/Poppins-Bold.ttf'),url('/fonts/Poppins-Italic.ttf');
+}
+
+
+:root [data-theme='skeleton'] {
+  --theme-font-family-base: 'Poppins', sans-serif;
+  --theme-font-family-heading: 'Poppins', sans-serif;
+}

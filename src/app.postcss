@@ -1,34 +1,5 @@
+/* Here goes the tailwind stuff */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 @tailwind variants;
-
-/*place global styles here */
-html,
-body {
-	@apply h-full overflow-hidden;
-}
-
-@font-face {
-	/* Reference name */
-	font-family: 'CourierPrime';
-	/* For multiple files use commas, ex: url(), url(), ... */
-	src: url('/fonts/CourierPrime-Regular.ttf');
-}
-
-@font-face {
-	/* Reference name */
-	font-family: 'Poppins';
-	/* For multiple files use commas, ex: url(), url(), ... */
-	src: url('/fonts/Poppins-Regular.ttf'),url('/fonts/Poppins-Bold.ttf'),url('/fonts/Poppins-Italic.ttf');
-}
-
-
-/* NOTE: set your target theme name (ex: skeleton, wintry, modern, etc) */
-
-:root [data-theme='skeleton'] {
-    --theme-font-family-base: 'Poppins', sans-serif;
-    --theme-font-family-heading: 'Poppins', sans-serif;
-    /* ... */
-}
-
