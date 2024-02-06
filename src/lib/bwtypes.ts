@@ -29,6 +29,12 @@ export enum CoreFileStatusType {
 	cfst_installed
 }
 
+export enum DaemonRunningStatusType {
+	drstStopped,
+	drstStarting,
+	drstRunning
+}
+
 export enum WalletRunningStatusType {
 	wrst_starting,
 	wrst_stopping,
