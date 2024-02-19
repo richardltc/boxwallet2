@@ -3,16 +3,19 @@
 
 	// Icons
 	import { Download, Play, StopCircle, Unlock } from 'lucide-svelte';
-	import { coreFileStatus, walletRunningStatus } from '$lib/bw_store';
+	import { coreFileStatus, isWorking, walletRunningStatus } from '$lib/bw_store';
 	import {
 		type BWAPIResponse,
 		CoinMethodType,
 		CoinType,
 		CoreFileStatusType,
-		type WalletRunningStatusType
+		WalletRunningStatusType
 	} from '$lib/bwtypes';
 	import { PUBLIC_HOST_IP } from '$env/static/public';
 	import { getModalStore, getToastStore, type ToastSettings } from '@skeletonlabs/skeleton';
+	import { walletConnections, walletVersion } from '$lib/rdd_getnetworkinfo_store';
+	import type { GetBlockchainInfoResponse, GetNetworkInfoResponse } from '$lib/rdd_types';
+	import { blocks, difficulty, headers, verificationProgress } from '$lib/rdd_getblockchaininfo_store';
 
 	export let coin_name: string;
 
@@ -42,18 +45,25 @@
 
 
 	let bw_api_response: BWAPIResponse;
-
+	let coin_get_blockchain_info: GetBlockchainInfoResponse;
+	let coin_get_network_info_response: GetNetworkInfoResponse;
 	let core_files_status: CoreFileStatusType;
+	let daemon_is_ready: null | boolean = false;
+	let daemon_is_running: null | boolean = false;
+	let disable_download_button = false
+	let getblockchaininfo_interval_id: ReturnType<typeof setInterval>;
+	let getnetworkinfo_interval_id: ReturnType<typeof setInterval>;
+	let is_ready_interval_id: ReturnType<typeof setInterval>;
+	let timer_get_blockchain_info_running = false;
+	let timer_get_network_info_running = false;
+	let wallet_running_status: WalletRunningStatusType;
+
 	const unsub_core_file_status = coreFileStatus.subscribe((value) => {
 		core_files_status = value;
 	});
-
-	let wallet_running_status: WalletRunningStatusType;
 	const unsub_wallet_running_status = walletRunningStatus.subscribe((value) => {
 		wallet_running_status = value;
 	});
-
-	let disable_download_button = false
 
 	async function doDownloadCoreFilesAPIRequest() {
 		// Confirm if core files are already downloaded.
@@ -79,6 +89,7 @@
 		}
 
 		disable_download_button = true;
+		isWorking.set(true);
 		coreFileStatus.set(CoreFileStatusType.cfst_downloading);
 		const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/reddcoin/api`, {
 			method: 'POST',
@@ -89,6 +100,7 @@
 		});
 
 		disable_download_button = false
+		isWorking.set(false);
 
 		const t: ToastSettings = {
 			message: `The ${coin_name} core files downloaded successfully.`,
@@ -103,6 +115,111 @@
 			coreFileStatus.set(CoreFileStatusType.cfst_installed);
 		}
 	}
+
+	async function doGetBlockchainInfoAPIRequest(cmt: CoinMethodType) {
+		const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/reddcoin/api`, {
+			method: 'POST',
+			body: JSON.stringify({
+				coin_type: CoinType.reddcoin,
+				method_type: cmt
+			})
+		});
+
+		coin_get_blockchain_info = await response.json();
+		const json_result = JSON.stringify(coin_get_blockchain_info);
+		console.log(`doPost json response: ${json_result}`);
+		// block_height = coin_get_blockchain_info.result.blocks;
+		headers.set(coin_get_blockchain_info.result.headers);
+		blocks.set(coin_get_blockchain_info.result.blocks);
+		difficulty.set(coin_get_blockchain_info.result.difficulty);
+		// walletUnlockedUntil.set(coin_get_blockchain_info)
+
+		verificationProgress.set(coin_get_blockchain_info.result.verificationprogress);
+	}
+
+	async function doGetNetworkInfoAPIRequest(cmt: CoinMethodType) {
+		const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/reddcoin/api`, {
+			method: 'POST',
+			body: JSON.stringify({
+				coin_type: CoinType.reddcoin,
+				method_type: cmt
+			})
+		});
+
+		coin_get_network_info_response = await response.json();
+		const json_result = JSON.stringify(coin_get_network_info_response);
+		console.log(`doPost json response: ${json_result}`);
+		walletConnections.set(coin_get_network_info_response.result.connections);
+		walletVersion.set(coin_get_network_info_response.result.version);
+		// wallet_unlocked_until = coin_get_network_info_response.result.unlocked_until;
+		// walletUnlockedUntil.set(coin_get_network_info_response.result.unlocked_until);
+		if (coin_get_network_info_response.result.connections > 0) {
+			if (!timer_get_blockchain_info_running) {
+				timer_get_blockchain_info_running = true;
+				console.log('Setting GetBlockchainInfo timer');
+				getblockchaininfo_interval_id = setInterval(async () => {
+					await doGetBlockchainInfoAPIRequest(CoinMethodType.get_blockchain_info);
+				}, 10000);
+				await doGetBlockchainInfoAPIRequest(CoinMethodType.get_blockchain_info)
+			}
+		}
+	}
+
+	async function doStartWalletAPIRequest(cmt: CoinMethodType) {
+		if (cmt === CoinMethodType.start_daemon) {
+			isWorking.set(true);
+			is_ready_interval_id = setInterval(isReady, 2000);
+		}
+
+		const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/reddcoin/api`, {
+			method: 'POST',
+			body: JSON.stringify({
+				coin_type: CoinType.reddcoin,
+				method_type: cmt
+			})
+		});
+
+		bw_api_response = await response.json();
+		const json_result = JSON.stringify(
+			bw_api_response
+		);
+		console.log(`doPost json response: ${json_result}`);
+		console.log(`doPost is_running response: ${bw_api_response.is_running}`);
+		// daemon_is_ready = bw_api_response.is_ready;
+		// daemon_is_running = bw_api_response.is_running;
+		// if (bw_api_response.core_files_exists) {
+		// 	core_files_downloaded = true;
+		// }
+	}
+
+	const isReady = async () => {
+		const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/reddcoin/api`, {
+			method: 'POST',
+			body: JSON.stringify({
+				coin_type: CoinType.reddcoin,
+				method_type: CoinMethodType.is_ready
+			})
+		});
+
+		bw_api_response = await response.json();
+		const json_result = JSON.stringify(bw_api_response);
+		console.log(`isReady json response: ${json_result}`);
+		daemon_is_ready = bw_api_response.is_ready;
+		daemon_is_running = bw_api_response.is_running;
+		if (bw_api_response.is_ready === true) {
+			isWorking.set(false);
+			walletRunningStatus.set(WalletRunningStatusType.wrst_stopped)
+			clearInterval(is_ready_interval_id);
+			if (!timer_get_network_info_running) {
+				timer_get_network_info_running = true
+				getnetworkinfo_interval_id = setInterval(async () => {
+					await doGetNetworkInfoAPIRequest(CoinMethodType.get_network_info);
+				}, 10000);
+				await doGetNetworkInfoAPIRequest(CoinMethodType.get_network_info)
+			}
+		}
+	};
+
 
 </script>
 
