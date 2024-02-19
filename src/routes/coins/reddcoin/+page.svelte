@@ -6,11 +6,12 @@
 	import type { GenericResponse, GetBlockchainInfoResponse, GetNetworkInfoResponse } from '$lib/rdd_types.js';
 	import { blocks, difficulty, headers } from '$lib/rdd_getblockchaininfo_store';
 	import { coreFileStatus } from '$lib/bw_store';
-	import { walletConnections, walletUnlockedUntil } from '$lib/rdd_getnetworkinfo_store';
+	import { walletConnections, walletUnlockedUntil, walletVersion } from '$lib/rdd_getnetworkinfo_store';
 	import type { ModalSettings, ToastSettings } from '@skeletonlabs/skeleton';
 	import { getModalStore, getToastStore } from '@skeletonlabs/skeleton';
 	import BlockchainInfo from '$lib/BlockchainInfo.svelte';
 	import Toolbar from '$lib/components/Toolbar.svelte';
+	import WalletVersion from '$lib/components/WalletVersion.svelte';
 
 	const coin_name = 'ReddCoin';
 	const modalStore = getModalStore();
@@ -96,6 +97,7 @@
 	let wallet_unlocked_until: number;
 	let wallet_unlockfs_response: GenericResponse;
 	let wallet_verification_progress: number;
+	let wallet_version: number;
 	let daemon_is_ready: null | boolean = false;
 	let daemon_is_running: null | boolean = false;
 
@@ -144,55 +146,55 @@
 		}
 	};
 
-	async function doDownloadCoreFilesAPIRequest() {
-		// Confirm if core files are already downloaded.
-		let confirmed = false;
-		if (core_files_downloaded) {
-			await new Promise<boolean>((resolve) => {
-				const confirm_modal: ModalSettings = {
-					type: 'confirm',
-					title: 'Please Confirm',
-					body: `The ${coin_name} core files are already downloaded. Would you like to re-download them?`,
-					response: (r: boolean) => {
-						resolve(r);
-					}
-				};
-				modalStore.trigger(confirm_modal);
-			}).then((r: boolean) => {
-				confirmed = r;
-			});
-		}
-
-		if (!confirmed && core_files_downloaded) {
-			return;
-		}
-
-		download_disabled = true;
-		is_working = true;
-		const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/reddcoin/api`, {
-			method: 'POST',
-			body: JSON.stringify({
-				coin_type: CoinType.reddcoin,
-				method_type: CoinMethodType.download_core_files
-			})
-		});
-
-		download_disabled = false;
-		is_working = false;
-
-		const t: ToastSettings = {
-			message: `The ${coin_name} core files downloaded successfully.`,
-			timeout: 5000,
-			hideDismiss: true,
-			background: 'variant-filled-success'
-		};
-		toastStore.trigger(t);
-
-		bw_api_response = await response.json();
-		if (bw_api_response.core_files_exists) {
-			core_files_downloaded = true;
-		}
-	}
+	// async function doDownloadCoreFilesAPIRequest() {
+	// 	// Confirm if core files are already downloaded.
+	// 	let confirmed = false;
+	// 	if (core_files_downloaded) {
+	// 		await new Promise<boolean>((resolve) => {
+	// 			const confirm_modal: ModalSettings = {
+	// 				type: 'confirm',
+	// 				title: 'Please Confirm',
+	// 				body: `The ${coin_name} core files are already downloaded. Would you like to re-download them?`,
+	// 				response: (r: boolean) => {
+	// 					resolve(r);
+	// 				}
+	// 			};
+	// 			modalStore.trigger(confirm_modal);
+	// 		}).then((r: boolean) => {
+	// 			confirmed = r;
+	// 		});
+	// 	}
+	//
+	// 	if (!confirmed && core_files_downloaded) {
+	// 		return;
+	// 	}
+	//
+	// 	download_disabled = true;
+	// 	is_working = true;
+	// 	const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/reddcoin/api`, {
+	// 		method: 'POST',
+	// 		body: JSON.stringify({
+	// 			coin_type: CoinType.reddcoin,
+	// 			method_type: CoinMethodType.download_core_files
+	// 		})
+	// 	});
+	//
+	// 	download_disabled = false;
+	// 	is_working = false;
+	//
+	// 	const t: ToastSettings = {
+	// 		message: `The ${coin_name} core files downloaded successfully.`,
+	// 		timeout: 5000,
+	// 		hideDismiss: true,
+	// 		background: 'variant-filled-success'
+	// 	};
+	// 	toastStore.trigger(t);
+	//
+	// 	bw_api_response = await response.json();
+	// 	if (bw_api_response.core_files_exists) {
+	// 		core_files_downloaded = true;
+	// 	}
+	// }
 
 	async function doGetBlockchainInfoAPIRequest(cmt: CoinMethodType) {
 		const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/reddcoin/api`, {
@@ -228,6 +230,7 @@
 		const json_result = JSON.stringify(coin_get_network_info_response);
 		console.log(`doPost json response: ${json_result}`);
 		walletConnections.set(coin_get_network_info_response.result.connections);
+		walletVersion.set(coin_get_network_info_response.result.version);
 		// wallet_unlocked_until = coin_get_network_info_response.result.unlocked_until;
 		// walletUnlockedUntil.set(coin_get_network_info_response.result.unlocked_until);
 		if (coin_get_network_info_response.result.connections > 0) {
@@ -276,9 +279,6 @@
 
 		bw_api_response = await response.json();
 		const json_result = JSON.stringify(
-			// if (bw_api_response.core_files_exists) {
-			// 	core_files_downloaded = true;
-			// }
 			bw_api_response
 		);
 		console.log(`doPost json response: ${json_result}`);
@@ -321,8 +321,8 @@
 <div class="container mx-auto p-8 space-y-4">
 	<div class="flex flex-wrap items-center sm:space-x-5">
 		<img src="../rdd_logo.png" alt="rdd_logo" class="mr-3 h-20" />
-		<div class="flex-wrap items-center">
-		<h1 class="h1 pt-3 sm:pt-0">ReddCoin</h1>
+		<div>
+		<h1 class="h1 pt-3 sm:pt-0">ReddCoin <span class="text-base inline-block"><WalletVersion/></span></h1>
 		<h2 class="h2">The social currency</h2>
 		</div>
 	</div>
@@ -335,7 +335,6 @@
 			{block_height}
 			{core_files_downloaded}
 			{is_ready}
-			{is_working}
 			{wallet_verification_progress}
 			{wallet_offline}
 		/>
@@ -344,14 +343,14 @@
 		/>
 	</section>
 	<section>
-		<button
-			disabled={download_disabled}
-			class="btn variant-filled-tertiary"
-			type="button"
-			on:click={() => doDownloadCoreFilesAPIRequest()}
-		>
-			Download
-		</button>
+<!--		<button-->
+<!--			disabled={download_disabled}-->
+<!--			class="btn variant-filled-tertiary"-->
+<!--			type="button"-->
+<!--			on:click={() => doDownloadCoreFilesAPIRequest()}-->
+<!--		>-->
+<!--			Download-->
+<!--		</button>-->
 		<button
 			disabled={is_running || !core_files_downloaded}
 			class="btn variant-filled-tertiary"
