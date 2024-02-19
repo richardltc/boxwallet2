@@ -3,7 +3,7 @@
 	import { tweened } from 'svelte/motion';
 
 	let wallet_version = tweened(0, {
-		duration: 5000,
+		duration: 3000,
 		easing: cubicOut
 	});
 	import { cubicOut } from 'svelte/easing';
@@ -18,9 +18,9 @@
 	<figure class="p-2 pr-10">
 		<div class="label">
 			{#if $wallet_version === 0}
-				version: <div class="version">...</div>
+				v<span class="version">...</span>
 			{:else}
-				version: <div class="version">{wallet_version}</div>
+				v<div class="version">{wallet_version}</div>
 			{/if}
 		</div>
 	</figure>
@@ -29,10 +29,10 @@
 <style>
     .version {
         font-family: 'Courier Prime', monospace;
-        font-size: 1.2em;
+        font-size: 1.0em;
     }
     .label {
-        font-size: 1.0em;
+        font-size: 0.9em;
     }
 
 </style>
