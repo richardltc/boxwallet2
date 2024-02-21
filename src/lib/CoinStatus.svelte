@@ -121,20 +121,20 @@
 	// 		}
 	// 	}
 
-		// if (is_working) {
-		//     icon_is_working_class = "fa-solid fa-cog fa-spin fa-2x";
-		//     icon_is_working_title = "Working..."
-		// } else {
-		//     icon_is_working_class = "fa-solid fa-cog fa-2x fa-spin-stop"
-		//     icon_is_working_title = "Idle"
-		// }
-		// if (core_files_downloaded) {
-		// 	icon_core_files_downloaded_class = 'fa-solid fa-download fa-2x';
-		// 	icon_core_files_downloaded_title = 'Core files have been downloaded';
-		// } else {
-		// 	icon_core_files_downloaded_class = 'fa-solid fa-download fa-2x disabled-icon';
-		// 	icon_core_files_downloaded_title = 'Core files need to be downloaded';
-		// }
+	// if (is_working) {
+	//     icon_is_working_class = "fa-solid fa-cog fa-spin fa-2x";
+	//     icon_is_working_title = "Working..."
+	// } else {
+	//     icon_is_working_class = "fa-solid fa-cog fa-2x fa-spin-stop"
+	//     icon_is_working_title = "Idle"
+	// }
+	// if (core_files_downloaded) {
+	// 	icon_core_files_downloaded_class = 'fa-solid fa-download fa-2x';
+	// 	icon_core_files_downloaded_title = 'Core files have been downloaded';
+	// } else {
+	// 	icon_core_files_downloaded_class = 'fa-solid fa-download fa-2x disabled-icon';
+	// 	icon_core_files_downloaded_title = 'Core files need to be downloaded';
+	// }
 	// }
 </script>
 
@@ -146,7 +146,9 @@
 				<span title="Working..."><i class="fa-solid fa-cog fa-spin fa-2x" /></span>
 			</div>
 		{:else}
-			<span title="Idle"><i class="fa-solid fa-cog fa-2x fa-spin-stop" /></span>
+			<div class="px-2 py-2">
+				<span title="Idle"><i class="fa-solid fa-cog fa-2x fa-spin-stop" /></span>
+			</div>
 		{/if}
 
 		<!--		Core file status-->
@@ -194,19 +196,19 @@
 		{#if wallet_verification_progress < 0.99999 && wallet_connections > 0}
 			<div class="px-2 py-2">
 				<span title="Blockchain is syncing... Blocks: ${block_height}"
-				><i class="fa-solid fa-rotate fa-2x fa-spin" /></span
+					><i class="fa-solid fa-rotate fa-2x fa-spin" /></span
 				>
 			</div>
 		{:else if wallet_connections > 0}
 			<div class="px-2 py-2">
 				<span title="Blockchain is synced. Blocks: ${block_height}"
-				><i class="fa-solid fa-rotate fa-2x fa-spin-stop" /></span
+					><i class="fa-solid fa-rotate fa-2x fa-spin-stop" /></span
 				>
 			</div>
 		{:else}
 			<div class="px-2 py-2">
 				<span title="Offline"
-				><i class="fa-solid fa-rotate fa-2x fa-spin-stop disabled-icon" /></span
+					><i class="fa-solid fa-rotate fa-2x fa-spin-stop disabled-icon" /></span
 				>
 			</div>
 		{/if}
@@ -215,7 +217,9 @@
 			<span title="Offline"><i class="fa-solid fa-lock-open fa-2x disabled-icon" /></span>
 		</div>
 		<div class="px-2 py-2">
-			<span title="Offline"><i class="fa-solid fa-microchip fa-2x fa-spin-stop disabled-icon" /></span>
+			<span title="Offline"
+				><i class="fa-solid fa-microchip fa-2x fa-spin-stop disabled-icon" /></span
+			>
 		</div>
 	</div>
 </main>
