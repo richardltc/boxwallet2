@@ -3,19 +3,34 @@
 
 	// Icons
 	import { Download, Play, StopCircle, Unlock } from 'lucide-svelte';
-	import { coreFileStatus, isWorking, walletRunningStatus } from '$lib/bw_store';
+	import {
+		coreFileStatus,
+		daemonRunningStatus,
+		isWorking,
+		walletRunningStatus
+	} from '$lib/bw_store';
 	import {
 		type BWAPIResponse,
 		CoinMethodType,
 		CoinType,
 		CoreFileStatusType,
+		DaemonRunningStatusType,
 		WalletRunningStatusType
 	} from '$lib/bwtypes';
 	import { PUBLIC_HOST_IP } from '$env/static/public';
 	import { getModalStore, getToastStore, type ToastSettings } from '@skeletonlabs/skeleton';
-	import { walletConnections, walletVersion } from '$lib/rdd_getnetworkinfo_store';
+	import {
+		walletConnections,
+		walletUnlockedUntil,
+		walletVersion
+	} from '$lib/rdd_getnetworkinfo_store';
 	import type { GetBlockchainInfoResponse, GetNetworkInfoResponse } from '$lib/rdd_types';
-	import { blocks, difficulty, headers, verificationProgress } from '$lib/rdd_getblockchaininfo_store';
+	import {
+		blocks,
+		difficulty,
+		headers,
+		verificationProgress
+	} from '$lib/rdd_getblockchaininfo_store';
 
 	export let coin_name: string;
 
@@ -43,14 +58,13 @@
 		valueAttr: { type: 'password'; minlength: 1; maxlength: 10; required: true };
 	}
 
-
 	let bw_api_response: BWAPIResponse;
 	let coin_get_blockchain_info: GetBlockchainInfoResponse;
 	let coin_get_network_info_response: GetNetworkInfoResponse;
 	let core_files_status: CoreFileStatusType;
 	let daemon_is_ready: null | boolean = false;
 	let daemon_is_running: null | boolean = false;
-	let disable_download_button = false
+	let disable_download_button = false;
 	let getblockchaininfo_interval_id: ReturnType<typeof setInterval>;
 	let getnetworkinfo_interval_id: ReturnType<typeof setInterval>;
 	let is_ready_interval_id: ReturnType<typeof setInterval>;
@@ -65,6 +79,8 @@
 		wallet_running_status = value;
 	});
 
+	/////////////////////////////////
+	// Download
 	async function doDownloadCoreFilesAPIRequest() {
 		// Confirm if core files are already downloaded.
 		let confirmed = false;
@@ -99,7 +115,7 @@
 			})
 		});
 
-		disable_download_button = false
+		disable_download_button = false;
 		isWorking.set(false);
 
 		const t: ToastSettings = {
@@ -116,6 +132,8 @@
 		}
 	}
 
+	/////////////////////////////////
+	// Get Blockchain Info
 	async function doGetBlockchainInfoAPIRequest(cmt: CoinMethodType) {
 		const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/reddcoin/api`, {
 			method: 'POST',
@@ -137,6 +155,8 @@
 		verificationProgress.set(coin_get_blockchain_info.result.verificationprogress);
 	}
 
+	/////////////////////////////////
+	// Get Network Info
 	async function doGetNetworkInfoAPIRequest(cmt: CoinMethodType) {
 		const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/reddcoin/api`, {
 			method: 'POST',
@@ -160,11 +180,13 @@
 				getblockchaininfo_interval_id = setInterval(async () => {
 					await doGetBlockchainInfoAPIRequest(CoinMethodType.get_blockchain_info);
 				}, 10000);
-				await doGetBlockchainInfoAPIRequest(CoinMethodType.get_blockchain_info)
+				await doGetBlockchainInfoAPIRequest(CoinMethodType.get_blockchain_info);
 			}
 		}
 	}
 
+	/////////////////////////////////
+	// Start Wallet
 	async function doStartWalletAPIRequest(cmt: CoinMethodType) {
 		if (cmt === CoinMethodType.start_daemon) {
 			isWorking.set(true);
@@ -180,9 +202,7 @@
 		});
 
 		bw_api_response = await response.json();
-		const json_result = JSON.stringify(
-			bw_api_response
-		);
+		const json_result = JSON.stringify(bw_api_response);
 		console.log(`doPost json response: ${json_result}`);
 		console.log(`doPost is_running response: ${bw_api_response.is_running}`);
 		// daemon_is_ready = bw_api_response.is_ready;
@@ -192,6 +212,8 @@
 		// }
 	}
 
+	/////////////////////////////////
+	// Is Ready
 	const isReady = async () => {
 		const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/reddcoin/api`, {
 			method: 'POST',
@@ -208,19 +230,43 @@
 		daemon_is_running = bw_api_response.is_running;
 		if (bw_api_response.is_ready === true) {
 			isWorking.set(false);
-			walletRunningStatus.set(WalletRunningStatusType.wrst_stopped)
+			walletRunningStatus.set(WalletRunningStatusType.wrst_stopped);
 			clearInterval(is_ready_interval_id);
 			if (!timer_get_network_info_running) {
-				timer_get_network_info_running = true
+				timer_get_network_info_running = true;
 				getnetworkinfo_interval_id = setInterval(async () => {
 					await doGetNetworkInfoAPIRequest(CoinMethodType.get_network_info);
 				}, 10000);
-				await doGetNetworkInfoAPIRequest(CoinMethodType.get_network_info)
+				await doGetNetworkInfoAPIRequest(CoinMethodType.get_network_info);
 			}
 		}
 	};
 
+	/////////////////////////////////
+	// Stop Wallet
+	async function doStopWalletAPIRequest() {
+		// Stop all timers
+		clearInterval(getnetworkinfo_interval_id);
+		clearInterval(getblockchaininfo_interval_id);
+		const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/reddcoin/api`, {
+			method: 'POST',
+			body: JSON.stringify({
+				coin_type: CoinType.reddcoin,
+				method_type: CoinMethodType.stop_daemon
+			})
+		});
 
+		walletConnections.set(0);
+		walletUnlockedUntil.set(-5);
+		headers.set(0);
+		blocks.set(0);
+		difficulty.set(0);
+		daemonRunningStatus.set(DaemonRunningStatusType.drstStopped);
+
+		bw_api_response = await response.json();
+		const json_result = JSON.stringify(bw_api_response);
+		console.log(`doPost json response: ${json_result}`);
+	}
 </script>
 
 <div
@@ -251,10 +297,16 @@
 				<Download class="square-5" />
 			</button>
 		{/if}
-		<button class="item" aria-label="start" use:melt={$button}>
+		<button class="item" aria-label="start" title="Start {coin_name} wallet" use:melt={$button}>
 			<Play class="square-5" />
 		</button>
-		<button class="item" aria-label="stop" use:melt={$button}>
+		<button
+			class="item"
+			aria-label="stop"
+			on:click={() => doStopWalletAPIRequest()}
+			title="Stop {coin_name} wallet"
+			use:melt={$button}
+		>
 			<StopCircle class="square-5" />
 		</button>
 		<div class="separator" use:melt={$separator} />
