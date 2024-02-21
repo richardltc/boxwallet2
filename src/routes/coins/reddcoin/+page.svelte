@@ -333,10 +333,7 @@
 	<section>
 		<CoinStatus
 			{block_height}
-			{core_files_downloaded}
 			{is_ready}
-			{wallet_verification_progress}
-			{wallet_offline}
 		/>
 		<Toolbar
 			{coin_name}
