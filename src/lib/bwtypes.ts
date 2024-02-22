@@ -30,16 +30,11 @@ export enum CoreFileStatusType {
 }
 
 export enum DaemonRunningStatusType {
-	drstStopped,
-	drstStarting,
-	drstRunning
+	drst_stopped,
+	drst_starting,
+	drst_running
 }
 
-export enum WalletRunningStatusType {
-	wrst_starting,
-	wrst_stopping,
-	wrst_stopped
-}
 export enum CoinType {
 	divi,
 	pivx,
