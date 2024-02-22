@@ -5,8 +5,6 @@
 	import { walletUnlockedUntil, walletConnections } from '$lib/rdd_getnetworkinfo_store';
 
 	export let block_height: number;
-	export let is_ready = false;
-	// export let is_working: boolean
 
 	let core_file_status: CoreFileStatusType;
 	let daemon_running_status: DaemonRunningStatusType;
@@ -166,7 +164,7 @@
 		{/if}
 
 		<!--		Daemon is running-->
-		{#if daemon_running_status === DaemonRunningStatusType.drstRunning}
+		{#if daemon_running_status === DaemonRunningStatusType.drst_running}
 			<div class="px-2 py-2">
 				<span title="Core wallet is ready."><i class="fa-solid fa-face-smile fa-2x" /></span>
 			</div>
