@@ -3,34 +3,19 @@
 
 	// Icons
 	import { Download, Play, StopCircle, Unlock } from 'lucide-svelte';
-	import {
-		coreFileStatus,
-		daemonRunningStatus,
-		isWorking,
-		walletRunningStatus
-	} from '$lib/bw_store';
+	import { coreFileStatus, daemonRunningStatus, isWorking } from '$lib/bw_store';
 	import {
 		type BWAPIResponse,
 		CoinMethodType,
 		CoinType,
 		CoreFileStatusType,
-		DaemonRunningStatusType,
-		WalletRunningStatusType
+		DaemonRunningStatusType
 	} from '$lib/bwtypes';
 	import { PUBLIC_HOST_IP } from '$env/static/public';
 	import { getModalStore, getToastStore, type ToastSettings } from '@skeletonlabs/skeleton';
-	import {
-		walletConnections,
-		walletUnlockedUntil,
-		walletVersion
-	} from '$lib/rdd_getnetworkinfo_store';
+	import { walletConnections, walletUnlockedUntil, walletVersion } from '$lib/rdd_getnetworkinfo_store';
 	import type { GetBlockchainInfoResponse, GetNetworkInfoResponse } from '$lib/rdd_types';
-	import {
-		blocks,
-		difficulty,
-		headers,
-		verificationProgress
-	} from '$lib/rdd_getblockchaininfo_store';
+	import { blocks, difficulty, headers, verificationProgress } from '$lib/rdd_getblockchaininfo_store';
 
 	export let coin_name: string;
 
@@ -70,14 +55,18 @@
 	let is_ready_interval_id: ReturnType<typeof setInterval>;
 	let timer_get_blockchain_info_running = false;
 	let timer_get_network_info_running = false;
-	let wallet_running_status: WalletRunningStatusType;
+	let daemon_running_status: DaemonRunningStatusType;
 
 	const unsub_core_file_status = coreFileStatus.subscribe((value) => {
 		core_files_status = value;
 	});
-	const unsub_wallet_running_status = walletRunningStatus.subscribe((value) => {
-		wallet_running_status = value;
+	const unsub_daemon_running_status = daemonRunningStatus.subscribe((value) => {
+		daemon_running_status = value;
 	});
+
+	// const unsub_wallet_running_status = walletRunningStatus.subscribe((value) => {
+	// 	wallet_running_status = value;
+	// });
 
 	/////////////////////////////////
 	// Download
@@ -187,17 +176,16 @@
 
 	/////////////////////////////////
 	// Start Wallet
-	async function doStartWalletAPIRequest(cmt: CoinMethodType) {
-		if (cmt === CoinMethodType.start_daemon) {
-			isWorking.set(true);
-			is_ready_interval_id = setInterval(isReady, 2000);
-		}
+	async function doStartWalletAPIRequest() {
+		isWorking.set(true);
+		is_ready_interval_id = setInterval(isReady, 2000);
+		daemonRunningStatus.set(DaemonRunningStatusType.drst_starting);
 
 		const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/reddcoin/api`, {
 			method: 'POST',
 			body: JSON.stringify({
 				coin_type: CoinType.reddcoin,
-				method_type: cmt
+				method_type: CoinMethodType.start_daemon
 			})
 		});
 
@@ -230,7 +218,8 @@
 		daemon_is_running = bw_api_response.is_running;
 		if (bw_api_response.is_ready === true) {
 			isWorking.set(false);
-			walletRunningStatus.set(WalletRunningStatusType.wrst_stopped);
+			daemonRunningStatus.set(DaemonRunningStatusType.drst_running)
+			// walletRunningStatus.set(WalletRunningStatusType.wrst_stopped);
 			clearInterval(is_ready_interval_id);
 			if (!timer_get_network_info_running) {
 				timer_get_network_info_running = true;
@@ -261,7 +250,7 @@
 		headers.set(0);
 		blocks.set(0);
 		difficulty.set(0);
-		daemonRunningStatus.set(DaemonRunningStatusType.drstStopped);
+		daemonRunningStatus.set(DaemonRunningStatusType.drst_stopped);
 
 		bw_api_response = await response.json();
 		const json_result = JSON.stringify(bw_api_response);
@@ -297,11 +286,33 @@
 				<Download class="square-5" />
 			</button>
 		{/if}
-		<button class="item" aria-label="start" title="Start {coin_name} wallet" use:melt={$button}>
-			<Play class="square-5" />
-		</button>
+		{#if daemon_running_status === DaemonRunningStatusType.drst_stopped}
+			<button
+				class="item"
+				disabled={false}
+				aria-label="start"
+				title="Start {coin_name} wallet"
+				on:click={() => doStartWalletAPIRequest()}
+				use:melt={$button}
+			>
+				<Play class="square-5" />
+			</button>
+		{:else}
+			<button
+				class="item"
+				disabled={true}
+				aria-label="start"
+				title="Start {coin_name} wallet"
+				on:click={() => doStartWalletAPIRequest()}
+				use:melt={$button}
+			>
+				<Play class="square-5" />
+			</button>
+		{/if}
+		{#if daemon_running_status === DaemonRunningStatusType.drst_running}
 		<button
 			class="item"
+			disabled={false}
 			aria-label="stop"
 			on:click={() => doStopWalletAPIRequest()}
 			title="Stop {coin_name} wallet"
@@ -309,6 +320,18 @@
 		>
 			<StopCircle class="square-5" />
 		</button>
+			{:else}
+			<button
+				class="item"
+				disabled={true}
+				aria-label="stop"
+				on:click={() => doStopWalletAPIRequest()}
+				title="Stop {coin_name} wallet"
+				use:melt={$button}
+			>
+				<StopCircle class="square-5" />
+			</button>
+			{/if}
 		<div class="separator" use:melt={$separator} />
 		<button class="item" aria-label="unlock" use:melt={$button}>
 			<Unlock class="square-5" />
@@ -316,10 +339,10 @@
 	</div>
 	<div class="separator" use:melt={$separator} />
 	<!--	<a href="/" class="link nowrap flex-shrink-0" use:melt={$link}> Edited 2 hours ago </a>-->
-	<button
-		class="ml-auto rounded-md bg-green-600 px-3 py-1 font-medium text-magnum-100 hover:opacity-75 active:opacity-50"
-		use:melt={$button}>Save</button
-	>
+<!--	<button-->
+<!--		class="ml-auto rounded-md bg-green-600 px-3 py-1 font-medium text-magnum-100 hover:opacity-75 active:opacity-50"-->
+<!--		use:melt={$button}>Save</button-->
+<!--	>-->
 </div>
 
 <style lang="postcss">
