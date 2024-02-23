@@ -1,11 +1,17 @@
 <script lang="ts">
-	import { type BWAPIResponse, CoinMethodType, CoinType, CoreFileStatusType } from '$lib/bwtypes';
+	import {
+		type BWAPIResponse,
+		CoinMethodType,
+		CoinType,
+		CoreFileStatusType,
+		DaemonRunningStatusType
+	} from '$lib/bwtypes';
 	import CoinStatus from '$lib/CoinStatus.svelte';
 	import { PUBLIC_HOST_IP } from '$env/static/public';
 	import { onMount } from 'svelte';
 	import type { GenericResponse, GetBlockchainInfoResponse, GetNetworkInfoResponse } from '$lib/rdd_types.js';
 	import { blocks, difficulty, headers } from '$lib/rdd_getblockchaininfo_store';
-	import { coreFileStatus } from '$lib/bw_store';
+	import { coreFileStatus, daemonRunningStatus } from '$lib/bw_store';
 	import { walletConnections, walletUnlockedUntil, walletVersion } from '$lib/rdd_getnetworkinfo_store';
 	import type { ModalSettings, ToastSettings } from '@skeletonlabs/skeleton';
 	import { getModalStore, getToastStore } from '@skeletonlabs/skeleton';
@@ -87,7 +93,6 @@
 	let getblockchaininfo_interval_id: ReturnType<typeof setInterval>;
 	let getnetworkinfo_interval_id: ReturnType<typeof setInterval>;
 	let is_ready_interval_id: ReturnType<typeof setInterval>;
-	let is_ready = false;
 	let is_working = false;
 	let is_running = false;
 	// let wallet_connections: number;
@@ -256,6 +261,9 @@
 
 		bw_api_response = await response.json();
 		const json_result = JSON.stringify(bw_api_response);
+		if (bw_api_response.is_running) {
+			daemonRunningStatus.set(DaemonRunningStatusType.drst_running);
+		}
 		if (bw_api_response.core_files_exists) {
 			core_files_downloaded = true;
 			coreFileStatus.set(CoreFileStatusType.cfst_installed)
@@ -263,32 +271,32 @@
 		await isReady();
 	}
 
-	async function doStartWalletAPIRequest(cmt: CoinMethodType) {
-		if (cmt === CoinMethodType.start_daemon) {
-			is_working = true;
-			is_ready_interval_id = setInterval(isReady, 2000);
-		}
-
-		const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/reddcoin/api`, {
-			method: 'POST',
-			body: JSON.stringify({
-				coin_type: CoinType.reddcoin,
-				method_type: cmt
-			})
-		});
-
-		bw_api_response = await response.json();
-		const json_result = JSON.stringify(
-			bw_api_response
-		);
-		console.log(`doPost json response: ${json_result}`);
-		console.log(`doPost is_running response: ${bw_api_response.is_running}`);
-		// daemon_is_ready = bw_api_response.is_ready;
-		// daemon_is_running = bw_api_response.is_running;
-		// if (bw_api_response.core_files_exists) {
-		// 	core_files_downloaded = true;
-		// }
-	}
+	// async function doStartWalletAPIRequest(cmt: CoinMethodType) {
+	// 	if (cmt === CoinMethodType.start_daemon) {
+	// 		is_working = true;
+	// 		is_ready_interval_id = setInterval(isReady, 2000);
+	// 	}
+	//
+	// 	const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/reddcoin/api`, {
+	// 		method: 'POST',
+	// 		body: JSON.stringify({
+	// 			coin_type: CoinType.reddcoin,
+	// 			method_type: cmt
+	// 		})
+	// 	});
+	//
+	// 	bw_api_response = await response.json();
+	// 	const json_result = JSON.stringify(
+	// 		bw_api_response
+	// 	);
+	// 	console.log(`doPost json response: ${json_result}`);
+	// 	console.log(`doPost is_running response: ${bw_api_response.is_running}`);
+	// 	// daemon_is_ready = bw_api_response.is_ready;
+	// 	// daemon_is_running = bw_api_response.is_running;
+	// 	// if (bw_api_response.core_files_exists) {
+	// 	// 	core_files_downloaded = true;
+	// 	// }
+	// }
 
 	async function doStopWalletAPIRequest(cmt: CoinMethodType) {
 		// Stop all timers
@@ -333,13 +341,12 @@
 	<section>
 		<CoinStatus
 			{block_height}
-			{is_ready}
 		/>
 		<Toolbar
 			{coin_name}
 		/>
 	</section>
-	<section>
+<!--	<section>-->
 <!--		<button-->
 <!--			disabled={download_disabled}-->
 <!--			class="btn variant-filled-tertiary"-->
@@ -348,33 +355,33 @@
 <!--		>-->
 <!--			Download-->
 <!--		</button>-->
-		<button
-			disabled={is_running || !core_files_downloaded}
-			class="btn variant-filled-tertiary"
-			type="button"
-			on:click={() => doStartWalletAPIRequest(CoinMethodType.start_daemon)}
-		>
-			Start
-		</button>
+<!--		<button-->
+<!--			disabled={is_running || !core_files_downloaded}-->
+<!--			class="btn variant-filled-tertiary"-->
+<!--			type="button"-->
+<!--			on:click={() => doStartWalletAPIRequest(CoinMethodType.start_daemon)}-->
+<!--		>-->
+<!--			Start-->
+<!--		</button>-->
 
-		<button
-			class="btn variant-filled-tertiary"
-			disabled={!is_running}
-			type="button"
-			on:click={walletUnlockFS}
-		>
-			Unlock for staking
-		</button>
+<!--		<button-->
+<!--			class="btn variant-filled-tertiary"-->
+<!--			disabled={!is_running}-->
+<!--			type="button"-->
+<!--			on:click={walletUnlockFS}-->
+<!--		>-->
+<!--			Unlock for staking-->
+<!--		</button>-->
 
-		<button
-			class="btn variant-filled-tertiary"
-			disabled={!is_running}
-			type="button"
-			on:click={() => doStopWalletAPIRequest(CoinMethodType.stop_daemon)}
-		>
-			Stop
-		</button>
-	</section>
+<!--		<button-->
+<!--			class="btn variant-filled-tertiary"-->
+<!--			disabled={!is_running}-->
+<!--			type="button"-->
+<!--			on:click={() => doStopWalletAPIRequest(CoinMethodType.stop_daemon)}-->
+<!--		>-->
+<!--			Stop-->
+<!--		</button>-->
+<!--	</section>-->
 	<section>
 		<BlockchainInfo />
 		<!--		<BlockchainHeaders/>-->
