@@ -180,9 +180,40 @@ class ReddCoin {
 			}
 		}
 		{
-			// Unsupported platform
+			// Unsupported platform.
 			throw new Error('Unsupported platform');
 		}
+	}
+
+	public async CreateWallet(name: string): Promise<GenericResponse> {
+		const body = `{"jsonrpc":"1.0","id":"curltext","method":"createwallet","params":["${name}"]}`;
+		console.log(`body: ${body}`);
+		const url = `http://${this.ip_address}:${this.rpc_port}`;
+		const config = {
+			auth: {
+				username: rpc_user,
+				password: this.rpc_password
+			},
+			headers: {
+				'Content-Type': 'text/plain'
+			}
+		};
+		let response_data: GenericResponse = {
+			result: '',
+			error: null,
+			id: ''
+		};
+
+		try {
+			const response = await axios.post(url, body, config);
+			response_data = response.data as GenericResponse;
+
+			console.log(`response: ${response_data}`);
+			return response_data;
+		} catch (error: any | AxiosError) {
+			console.error('Error data:', error.response.data);
+		}
+		return response_data;
 	}
 
 	public async DownloadCoreFiles(): Promise<void> {
