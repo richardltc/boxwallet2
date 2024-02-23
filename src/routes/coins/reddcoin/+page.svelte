@@ -93,6 +93,7 @@
 	let getblockchaininfo_interval_id: ReturnType<typeof setInterval>;
 	let getnetworkinfo_interval_id: ReturnType<typeof setInterval>;
 	let is_ready_interval_id: ReturnType<typeof setInterval>;
+	let is_ready = false;
 	let is_working = false;
 	let is_running = false;
 	// let wallet_connections: number;
