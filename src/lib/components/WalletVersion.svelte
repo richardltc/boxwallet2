@@ -2,14 +2,10 @@
 	import { walletVersion } from '$lib/rdd_getnetworkinfo_store';
 	import { tweened } from 'svelte/motion';
 
-	let wallet_version = tweened(0, {
-		duration: 3000,
-		easing: cubicOut
-	});
-	import { cubicOut } from 'svelte/easing';
+	let wallet_version = 0;
 
 	const unsub_walletVersion = walletVersion.subscribe((value) => {
-		$wallet_version = value;
+		wallet_version = value;
 	});
 </script>
 
@@ -17,10 +13,10 @@
 	<!--	<figure class="bg-opacity-90 rounded-xl p-2 dark:bg-opacity-90">-->
 	<figure class="p-2 pr-10">
 		<div class="label">
-			{#if $wallet_version === 0}
+			{#if wallet_version === 0}
 				v<span class="version">...</span>
 			{:else}
-				v<div class="version">{wallet_version}</div>
+				v: <span class="version">{wallet_version}</span>
 			{/if}
 		</div>
 	</figure>
