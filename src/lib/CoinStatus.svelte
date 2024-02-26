@@ -191,7 +191,7 @@
 			</div>
 		{/if}
 
-		{#if wallet_verification_progress < 0.99999 && wallet_connections > 0}
+		{#if (wallet_verification_progress < 0.99999) && (wallet_connections > 0)}
 			<div class="px-2 py-2">
 				<span title="Blockchain is syncing... Blocks: ${block_height}"
 					><i class="fa-solid fa-rotate fa-2x fa-spin" /></span
