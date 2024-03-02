@@ -8,6 +8,7 @@
 
 	let core_file_status: CoreFileStatusType;
 	let daemon_running_status: DaemonRunningStatusType;
+	let icon_wallet_security_class = '';
 	let icon_wallet_security_title = '';
 	let wallet_verification_progress: number;
 	// export let wallet_offline = true;

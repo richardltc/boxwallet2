@@ -207,14 +207,14 @@
 			}
 		}
 	}
-	
+
 </script>
 
 <div class="container mx-auto p-8 space-y-4">
 	<div class="flex flex-wrap items-center sm:space-x-5">
 		<img src="../rdd_logo.png" alt="rdd_logo" class="mr-3 h-20" />
 		<div>
-		<h1 class="h1 pt-3 sm:pt-0">ReddCoin <span class="text-base inline-block"><WalletVersion/></span></h1>
+		<h1 class="h1 pt-3 sm:pt-0">{coin_name} <span class="text-base inline-block"><WalletVersion/></span></h1>
 		<h2 class="h2">The social currency</h2>
 		</div>
 	</div>
