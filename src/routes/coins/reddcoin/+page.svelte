@@ -9,6 +9,7 @@
 	import CoinStatus from '$lib/CoinStatus.svelte';
 	import { PUBLIC_HOST_IP } from '$env/static/public';
 	import { onMount } from 'svelte';
+	import * as rdd_client from '$lib/rdd_client';
 	import type { GenericResponse, GetBlockchainInfoResponse, GetNetworkInfoResponse } from '$lib/rdd_types.js';
 	import { blocks, difficulty, headers } from '$lib/rdd_getblockchaininfo_store';
 	import { coreFileStatus, daemonRunningStatus } from '$lib/bw_store';
@@ -121,86 +122,42 @@
 	}
 
 	onMount(async () => {
-		await doGetCoreStatusAPIRequest(CoinMethodType.get_core_status);
+		// is_ready_interval_id = setInterval(async () => {
+		// 	await rdd_client.IsReady();
+		// }, 10000);
+
+		await rdd_client.GetCoreStatusAPIRequest(CoinMethodType.get_core_status);
+	  await rdd_client.IsReady();
 	});
 
-	const isReady = async () => {
-		const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/reddcoin/api`, {
-			method: 'POST',
-			body: JSON.stringify({
-				coin_type: CoinType.reddcoin,
-				method_type: CoinMethodType.is_ready
-			})
-		});
-
-		bw_api_response = await response.json();
-		const json_result = JSON.stringify(bw_api_response);
-		console.log(`isReady json response: ${json_result}`);
-		daemon_is_ready = bw_api_response.is_ready;
-		daemon_is_running = bw_api_response.is_running;
-		if (bw_api_response.is_ready === true) {
-			is_working = false;
-			wallet_offline = false;
-			clearInterval(is_ready_interval_id);
-			if (!timer_get_network_info_running) {
-				timer_get_network_info_running = true
-				getnetworkinfo_interval_id = setInterval(async () => {
-					await doGetNetworkInfoAPIRequest(CoinMethodType.get_network_info);
-				}, 10000);
-				await doGetNetworkInfoAPIRequest(CoinMethodType.get_network_info)
-			}
-		}
-	};
-
-	// async function doDownloadCoreFilesAPIRequest() {
-	// 	// Confirm if core files are already downloaded.
-	// 	let confirmed = false;
-	// 	if (core_files_downloaded) {
-	// 		await new Promise<boolean>((resolve) => {
-	// 			const confirm_modal: ModalSettings = {
-	// 				type: 'confirm',
-	// 				title: 'Please Confirm',
-	// 				body: `The ${coin_name} core files are already downloaded. Would you like to re-download them?`,
-	// 				response: (r: boolean) => {
-	// 					resolve(r);
-	// 				}
-	// 			};
-	// 			modalStore.trigger(confirm_modal);
-	// 		}).then((r: boolean) => {
-	// 			confirmed = r;
-	// 		});
-	// 	}
-	//
-	// 	if (!confirmed && core_files_downloaded) {
-	// 		return;
-	// 	}
-	//
-	// 	download_disabled = true;
-	// 	is_working = true;
+	// const isReady = async () => {
 	// 	const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/reddcoin/api`, {
 	// 		method: 'POST',
 	// 		body: JSON.stringify({
 	// 			coin_type: CoinType.reddcoin,
-	// 			method_type: CoinMethodType.download_core_files
+	// 			method_type: CoinMethodType.is_ready
 	// 		})
 	// 	});
 	//
-	// 	download_disabled = false;
-	// 	is_working = false;
-	//
-	// 	const t: ToastSettings = {
-	// 		message: `The ${coin_name} core files downloaded successfully.`,
-	// 		timeout: 5000,
-	// 		hideDismiss: true,
-	// 		background: 'variant-filled-success'
-	// 	};
-	// 	toastStore.trigger(t);
-	//
 	// 	bw_api_response = await response.json();
-	// 	if (bw_api_response.core_files_exists) {
-	// 		core_files_downloaded = true;
+	// 	const json_result = JSON.stringify(bw_api_response);
+	// 	console.log(`isReady json response: ${json_result}`);
+	// 	daemon_is_ready = bw_api_response.is_ready;
+	// 	daemon_is_running = bw_api_response.is_running;
+	// 	if (bw_api_response.is_ready === true) {
+	// 		is_working = false;
+	// 		wallet_offline = false;
+	// 		clearInterval(is_ready_interval_id);
+	// 		if (!timer_get_network_info_running) {
+	// 			timer_get_network_info_running = true
+	// 			getnetworkinfo_interval_id = setInterval(async () => {
+	// 				await doGetNetworkInfoAPIRequest(CoinMethodType.get_network_info);
+	// 			}, 10000);
+	// 			await doGetNetworkInfoAPIRequest(CoinMethodType.get_network_info)
+	// 		}
 	// 	}
-	// }
+	// };
+
 
 	async function doGetBlockchainInfoAPIRequest(cmt: CoinMethodType) {
 		const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/reddcoin/api`, {
@@ -250,81 +207,7 @@
 			}
 		}
 	}
-
-	async function doGetCoreStatusAPIRequest(cmt: CoinMethodType) {
-		const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/reddcoin/api`, {
-			method: 'POST',
-			body: JSON.stringify({
-				coin_type: CoinType.reddcoin,
-				method_type: cmt
-			})
-		});
-
-		bw_api_response = await response.json();
-		const json_result = JSON.stringify(bw_api_response);
-		if (bw_api_response.is_running) {
-			daemonRunningStatus.set(DaemonRunningStatusType.drst_running);
-		}
-		if (bw_api_response.core_files_exists) {
-			core_files_downloaded = true;
-			coreFileStatus.set(CoreFileStatusType.cfst_installed)
-		}
-		await isReady();
-	}
-
-	// async function doStartWalletAPIRequest(cmt: CoinMethodType) {
-	// 	if (cmt === CoinMethodType.start_daemon) {
-	// 		is_working = true;
-	// 		is_ready_interval_id = setInterval(isReady, 2000);
-	// 	}
-	//
-	// 	const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/reddcoin/api`, {
-	// 		method: 'POST',
-	// 		body: JSON.stringify({
-	// 			coin_type: CoinType.reddcoin,
-	// 			method_type: cmt
-	// 		})
-	// 	});
-	//
-	// 	bw_api_response = await response.json();
-	// 	const json_result = JSON.stringify(
-	// 		bw_api_response
-	// 	);
-	// 	console.log(`doPost json response: ${json_result}`);
-	// 	console.log(`doPost is_running response: ${bw_api_response.is_running}`);
-	// 	// daemon_is_ready = bw_api_response.is_ready;
-	// 	// daemon_is_running = bw_api_response.is_running;
-	// 	// if (bw_api_response.core_files_exists) {
-	// 	// 	core_files_downloaded = true;
-	// 	// }
-	// }
-
-	async function doStopWalletAPIRequest(cmt: CoinMethodType) {
-		// Stop all timers
-		clearInterval(getnetworkinfo_interval_id);
-		clearInterval(getblockchaininfo_interval_id);
-		const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/reddcoin/api`, {
-			method: 'POST',
-			body: JSON.stringify({
-				coin_type: CoinType.reddcoin,
-				method_type: cmt
-			})
-		});
-
-		if (cmt === CoinMethodType.stop_daemon) {
-			walletConnections.set(0);
-			walletUnlockedUntil.set(-5);
-			headers.set(0);
-			blocks.set(0);
-			difficulty.set(0);
-
-			wallet_offline = true;
-		}
-
-		bw_api_response = await response.json();
-		const json_result = JSON.stringify(bw_api_response);
-		console.log(`doPost json response: ${json_result}`);
-	}
+	
 </script>
 
 <div class="container mx-auto p-8 space-y-4">

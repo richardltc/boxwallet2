@@ -8,7 +8,6 @@
 
 	let core_file_status: CoreFileStatusType;
 	let daemon_running_status: DaemonRunningStatusType;
-	let icon_wallet_security_class = '';
 	let icon_wallet_security_title = '';
 	let wallet_verification_progress: number;
 	// export let wallet_offline = true;
@@ -139,7 +138,7 @@
 <main>
 	<div class="flex flex-wrap -mx-2 items-start">
 		<!--		Working-->
-		{#if is_working}
+		{#if (is_working) || (core_file_status === CoreFileStatusType.cfst_downloading)}
 			<div class="px-2 py-2">
 				<span title="Working..."><i class="fa-solid fa-cog fa-spin fa-2x" /></span>
 			</div>
@@ -179,7 +178,7 @@
 		<!--		Wallet connections-->
 		{#if wallet_connections > 0}
 			<div class="px-2 py-2">
-				<span title="${wallet_connections} connections"
+				<span title="{wallet_connections} connections"
 					><i class="fa-solid fa-network-wired fa-2x" /></span
 				>
 			</div>

@@ -185,7 +185,7 @@ class ReddCoin {
 		}
 	}
 
-	public async CreateWallet(name: string): Promise<GenericResponse> {
+	public async CreateWalletIfRequired(name: string): Promise<GenericResponse> {
 		const body = `{"jsonrpc":"1.0","id":"curltext","method":"createwallet","params":["${name}"]}`;
 		console.log(`body: ${body}`);
 		const url = `http://${this.ip_address}:${this.rpc_port}`;
@@ -243,7 +243,7 @@ class ReddCoin {
 			.catch((error) => {
 				console.error('Error downloading file:', error);
 			});
-		// uncompress a file
+		// un-compress a file
 		await compressing.tgz
 			.uncompress(
 				path.join(home_dir, home_dir_boxwallet, dl_file),
@@ -498,6 +498,42 @@ class ReddCoin {
 			console.error('Error data:', error.response.data);
 		}
 		return response_data;
+	}
+
+	async WalletExists(name: string): Promise<boolean> {
+		let wallet_exists = false;
+
+		const body = `{"jsonrpc":"1.0","id":"curltext","method":"listwallets","params":[]}`;
+		console.log(`body: ${body}`);
+		const url = `http://${this.ip_address}:${this.rpc_port}`;
+		const config = {
+			auth: {
+				username: rpc_user,
+				password: this.rpc_password
+			},
+			headers: {
+				'Content-Type': 'text/plain'
+			}
+		};
+		let response_data: GenericResponse = {
+			result: '',
+			error: null,
+			id: ''
+		};
+
+		try {
+			const response = await axios.post(url, body, config);
+			response_data = response.data as GenericResponse;
+
+			console.log(`response: ${response_data}`);
+			if (response_data.result.includes('main', 0)) {
+				console.log('Wallet main exists');
+				return true;
+			}
+		} catch (error: any | AxiosError) {
+			console.error('Error data:', error.response.data);
+		}
+		return false;
 	}
 }
 
