@@ -1,6 +1,6 @@
 # What is BoxWallet?
 
-BoxWallet is a browser based,  multi-coin wallet, that can get your coin-of-choice up and running, securely staking with just a few clicks.
+BoxWallet is a browser based,  multi-coin wallet, that can get your coin-of-choice up and running fast and securely staking with just a few clicks.
 
 # Getting started with BoxWallet
 
@@ -20,7 +20,7 @@ With `git` now installed, you can change into the directory where you'd like to 
 
 You should now have a directory full of files.
 
-## Installing `NodeJS`
+## Installing `NodeJS` or `bun`
 Before we're able to run BoxWallet we need to install `NodeJS` as that will be the engine that BoxWallet uses in order to run.
 
 Again, if you're running on Linux you'll be able to install `NodeJS` from your package manager (`sudo apt install nodejs`), on Windows, you can go to:

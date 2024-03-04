@@ -1,23 +1,29 @@
 import type { RequestEvent } from './$types';
-import type { ApiRequest, BWAPIResponse } from '$lib/bwtypes';
-import { CoinMethodType, CoinType } from '$lib/bwtypes';
+import type { ApiRequest, BWAPIResponse } from '$lib/bw_types';
+import { CoinMethodType, CoinType } from '$lib/bw_types';
 import { download_file } from '$lib/web_utils';
 import * as os from 'os';
-import ReddCoin from '$lib/rdd';
+import ReddCoin from '$lib/rdd/rdd';
 import type {
 	GetBlockchainInfoResponse,
 	GetNetworkInfoResponse,
 	GenericResponse
-} from '$lib/rdd_types';
+} from '$lib/rdd/rdd_types';
+import path from 'path';
 
-const home_dir = os.homedir();
+const home_dir_boxwallet = '.boxwallet';
+const home_dir_coin_lin = '.reddcoin';
+const home_dir_coin_win = 'REDDCOIN';
+const conf_file = 'reddcoin.conf';
+
+const coin_conf_file = path.join(os.homedir(), home_dir_coin_lin, conf_file);
 
 export async function POST({ request }: RequestEvent) {
 	const data_object: any = await request.json();
 
 	// method_types include: core_files_exist, start_daemon, stop_daemon
 	const method_type: CoinMethodType = data_object.method_type;
-	const redd_coin = await ReddCoin.getInstance('/home/richard/.reddcoin/reddcoin.conf');
+	const redd_coin = await ReddCoin.getInstance(coin_conf_file);
 
 	let get_blockchain_info_api_response: GetBlockchainInfoResponse;
 	let get_network_info_api_response: GetNetworkInfoResponse;
@@ -29,17 +35,20 @@ export async function POST({ request }: RequestEvent) {
 	};
 	let is_ready: boolean;
 	let is_running: boolean;
+	let wallet_exists: boolean;
 	let generic_api_response: GenericResponse;
 
 	// Wait for the asynchronous initialization to complete
 
 	switch (method_type) {
+		//////////////////////////////
+		// CORE_FILES_EXIST
 		case CoinMethodType.core_files_exist: {
 			// Check that core files exist
 			let result = {};
 
 			const api_request: ApiRequest = {
-				boxwallet_dir: home_dir + '/.boxwallet/',
+				boxwallet_dir: path.join(os.homedir(), home_dir_boxwallet),
 				coin_type: CoinType.reddcoin,
 				method_type: CoinMethodType.core_files_exist
 			};
@@ -84,6 +93,7 @@ export async function POST({ request }: RequestEvent) {
 		case CoinMethodType.get_network_info:
 			get_network_info_api_response = await redd_coin.GetNetworkInfo();
 			return new Response(JSON.stringify(get_network_info_api_response));
+
 		//////////////////////////////
 		// GET_CORE_STATUS
 		case CoinMethodType.get_core_status:
@@ -94,6 +104,12 @@ export async function POST({ request }: RequestEvent) {
 			is_running = await redd_coin.CoinDaemonIsRunning();
 			if (is_ready) {
 				console.log('Coin daemon is ready');
+				wallet_exists = await redd_coin.WalletExists('main');
+				if (wallet_exists) {
+					console.log('main wallet exists');
+				} else {
+					console.log('main wallet does not exist');
+				}
 			} else {
 				console.log('Coin daemon is not ready');
 			}

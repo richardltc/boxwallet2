@@ -5,7 +5,7 @@ import type {
 	GetNetworkInfoResponse,
 	GetBlockchainInfoResponse,
 	GenericResponse
-} from '$lib/rdd_types';
+} from '$lib/rdd/rdd_types';
 import os from 'os';
 import { exec } from 'child_process';
 import type { ChildProcess } from 'child_process';

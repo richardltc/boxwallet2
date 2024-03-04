@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { CoreFileStatusType, DaemonRunningStatusType, IconStatusType } from '$lib/bwtypes';
+	import { CoreFileStatusType, DaemonRunningStatusType, IconStatusType } from '$lib/bw_types';
 	import { coreFileStatus, daemonRunningStatus, isWorking } from '$lib/bw_store';
-	import { verificationProgress } from '$lib/rdd_getblockchaininfo_store';
-	import { walletUnlockedUntil, walletConnections } from '$lib/rdd_getnetworkinfo_store';
+	import { verificationProgress } from '$lib/rdd/rdd_getblockchaininfo_store';
+	import { walletUnlockedUntil, walletConnections } from '$lib/rdd/rdd_getnetworkinfo_store';
 
 	export let block_height: number;
 

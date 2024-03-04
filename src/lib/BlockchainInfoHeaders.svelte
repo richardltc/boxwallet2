@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { headers } from '$lib/rdd_getblockchaininfo_store.js';
+	import { headers } from '$lib/rdd/rdd_getblockchaininfo_store.js';
 	import { tweened } from 'svelte/motion';
 
 	//let header_height: number;

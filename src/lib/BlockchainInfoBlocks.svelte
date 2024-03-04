@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { blocks } from '$lib/rdd_getblockchaininfo_store.js';
+	import { blocks } from '$lib/rdd/rdd_getblockchaininfo_store.js';
 	import { tweened } from 'svelte/motion';
 
 	let blocks_height = tweened(0, {

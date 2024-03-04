@@ -1,4 +1,4 @@
-import type { GetBlockchainInfoResponse, GetNetworkInfoResponse } from '$lib/rdd_types';
+import type { GetBlockchainInfoResponse, GetNetworkInfoResponse } from '$lib/rdd/rdd_types';
 import { PUBLIC_HOST_IP } from '$env/static/public';
 import {
 	type BWAPIResponse,
@@ -6,18 +6,18 @@ import {
 	CoinType,
 	CoreFileStatusType,
 	DaemonRunningStatusType
-} from '$lib/bwtypes';
+} from '$lib/bw_types';
 import {
 	walletConnections,
 	walletUnlockedUntil,
 	walletVersion
-} from '$lib/rdd_getnetworkinfo_store';
+} from '$lib/rdd/rdd_getnetworkinfo_store';
 import {
 	blocks,
 	difficulty,
 	headers,
 	verificationProgress
-} from '$lib/rdd_getblockchaininfo_store';
+} from '$lib/rdd/rdd_getblockchaininfo_store';
 import { coreFileStatus, daemonRunningStatus, isWorking } from '$lib/bw_store';
 // import { getModalStore, getToastStore, type ToastSettings } from '@skeletonlabs/skeleton';
 
@@ -33,20 +33,12 @@ let getnetworkinfo_interval_id: ReturnType<typeof setInterval>;
 let timer_get_blockchain_info_running = false;
 let timer_get_network_info_running = false;
 
-const coin_name = 'ReddCoin';
-
-interface ModalSettings {
-	type: 'prompt';
-	title: string;
-	body: string;
-	response: (password: string) => void;
-	valueAttr: { type: 'password'; minlength: 1; maxlength: 10; required: true };
-}
+const coin_name_lower = 'reddcoin';
 
 /////////////////////////////////
 // Get Blockchain Info
 export async function GetBlockchainInfoAPIRequest(cmt: CoinMethodType) {
-	const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/reddcoin/api`, {
+	const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/${coin_name_lower}/api`, {
 		method: 'POST',
 		body: JSON.stringify({
 			coin_type: CoinType.reddcoin,
@@ -67,7 +59,7 @@ export async function GetBlockchainInfoAPIRequest(cmt: CoinMethodType) {
 }
 
 export async function GetCoreStatusAPIRequest(cmt: CoinMethodType) {
-	const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/reddcoin/api`, {
+	const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/${coin_name_lower}/api`, {
 		method: 'POST',
 		body: JSON.stringify({
 			coin_type: CoinType.reddcoin,
@@ -91,7 +83,7 @@ export async function GetCoreStatusAPIRequest(cmt: CoinMethodType) {
 /////////////////////////////////
 // Get Network Info
 export async function GetNetworkInfoAPIRequest(cmt: CoinMethodType) {
-	const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/reddcoin/api`, {
+	const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/${coin_name_lower}/api`, {
 		method: 'POST',
 		body: JSON.stringify({
 			coin_type: CoinType.reddcoin,
@@ -121,7 +113,7 @@ export async function GetNetworkInfoAPIRequest(cmt: CoinMethodType) {
 //////////////////////////////
 // Is Ready
 export const IsReady = async () => {
-	const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/reddcoin/api`, {
+	const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/${coin_name_lower}/api`, {
 		method: 'POST',
 		body: JSON.stringify({
 			coin_type: CoinType.reddcoin,
@@ -131,7 +123,7 @@ export const IsReady = async () => {
 
 	bw_api_response = await response.json();
 	const json_result = JSON.stringify(bw_api_response);
-	console.log(`isReady json response: ${json_result}`);
+	console.log(`IsReady json response: ${json_result}`);
 	daemon_is_ready = bw_api_response.is_ready;
 	daemon_is_running = bw_api_response.is_running;
 	if (bw_api_response.is_ready === true) {
@@ -156,7 +148,7 @@ export async function StartWalletAPIRequest() {
 	is_ready_interval_id = setInterval(IsReady, 2000);
 	daemonRunningStatus.set(DaemonRunningStatusType.drst_starting);
 
-	const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/reddcoin/api`, {
+	const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/${coin_name_lower}/api`, {
 		method: 'POST',
 		body: JSON.stringify({
 			coin_type: CoinType.reddcoin,
@@ -181,7 +173,7 @@ export async function StopWalletAPIRequest() {
 	// Stop all timers
 	clearInterval(getnetworkinfo_interval_id);
 	clearInterval(getblockchaininfo_interval_id);
-	const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/reddcoin/api`, {
+	const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/${coin_name_lower}/api`, {
 		method: 'POST',
 		body: JSON.stringify({
 			coin_type: CoinType.reddcoin,

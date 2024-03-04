@@ -1,5 +1,5 @@
 import { writable } from 'svelte/store';
-import { CoreFileStatusType, DaemonRunningStatusType } from '$lib/bwtypes';
+import { CoreFileStatusType, DaemonRunningStatusType } from '$lib/bw_types';
 
 // Various BoxWallet states.
 export const coreFileStatus = writable(CoreFileStatusType.cfst_not_installed);

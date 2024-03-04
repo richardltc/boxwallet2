@@ -10,13 +10,13 @@
 		CoinType,
 		CoreFileStatusType,
 		DaemonRunningStatusType
-	} from '$lib/bwtypes';
+	} from '$lib/bw_types';
 	import { PUBLIC_HOST_IP } from '$env/static/public';
 	import { getModalStore, getToastStore, type ToastSettings } from '@skeletonlabs/skeleton';
-	import { walletConnections, walletUnlockedUntil, walletVersion } from '$lib/rdd_getnetworkinfo_store';
-	import type { GetBlockchainInfoResponse, GetNetworkInfoResponse } from '$lib/rdd_types';
-	import { blocks, difficulty, headers, verificationProgress } from '$lib/rdd_getblockchaininfo_store';
-	import * as rdd_client from '$lib/rdd_client';
+	import { walletConnections, walletUnlockedUntil, walletVersion } from '$lib/rdd/rdd_getnetworkinfo_store';
+	import type { GetBlockchainInfoResponse, GetNetworkInfoResponse } from '$lib/rdd/rdd_types';
+	import { blocks, difficulty, headers, verificationProgress } from '$lib/rdd/rdd_getblockchaininfo_store';
+	import * as rdd_client from '$lib/rdd/rdd_client';
 
 	export let coin_name: string;
 

@@ -3,17 +3,16 @@
 		type BWAPIResponse,
 		CoinMethodType,
 		CoinType,
-		CoreFileStatusType,
 		DaemonRunningStatusType
-	} from '$lib/bwtypes';
+	} from '$lib/bw_types';
 	import CoinStatus from '$lib/CoinStatus.svelte';
 	import { PUBLIC_HOST_IP } from '$env/static/public';
 	import { onMount } from 'svelte';
-	import * as rdd_client from '$lib/rdd_client';
-	import type { GenericResponse, GetBlockchainInfoResponse, GetNetworkInfoResponse } from '$lib/rdd_types.js';
-	import { blocks, difficulty, headers } from '$lib/rdd_getblockchaininfo_store';
+	import * as rdd_client from '$lib/rdd/rdd_client';
+	import type { GenericResponse, GetBlockchainInfoResponse, GetNetworkInfoResponse } from '$lib/rdd/rdd_types.js';
+	import { blocks, difficulty, headers } from '$lib/rdd/rdd_getblockchaininfo_store';
 	import { coreFileStatus, daemonRunningStatus } from '$lib/bw_store';
-	import { walletConnections, walletUnlockedUntil, walletVersion } from '$lib/rdd_getnetworkinfo_store';
+	import { walletConnections, walletUnlockedUntil, walletVersion } from '$lib/rdd/rdd_getnetworkinfo_store';
 	import type { ModalSettings, ToastSettings } from '@skeletonlabs/skeleton';
 	import { getModalStore, getToastStore } from '@skeletonlabs/skeleton';
 	import BlockchainInfo from '$lib/BlockchainInfo.svelte';
@@ -21,6 +20,8 @@
 	import WalletVersion from '$lib/components/WalletVersion.svelte';
 
 	const coin_name = 'ReddCoin';
+	const coin_subtitle = 'The social currency'
+	const coin_description = 'With over 60,000 users in 50+ countries, Redd allows you to share, tip, and donate to anyone, anywhere.'
 	const modalStore = getModalStore();
 	const toastStore = getToastStore();
 	// const modal: ModalSettings = {
@@ -108,18 +109,18 @@
 	let daemon_is_ready: null | boolean = false;
 	let daemon_is_running: null | boolean = false;
 
-	$: {
-		if (daemon_is_running) {
-			is_running = true;
-		} else {
-			is_running = false;
-		}
-		if (daemon_is_ready) {
-			is_ready = true;
-		} else {
-			is_ready = false;
-		}
-	}
+	// $: {
+	// 	if (daemon_is_running) {
+	// 		is_running = true;
+	// 	} else {
+	// 		is_running = false;
+	// 	}
+	// 	if (daemon_is_ready) {
+	// 		is_ready = true;
+	// 	} else {
+	// 		is_ready = false;
+	// 	}
+	// }
 
 	onMount(async () => {
 		// is_ready_interval_id = setInterval(async () => {
@@ -130,84 +131,6 @@
 	  await rdd_client.IsReady();
 	});
 
-	// const isReady = async () => {
-	// 	const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/reddcoin/api`, {
-	// 		method: 'POST',
-	// 		body: JSON.stringify({
-	// 			coin_type: CoinType.reddcoin,
-	// 			method_type: CoinMethodType.is_ready
-	// 		})
-	// 	});
-	//
-	// 	bw_api_response = await response.json();
-	// 	const json_result = JSON.stringify(bw_api_response);
-	// 	console.log(`isReady json response: ${json_result}`);
-	// 	daemon_is_ready = bw_api_response.is_ready;
-	// 	daemon_is_running = bw_api_response.is_running;
-	// 	if (bw_api_response.is_ready === true) {
-	// 		is_working = false;
-	// 		wallet_offline = false;
-	// 		clearInterval(is_ready_interval_id);
-	// 		if (!timer_get_network_info_running) {
-	// 			timer_get_network_info_running = true
-	// 			getnetworkinfo_interval_id = setInterval(async () => {
-	// 				await doGetNetworkInfoAPIRequest(CoinMethodType.get_network_info);
-	// 			}, 10000);
-	// 			await doGetNetworkInfoAPIRequest(CoinMethodType.get_network_info)
-	// 		}
-	// 	}
-	// };
-
-
-	async function doGetBlockchainInfoAPIRequest(cmt: CoinMethodType) {
-		const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/reddcoin/api`, {
-			method: 'POST',
-			body: JSON.stringify({
-				coin_type: CoinType.reddcoin,
-				method_type: cmt
-			})
-		});
-
-		coin_get_blockchain_info = await response.json();
-		const json_result = JSON.stringify(coin_get_blockchain_info);
-		console.log(`doPost json response: ${json_result}`);
-		block_height = coin_get_blockchain_info.result.blocks;
-		headers.set(coin_get_blockchain_info.result.headers);
-		blocks.set(coin_get_blockchain_info.result.blocks);
-		difficulty.set(coin_get_blockchain_info.result.difficulty);
-		// walletUnlockedUntil.set(coin_get_blockchain_info)
-
-		wallet_verification_progress = coin_get_blockchain_info.result.verificationprogress;
-	}
-
-	async function doGetNetworkInfoAPIRequest(cmt: CoinMethodType) {
-		const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/reddcoin/api`, {
-			method: 'POST',
-			body: JSON.stringify({
-				coin_type: CoinType.reddcoin,
-				method_type: cmt
-			})
-		});
-
-		coin_get_network_info_response = await response.json();
-		const json_result = JSON.stringify(coin_get_network_info_response);
-		console.log(`doPost json response: ${json_result}`);
-		walletConnections.set(coin_get_network_info_response.result.connections);
-		walletVersion.set(coin_get_network_info_response.result.version);
-		// wallet_unlocked_until = coin_get_network_info_response.result.unlocked_until;
-		// walletUnlockedUntil.set(coin_get_network_info_response.result.unlocked_until);
-		if (coin_get_network_info_response.result.connections > 0) {
-			if (!timer_get_blockchain_info_running) {
-				timer_get_blockchain_info_running = true;
-				console.log('Setting GetBlockchainInfo timer');
-				getblockchaininfo_interval_id = setInterval(async () => {
-					await doGetBlockchainInfoAPIRequest(CoinMethodType.get_blockchain_info);
-				}, 10000);
-				await doGetBlockchainInfoAPIRequest(CoinMethodType.get_blockchain_info)
-			}
-		}
-	}
-
 </script>
 
 <div class="container mx-auto p-8 space-y-4">
@@ -215,12 +138,11 @@
 		<img src="../rdd_logo.png" alt="rdd_logo" class="mr-3 h-20" />
 		<div>
 		<h1 class="h1 pt-3 sm:pt-0">{coin_name} <span class="text-base inline-block"><WalletVersion/></span></h1>
-		<h2 class="h2">The social currency</h2>
+		<h2 class="h2">{coin_subtitle}</h2>
 		</div>
 	</div>
 	<p>
-		With over 60,000 users in 50+ countries, Redd allows you to share, tip, and donate to anyone,
-		anywhere.
+		{coin_description}
 	</p>
 	<section>
 		<CoinStatus

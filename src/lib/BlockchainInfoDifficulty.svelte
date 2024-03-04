@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { difficulty } from '$lib/rdd_getblockchaininfo_store.js';
+	import { difficulty } from '$lib/rdd/rdd_getblockchaininfo_store.js';
 	import { tweened } from 'svelte/motion';
 
 	let difficulty_value = tweened(0, {

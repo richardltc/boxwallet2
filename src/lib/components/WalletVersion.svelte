@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { walletVersion } from '$lib/rdd_getnetworkinfo_store';
+	import { walletVersion } from '$lib/rdd/rdd_getnetworkinfo_store';
 	import { tweened } from 'svelte/motion';
 
 	let wallet_version = 0;
