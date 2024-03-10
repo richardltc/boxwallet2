@@ -1,4 +1,4 @@
-import type { GetBlockchainInfoResponse, GetNetworkInfoResponse } from '$lib/rdd/rdd_types';
+import type { GetBlockchainInfoResponse, GetNetworkInfoResponse } from '$lib/divi/divi_types';
 import { PUBLIC_HOST_IP } from '$env/static/public';
 import {
 	type BWAPIResponse,
@@ -11,13 +11,13 @@ import {
 	walletConnections,
 	walletUnlockedUntil,
 	walletVersion
-} from '$lib/rdd/rdd_getnetworkinfo_store';
+} from '$lib/divi/divi_getnetworkinfo_store';
 import {
 	blocks,
 	difficulty,
 	headers,
 	verificationProgress
-} from '$lib/rdd/rdd_getblockchaininfo_store';
+} from '$lib/divi/divi_getblockchaininfo_store';
 import { coreFileStatus, daemonRunningStatus, isWorking } from '$lib/bw_store';
 // import { getModalStore, getToastStore, type ToastSettings } from '@skeletonlabs/skeleton';
 
@@ -33,15 +33,15 @@ let getnetworkinfo_interval_id: ReturnType<typeof setInterval>;
 let timer_get_blockchain_info_running = false;
 let timer_get_network_info_running = false;
 
-const coin_name_api = 'reddcoin';
+const coin_name_lower = 'divi';
 
 /////////////////////////////////
 // Get Blockchain Info
 export async function GetBlockchainInfoAPIRequest(cmt: CoinMethodType) {
-	const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/${coin_name_api}/api`, {
+	const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/${coin_name_lower}/api`, {
 		method: 'POST',
 		body: JSON.stringify({
-			coin_type: CoinType.reddcoin,
+			coin_type: CoinType.divi,
 			method_type: cmt
 		})
 	});
@@ -59,10 +59,10 @@ export async function GetBlockchainInfoAPIRequest(cmt: CoinMethodType) {
 }
 
 export async function GetCoreStatusAPIRequest(cmt: CoinMethodType) {
-	const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/${coin_name_api}/api`, {
+	const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/${coin_name_lower}/api`, {
 		method: 'POST',
 		body: JSON.stringify({
-			coin_type: CoinType.reddcoin,
+			coin_type: CoinType.divi,
 			method_type: cmt
 		})
 	});
@@ -80,13 +80,13 @@ export async function GetCoreStatusAPIRequest(cmt: CoinMethodType) {
 	// await isReady();
 }
 
-////////////////////////////////
+/////////////////////////////////
 // Get Network Info
 export async function GetNetworkInfoAPIRequest(cmt: CoinMethodType) {
-	const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/${coin_name_api}/api`, {
+	const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/${coin_name_lower}/api`, {
 		method: 'POST',
 		body: JSON.stringify({
-			coin_type: CoinType.reddcoin,
+			coin_type: CoinType.divi,
 			method_type: cmt
 		})
 	});
@@ -113,10 +113,10 @@ export async function GetNetworkInfoAPIRequest(cmt: CoinMethodType) {
 //////////////////////////////
 // Is Ready
 export const IsReady = async () => {
-	const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/${coin_name_api}/api`, {
+	const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/${coin_name_lower}/api`, {
 		method: 'POST',
 		body: JSON.stringify({
-			coin_type: CoinType.reddcoin,
+			coin_type: CoinType.divi,
 			method_type: CoinMethodType.is_ready
 		})
 	});
@@ -148,10 +148,10 @@ export async function StartDaemonAPIRequest() {
 	is_ready_interval_id = setInterval(IsReady, 2000);
 	daemonRunningStatus.set(DaemonRunningStatusType.drst_starting);
 
-	const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/${coin_name_api}/api`, {
+	const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/${coin_name_lower}/api`, {
 		method: 'POST',
 		body: JSON.stringify({
-			coin_type: CoinType.reddcoin,
+			coin_type: CoinType.divi,
 			method_type: CoinMethodType.start_daemon
 		})
 	});
@@ -173,10 +173,10 @@ export async function StopDaemonAPIRequest() {
 	// Stop all timers
 	clearInterval(getnetworkinfo_interval_id);
 	clearInterval(getblockchaininfo_interval_id);
-	const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/${coin_name_api}/api`, {
+	const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/${coin_name_lower}/api`, {
 		method: 'POST',
 		body: JSON.stringify({
-			coin_type: CoinType.reddcoin,
+			coin_type: CoinType.divi,
 			method_type: CoinMethodType.stop_daemon
 		})
 	});

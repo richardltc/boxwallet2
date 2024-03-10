@@ -1,12 +1,11 @@
 <script lang="ts">
-	import { walletVersion } from '$lib/rdd/rdd_getnetworkinfo_store';
-	import { tweened } from 'svelte/motion';
+	// import { walletVersion } from '$lib/rdd/rdd_getnetworkinfo_store';
 
-	let wallet_version = 0;
+	export let wallet_version = 0;
 
-	const unsub_walletVersion = walletVersion.subscribe((value) => {
-		wallet_version = value;
-	});
+	//const unsub_walletVersion = walletVersion.subscribe((value) => {
+	//	wallet_version = value;
+	//});
 </script>
 
 <main>

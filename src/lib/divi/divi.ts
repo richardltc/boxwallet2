@@ -5,58 +5,60 @@ import type {
 	GetNetworkInfoResponse,
 	GetBlockchainInfoResponse,
 	GenericResponse
-} from '$lib/rdd/rdd_types';
+} from '$lib/divi/divi_types';
 import os from 'os';
 import { exec } from 'child_process';
 import type { ChildProcess } from 'child_process';
 import * as child_process from 'child_process';
 import path from 'path';
+import { error } from '@sveltejs/kit';
 import fs from 'fs';
 import { download_file } from '$lib/web_utils';
 import { copyFileSync, rmdirSync } from 'node:fs';
 import * as coin_utils from '$lib/coin_utils';
 
-const cli_file_lin = 'reddcoin-cli';
-// const cli_file_win = 'reddcoin-cli.exe';
-const daemon_file_lin = 'reddcoind';
-const daemon_file_win = 'reddcoind.exe';
+const cli_file_lin = 'divi-cli';
+const cli_file_win = 'divi-cli.exe';
+const daemon_file_lin = 'divid';
+const daemon_file_win = 'divid.exe';
 
-const coin_name = 'ReddCoin';
-// const coin_name_abbrev = 'RDD';
-const coin_core_version = '4.22.8';
+const coin_name = 'Divi';
+// const coin_name_abbrev = 'DIVI';
+const coin_core_version = '3.0.0';
 
-const download_file_arm32 = 'reddcoin-1d0e612e3f0c-arm-linux-gnueabihf.tar.gz';
-const download_file_arm64 = 'reddcoin-1d0e612e3f0c-aarch64-linux-gnu.tar.gz';
-const download_file_lin64 = 'reddcoin-1d0e612e3f0c-x86_64-linux-gnu.tar.gz';
+const download_file_arm32 = 'divi-3.0.0-RPi2-9e2f76c.tar.gz';
+// const download_file_arm64 = 'reddcoin-1d0e612e3f0c-aarch64-linux-gnu.tar.gz';
+const download_file_lin64 = 'divi-3.0.0-x86_64-linux-gnu-9e2f76c.tar.gz';
 // const download_file_win: string = 'reddcoin-' + coin_core_version + '-win64.zip';
 // const download_file_bs = 'blockchain-latest.zip';
 
 const download_url_lin64: string =
-	'https://download.reddcoin.com/bin/reddcoin-core-' + coin_core_version + '/x86_64-linux-gnu/';
+	// https://github.com/DiviProject/Divi/releases/download/v3.0.0/divi-3.0.0-x86_64-linux-gnu-9e2f76c.tar.gz
+	'https://github.com/DiviProject/Divi/releases/download/v' + coin_core_version + '/';
 const download_url_arm32: string =
-	'https://download.reddcoin.com/bin/reddcoin-core-' + coin_core_version + '/arm-linux-gnueabihf/';
-const download_url_arm64: string =
-	'https://download.reddcoin.com/bin/reddcoin-core-' + coin_core_version + '/aarch64-linux-gnu/';
+	'https://github.com/DiviProject/Divi/releases/download/v' + coin_core_version + '/';
+// const download_url_arm64: string =
+// 	'https://github.com/DiviProject/Divi/releases/download/v';
 
-const download_url_bs = 'https://download.reddcoin.com/bin/bootstrap/';
+// const download_url_bs = 'https://download.reddcoin.com/bin/bootstrap/';
 
-const extracted_dir_lin = 'reddcoin-1d0e612e3f0c';
-const extracted_dir_win = 'reddcoin-' + coin_core_version + '\\';
+const extracted_dir_lin = 'divi-3.0.0';
+const extracted_dir_win = 'divi-3.0.0';
 
 const home_dir = os.homedir();
 const home_dir_boxwallet = '.boxwallet';
-const home_dir_lin = '.reddcoin';
-const home_dir_win = 'REDDCOIN';
+const home_dir_lin = '.divi';
+const home_dir_win = 'DIVI';
 
 // const min_tx_fee = 0.004;
 
-const conf_file = 'reddcoin.conf';
-const rpc_user = 'reddcoinrpc';
+const conf_file = 'divi.conf';
+const rpc_user = 'divirpc';
 const rpc_port = '45443';
 
-const tip_address = 'RtH6nZvmnstUsy5w5cmdwTrarbTPm6zyrC';
+const tip_address = 'DM5XJbB6kpyDXpbnYcb1ZidrNpubf2gmSN';
 
-class ReddCoin {
+class Divi {
 	private conf_file: string;
 
 	public coin_name = coin_name;
@@ -93,7 +95,7 @@ class ReddCoin {
 	}
 
 	public static async getInstance(confFile: string) {
-		const instance = new ReddCoin(confFile);
+		const instance = new Divi(confFile);
 		await instance.initialize();
 		return instance;
 	}
@@ -242,7 +244,7 @@ class ReddCoin {
 			.catch((error) => {
 				console.error('Error downloading file:', error);
 			});
-		// un-compress a file
+		// un-compress the file
 		await compressing.tgz
 			.uncompress(
 				path.join(home_dir, home_dir_boxwallet, dl_file),
@@ -468,7 +470,6 @@ class ReddCoin {
 	}
 
 	public async WalletUnlockFS(pw: string): Promise<GenericResponse> {
-		console.log(`RDD: password received: ${pw}`);
 		const body = `{"jsonrpc":"1.0","id":"curltext","method":"walletpassphrase","params":["${pw}",999999,true]}`;
 		console.log(`body: ${body}`);
 		const url = `http://${this.ip_address}:${this.rpc_port}`;
@@ -536,4 +537,4 @@ class ReddCoin {
 	}
 }
 
-export default ReddCoin;
+export default Divi;

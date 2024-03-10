@@ -9,23 +9,23 @@ export function PopulateConfFile(
 	rpcPortCoin: string
 ): { rpcUser: string; rpcPassword: string } | Error {
 	try {
-		console.log(`Populating conf file if required...`);
+		console.log(`${new Date().toISOString()} Populating conf file if required...`);
 		// Create home directory if it doesn't exist
 		fs.mkdirSync(homeDir, { recursive: true });
 
 		const fullConfFilePath = path.join(homeDir, confFile);
 
-		// Read existing configuration, if any
+		// Read existing configuration, if any.
 		const existingConfig = fs.existsSync(fullConfFilePath)
 			? fs.readFileSync(fullConfFilePath, 'utf-8').trim()
 			: '';
 
 		let rpc_pw = getConfigValue(existingConfig, 'rpcpassword');
 		if (rpc_pw == '' || rpc_pw === undefined) {
-			console.log('Password is blank so generating...');
+			console.log(`${new Date().toISOString()} Password is blank so generating...`);
 			rpc_pw = generateRandomPassword();
 		} else {
-			console.log('Password already exists');
+			console.log(`${new Date().toISOString()} Password already exists`);
 		}
 		// Construct updated configuration with necessary properties
 		const updatedConfig = [

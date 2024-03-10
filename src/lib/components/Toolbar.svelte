@@ -16,9 +16,12 @@
 	import { walletConnections, walletUnlockedUntil, walletVersion } from '$lib/rdd/rdd_getnetworkinfo_store';
 	import type { GetBlockchainInfoResponse, GetNetworkInfoResponse } from '$lib/rdd/rdd_types';
 	import { blocks, difficulty, headers, verificationProgress } from '$lib/rdd/rdd_getblockchaininfo_store';
-	import * as rdd_client from '$lib/rdd/rdd_client';
+	import type { CoinData, CoinClientAdapter } from '$lib/coin_types';
 
+	// export let coinData: CoinData;
+	export let clientAdapter: CoinClientAdapter
 	export let coin_name: string;
+	export let coin_name_api: string;
 
 	const modalStore = getModalStore();
 	const toastStore = getToastStore();
@@ -93,10 +96,10 @@
 		disable_download_button = true;
 		isWorking.set(true);
 		coreFileStatus.set(CoreFileStatusType.cfst_downloading);
-		const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/reddcoin/api`, {
+		const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/${coin_name_api}/api`, {
 			method: 'POST',
 			body: JSON.stringify({
-				coin_type: CoinType.reddcoin,
+				// coin_type: CoinType.reddcoin,
 				method_type: CoinMethodType.download_core_files
 			})
 		});
@@ -117,6 +120,13 @@
 			coreFileStatus.set(CoreFileStatusType.cfst_installed);
 		}
 	}
+
+	async function startDaemon() {
+		await clientAdapter.startDaemon();
+	}
+	async function stopDaemon() {
+		await clientAdapter.stopDaemon();
+	}
 </script>
 
 <div
@@ -129,7 +139,7 @@
 				class="item"
 				aria-label="upgrade"
 				disabled={disable_download_button}
-				title="Upgrade core wallet files"
+				title='Upgrade {coin_name} core wallet files'
 				on:click={() => downloadCoreFilesAPIRequest()}
 				use:melt={$button}
 			>
@@ -140,7 +150,7 @@
 				class="item"
 				disabled={disable_download_button}
 				aria-label="download"
-				title="Download core wallet files"
+				title='Download {coin_name} core wallet files'
 				on:click={() => downloadCoreFilesAPIRequest()}
 				use:melt={$button}
 			>
@@ -153,7 +163,7 @@
 				disabled={false}
 				aria-label="start"
 				title="Start {coin_name} wallet"
-				on:click={() => rdd_client.StartWalletAPIRequest()}
+				on:click={() => startDaemon()}
 				use:melt={$button}
 			>
 				<Play class="square-5" />
@@ -164,7 +174,7 @@
 				disabled={true}
 				aria-label="start"
 				title="Start {coin_name} wallet"
-				on:click={() => rdd_client.StartWalletAPIRequest()}
+				on:click={() => startDaemon()}
 				use:melt={$button}
 			>
 				<Play class="square-5" />
@@ -175,7 +185,7 @@
 			class="item"
 			disabled={false}
 			aria-label="stop"
-			on:click={() => rdd_client.StopWalletAPIRequest()}
+			on:click={() => stopDaemon()}
 			title="Stop {coin_name} wallet"
 			use:melt={$button}
 		>
@@ -186,7 +196,7 @@
 				class="item"
 				disabled={true}
 				aria-label="stop"
-				on:click={() => rdd_client.StopWalletAPIRequest()}
+				on:click={() => stopDaemon()}
 				title="Stop {coin_name} wallet"
 				use:melt={$button}
 			>

@@ -8,24 +8,38 @@
 	import CoinStatus from '$lib/CoinStatus.svelte';
 	import { PUBLIC_HOST_IP } from '$env/static/public';
 	import { onMount } from 'svelte';
-	import * as rdd_client from '$lib/rdd/rdd_client';
-	import type { GenericResponse, GetBlockchainInfoResponse, GetNetworkInfoResponse } from '$lib/rdd/rdd_types.js';
+	import * as divi_client from '$lib/divi/divi_client';
+	import type { GenericResponse, GetBlockchainInfoResponse, GetNetworkInfoResponse } from '$lib/divi/divi_types.js';
 	import { blocks, difficulty, headers } from '$lib/rdd/rdd_getblockchaininfo_store';
 	import { coreFileStatus, daemonRunningStatus } from '$lib/bw_store';
-	import { walletConnections, walletUnlockedUntil, walletVersion } from '$lib/rdd/rdd_getnetworkinfo_store';
+	// import { walletConnections, walletUnlockedUntil, walletVersion } from '$lib/rdd/rdd_getnetworkinfo_store';
 	import type { ModalSettings, ToastSettings } from '@skeletonlabs/skeleton';
 	import { getModalStore, getToastStore } from '@skeletonlabs/skeleton';
 	import BlockchainInfo from '$lib/BlockchainInfo.svelte';
 	import Toolbar from '$lib/components/Toolbar.svelte';
 	import WalletVersion from '$lib/components/WalletVersion.svelte';
-	import {RDDClientAdapter} from '$lib/rdd/rdd_client_adapter'
+	import {DIVIClientAdapter} from '$lib/divi/divi_client_adapter'
 	import type { CoinClientAdapter } from '$lib/coin_types';
+	import { walletVersion } from '$lib/divi/divi_getnetworkinfo_store';
+	import { tweened } from 'svelte/motion';
 
-	const coinClientAdapter = new RDDClientAdapter;
-	const coin_name = 'ReddCoin';
-	const coin_name_api = 'reddcoin';
-	const coin_subtitle = 'The social currency'
-	const coin_description = 'With over 60,000 users in 50+ countries, Redd allows you to share, tip, and donate to anyone, anywhere.'
+	let coin_version = 0;
+
+	const unsub_walletVersion = walletVersion.subscribe((value) => {
+		coin_version = value;
+	});
+
+
+	const coinClientAdapter = new DIVIClientAdapter;
+
+
+	const coin_logo = '../divi_logo.png';
+	const coin_alt_logo = '../divi_logo';
+	const coin_name = 'Divi';
+	const coin_name_api = 'divi';
+	const coin_subtitle = 'Crypto Made Easy'
+	const coin_description = 'The foundation for a truly decentralized future. Our rapidly changing world requires flexible financial products. Through our innovative technology, we’re building the future of finance.'
+
 	const modalStore = getModalStore();
 	const toastStore = getToastStore();
 	// const modal: ModalSettings = {
@@ -62,7 +76,7 @@
 			modalStore.trigger(modal);
 		});
 
-		// Proceed with actions based on the response.
+		// Proceed with actions based on the response
 		if (password) {
 			console.log(`password sent: ${password}`);
 			const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/reddcoin/api`, {
@@ -131,17 +145,18 @@
 		// 	await rdd_client.IsReady();
 		// }, 10000);
 
-		await rdd_client.GetCoreStatusAPIRequest(CoinMethodType.get_core_status);
-	  await rdd_client.IsReady();
+		await divi_client.GetCoreStatusAPIRequest(CoinMethodType.get_core_status);
+	  await divi_client.IsReady();
 	});
 
 </script>
 
 <div class="container mx-auto p-8 space-y-4">
 	<div class="flex flex-wrap items-center sm:space-x-5">
-		<img src="../rdd_logo.png" alt="rdd_logo" class="mr-3 h-20" />
+		<img src="{coin_logo}" alt="{coin_alt_logo}" class="mr-3 h-20" />
 		<div>
-		<h1 class="h1 pt-3 sm:pt-0">{coin_name} <span class="text-base inline-block"><WalletVersion/></span></h1>
+		<h1 class="h1 pt-3 sm:pt-0">{coin_name} <span class="text-base inline-block">
+			<WalletVersion wallet_version={coin_version}/></span></h1>
 		<h2 class="h2">{coin_subtitle}</h2>
 		</div>
 	</div>

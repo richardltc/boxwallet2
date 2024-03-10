@@ -3,21 +3,21 @@ import type { ApiRequest, BWAPIResponse } from '$lib/bw_types';
 import { CoinMethodType, CoinType } from '$lib/bw_types';
 import { download_file } from '$lib/web_utils';
 import * as os from 'os';
-import ReddCoin from '$lib/rdd/rdd';
+import Divi from '$lib/divi/divi';
 import type {
 	GetBlockchainInfoResponse,
 	GetNetworkInfoResponse,
 	GenericResponse
-} from '$lib/rdd/rdd_types';
+} from '$lib/divi/divi_types';
 import path from 'path';
 
 const home_dir_boxwallet = '.boxwallet';
-const home_dir_coin_lin = '.reddcoin';
-const home_dir_coin_win = 'REDDCOIN';
-const conf_file = 'reddcoin.conf';
+const home_dir_coin_lin = '.divi';
+const home_dir_coin_win = 'DIVI';
+const conf_file = 'divi.conf';
 
 const coin_conf_file = path.join(os.homedir(), home_dir_coin_lin, conf_file);
-const coin = await ReddCoin.getInstance(coin_conf_file);
+const coin = await Divi.getInstance(coin_conf_file);
 
 export async function POST({ request }: RequestEvent) {
 	const data_object: any = await request.json();
@@ -38,8 +38,10 @@ export async function POST({ request }: RequestEvent) {
 	let wallet_exists: boolean;
 	let generic_api_response: GenericResponse;
 
+	// Wait for the asynchronous initialization to complete
+
 	switch (method_type) {
-		/////////////////////////////
+		//////////////////////////////
 		// CORE_FILES_EXIST
 		case CoinMethodType.core_files_exist: {
 			// Check that core files exist
@@ -51,6 +53,7 @@ export async function POST({ request }: RequestEvent) {
 				method_type: CoinMethodType.core_files_exist
 			};
 
+			console.log('Talking to Go app');
 			const api_response = await fetch('http://127.0.0.1:3000/api/v1/coin', {
 				method: 'POST',
 				body: JSON.stringify(api_request)
@@ -102,15 +105,9 @@ export async function POST({ request }: RequestEvent) {
 			is_ready = await coin.CoinDaemonIsReady();
 			is_running = await coin.CoinDaemonIsRunning();
 			if (is_ready) {
-				console.log(`${coin.coin_name} Daemon is ready`);
-				wallet_exists = await coin.WalletExists('main');
-				if (wallet_exists) {
-					console.log('main wallet exists');
-				} else {
-					console.log('main wallet does not exist');
-				}
+				console.log(`${coin.coin_name} daemon is ready`);
 			} else {
-				console.log(`${coin.coin_name} Daemon is not ready`);
+				console.log(`${coin.coin_name} daemon is not ready`);
 			}
 			bw_api_response.core_files_exists = core_files_exist;
 			bw_api_response.is_ready = is_ready;
@@ -126,13 +123,12 @@ export async function POST({ request }: RequestEvent) {
 			is_ready = await coin.CoinDaemonIsReady();
 			is_running = await coin.CoinDaemonIsRunning();
 			if (is_ready) {
-				console.log(`${coin.coin_name} Daemon is ready`);
+				console.log(`${coin.coin_name} daemon is ready`);
 			} else {
-				console.log(`${coin.coin_name} Saemon is not ready`);
+				console.log(`${coin.coin_name} daemon is not ready`);
 			}
 			bw_api_response.is_ready = is_ready;
 			bw_api_response.is_running = is_running;
-			// console.log(`Returning ${JSON.stringify(bw_api_response)})...`);
 			return new Response(JSON.stringify(bw_api_response));
 
 		//////////////////////////////
@@ -142,9 +138,9 @@ export async function POST({ request }: RequestEvent) {
 			console.log(`Checking if ${coin.coin_name} Daemon is running...`);
 			is_running = await coin.CoinDaemonIsRunning();
 			if (is_running) {
-				console.log(`${coin.coin_name} Daemon is running`);
+				console.log(`${coin.coin_name} daemon is running`);
 			} else {
-				console.log(`${coin.coin_name} Daemon is not running`);
+				console.log(`${coin.coin_name} daemon is not running`);
 			}
 			bw_api_response.is_running = is_running;
 			// console.log(`Returning ${JSON.stringify(bw_api_response)})...`);
@@ -154,9 +150,8 @@ export async function POST({ request }: RequestEvent) {
 		// START
 		case CoinMethodType.start_daemon:
 			// start the Daemon
-			console.log(`Attempting to  start ${coin.coin_name} Daemon...`);
 			await coin.StartDaemon();
-			console.log(`${coin.coin_name} daemon is starting...`);
+			console.log(`${coin.coin_name} Daemon is starting...`);
 			bw_api_response.is_running = false;
 			return new Response(JSON.stringify(bw_api_response));
 
