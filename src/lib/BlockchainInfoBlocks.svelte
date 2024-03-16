@@ -1,26 +1,28 @@
 <script lang="ts">
-	import { blocks } from '$lib/rdd/rdd_getblockchaininfo_store.js';
+	import { cubicInOut, cubicOut } from 'svelte/easing';
 	import { tweened } from 'svelte/motion';
 
-	let blocks_height = tweened(0, {
-		duration: 5000,
-		easing: cubicOut
-	});
-	import { cubicOut } from 'svelte/easing';
+	export let blocks_height = 0;
 
-	const unsub_blocks = blocks.subscribe((value) => {
-		$blocks_height = value;
+	let tweened_blocks_height = tweened(blocks_height, {
+		duration: 7500,
+		easing: cubicInOut
 	});
+
+	$: {
+		tweened_blocks_height.set(blocks_height);
+	}
+
 </script>
 
 <main>
 <!--	<figure class="bg-opacity-90 rounded-xl p-2 dark:bg-opacity-90">-->
 	<figure class="p-2 pr-10">
 		<div class="label">
-			{#if $blocks_height === 0}
+			{#if blocks_height === 0}
 				Blocks: <div class="blocks">...</div>
 			{:else}
-				Blocks: <div class="blocks">{Math.round($blocks_height).toLocaleString()}</div>
+				Blocks: <div class="blocks">{Math.round($tweened_blocks_height).toLocaleString()}</div>
 			{/if}
 		</div>
 	</figure>
