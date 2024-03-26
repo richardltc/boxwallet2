@@ -28,6 +28,9 @@ export default {
 					'100': '#00aeef',
 					'200': '#fdbb30',
 					'300': '#e31b23'
+				},
+				box_wallet: {
+					'100': '#7ca071'
 				}
 			},
 			fontFamily: {
