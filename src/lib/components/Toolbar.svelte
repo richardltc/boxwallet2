@@ -247,7 +247,7 @@
 			/*color: theme('colors.neutral.600'); !* Adjust text color for better contrast *!*/
 		}
 		&:focus {
-			@apply ring-2 ring-green-400;
+			@apply ring-2 ring-box_wallet-100;
 		}
 	}
 
