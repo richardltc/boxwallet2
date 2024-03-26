@@ -18,7 +18,7 @@ import {
 	headers,
 	verificationProgress
 } from '$lib/divi/divi_getblockchaininfo_store';
-import { coreFileStatus, daemonRunningStatus, isWorking } from '$lib/bw_store';
+import { coreFileStatus, daemonRunningStatus } from '$lib/divi/divi_core_status_store';
 // import { getModalStore, getToastStore, type ToastSettings } from '@skeletonlabs/skeleton';
 
 let bw_api_response: BWAPIResponse;
@@ -74,7 +74,7 @@ export async function GetCoreStatusAPIRequest(cmt: CoinMethodType) {
 		daemonRunningStatus.set(DaemonRunningStatusType.drst_running);
 	}
 	if (bw_api_response.core_files_exists) {
-		// core_files_downloaded = true;
+		console.log('core files exist...');
 		coreFileStatus.set(CoreFileStatusType.cfst_installed);
 	}
 	// console.log('Running isReady...');
@@ -129,7 +129,7 @@ export const IsReady = async () => {
 	daemon_is_ready = bw_api_response.is_ready;
 	daemon_is_running = bw_api_response.is_running;
 	if (bw_api_response.is_ready === true) {
-		isWorking.set(false);
+		// isWorking.set(false);
 		daemonRunningStatus.set(DaemonRunningStatusType.drst_running);
 		// walletRunningStatus.set(WalletRunningStatusType.wrst_stopped);
 		clearInterval(is_ready_interval_id);
@@ -146,7 +146,7 @@ export const IsReady = async () => {
 /////////////////////////////////
 // Start Daemon
 export async function StartDaemonAPIRequest() {
-	isWorking.set(true);
+	// isWorking.set(true);
 	is_ready_interval_id = setInterval(IsReady, 2000);
 	daemonRunningStatus.set(DaemonRunningStatusType.drst_starting);
 

@@ -1,22 +1,25 @@
+<!-- PasswordPromptModal.svelte -->
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { getModalStore, type ModalSettings } from '@skeletonlabs/skeleton';
-
-	export let resolveFunction: (value: string) => void;
 	const modalStore = getModalStore();
 
+	export let response: (value: string) => void;
 
 	const modal: ModalSettings = {
-		type: 'confirm',
-		title: 'Enter password to unlock wallet',
-		body: 'Enter password?',
+		type: 'prompt',
+		title: 'Enter Password',
+		body: 'Provide your password in the field below.',
+		value: 'Skeleton',
+		valueAttr: { type: 'text', minlength: 3, maxlength: 10, required: true },
 		response: (r: string) => {
-			resolveFunction(r);
+			response(r);
 		},
 	};
 
 	onMount(() => {
-		// Assuming modalStore is your store for managing modals
+		// Assuming modalStore is your store for managing modals.
 		modalStore.trigger(modal);
 	});
 </script>
+

@@ -1,18 +1,26 @@
 <script lang="ts">
 	import { CoreFileStatusType, DaemonRunningStatusType, IconStatusType } from '$lib/bw_types';
-	import { coreFileStatus, daemonRunningStatus, isWorking } from '$lib/bw_store';
+	import { isWorking } from '$lib/bw_store';
 	import { verificationProgress } from '$lib/rdd/rdd_getblockchaininfo_store';
 	import { walletUnlockedUntil, walletConnections } from '$lib/rdd/rdd_getnetworkinfo_store';
 
 	export let block_height: number;
-	export let core_file_status: CoreFileStatusType;
+	export let coin_colour_primary: string;
+	export let coin_colour_secondary: string;
+	export let coin_colour_thirdly: string;
+	export let coin_colour_fourthly: string;
+	export let core_files_status: CoreFileStatusType;
   export let daemon_running_status: DaemonRunningStatusType
 	export let wallet_connections: number;
 	export let wallet_verification_progress: number;
 
+	console.log(`coin_colour_primary = ${coin_colour_primary}`)
+	import { setContext } from 'svelte';
+
+	setContext('--coin-colour-primary', coin_colour_primary); // Set the context with the coinColor prop
+
 	// let daemon_running_status: DaemonRunningStatusType;
 	// export let wallet_offline = true;
-	let icon_is_ready_title = '';
 	let icon_wallet_connections_class = '';
 	let icon_wallet_connections_title = '';
 	let icon_wallet_security_class = '';
@@ -83,42 +91,27 @@
 	//     return `${sProg}%`;
 	// }
 
-	// if (is_working) {
-	//     icon_is_working_class = "fa-solid fa-cog fa-spin fa-2x";
-	//     icon_is_working_title = "Working..."
-	// } else {
-	//     icon_is_working_class = "fa-solid fa-cog fa-2x fa-spin-stop"
-	//     icon_is_working_title = "Idle"
-	// }
-	// if (core_files_downloaded) {
-	// 	icon_core_files_downloaded_class = 'fa-solid fa-download fa-2x';
-	// 	icon_core_files_downloaded_title = 'Core files have been downloaded';
-	// } else {
-	// 	icon_core_files_downloaded_class = 'fa-solid fa-download fa-2x disabled-icon';
-	// 	icon_core_files_downloaded_title = 'Core files need to be downloaded';
-	// }
-	// }
 </script>
 
 <main>
 	<div class="flex flex-wrap -mx-2 items-start">
 		<!--		Working-->
 		{#if (daemon_running_status === DaemonRunningStatusType.drst_starting) ||
-		(core_file_status === CoreFileStatusType.cfst_downloading) ||
+		(core_files_status === CoreFileStatusType.cfst_downloading) ||
 			((daemon_running_status === DaemonRunningStatusType.drst_running) && (wallet_connections < 1))}
 			<div class="px-2 py-2">
-				<span title="Working..."><i class="fa-solid fa-cog fa-spin fa-2x animate-spin duration-300" /></span>
+				<span title="Working..."><i class={`fa-solid fa-cog fa-spin fa-2x animate-spin duration-300`} style="{`color: ${coin_colour_primary}`}" /></span>
 			</div>
 		{:else}
 			<div class="px-2 py-2">
-				<span title="Idle"><i class="fa-solid fa-cog fa-2x fa-spin-stop" /></span>
+				<span title="Idle"><i class={`fa-solid fa-cog fa-2x fa-spin-stop`} style="{`color: ${coin_colour_primary}`}" /></span>
 			</div>
 		{/if}
 
 		<!--		Core file status-->
-		{#if core_file_status === CoreFileStatusType.cfst_installed}
+		{#if core_files_status === CoreFileStatusType.cfst_installed}
 			<div class="px-2 py-2">
-				<span title="Core files have been downloaded"><i class="fa-solid fa-download fa-2x" /></span
+				<span title="Core files have been downloaded"><i class={`fa-solid fa-download fa-2x`} style="{`color: ${coin_colour_secondary}`}" /></span
 				>
 			</div>
 		{:else}
@@ -132,7 +125,7 @@
 		<!--		Daemon is running-->
 		{#if daemon_running_status === DaemonRunningStatusType.drst_running}
 			<div class="px-2 py-2">
-				<span title="Core wallet is ready."><i class="fa-solid fa-face-smile fa-2x" /></span>
+				<span title="Core wallet is ready."><i class={`fa-solid fa-face-smile fa-2x`} style="{`color: ${coin_colour_thirdly}`}" /></span>
 			</div>
 		{:else}
 			<div class="px-2 py-2">
@@ -146,7 +139,7 @@
 		{#if wallet_connections > 0}
 			<div class="px-2 py-2">
 				<span title="{wallet_connections} connections"
-					><i class="fa-solid fa-network-wired fa-2x" /></span
+					><i class={`fa-solid fa-network-wired fa-2x`} style="{`color: ${coin_colour_fourthly}`}" /></span
 				>
 			</div>
 		{:else}
@@ -159,14 +152,14 @@
 
 		{#if (wallet_verification_progress < 0.99999) && (wallet_connections > 0)}
 			<div class="px-2 py-2">
-				<span title="Blockchain is syncing... Blocks: {Math.round(block_height).toLocaleString()}"
-					><i class="fa-solid fa-rotate fa-2x fa-spin" /></span
+				<span title="Wallet verification: ${wallet_verification_progress} Blockchain is syncing... Blocks: {Math.round(block_height).toLocaleString()}"
+					><i class={`fa-solid fa-rotate fa-2x fa-spin text-[${coin_colour_primary}]`} /></span
 				>
 			</div>
 		{:else if wallet_connections > 0}
 			<div class="px-2 py-2">
 				<span title="Blockchain is synced. Blocks: {Math.round(block_height).toLocaleString()}"
-					><i class="fa-solid fa-rotate fa-2x fa-spin-stop" /></span
+					><i class={`fa-solid fa-rotate fa-2x fa-spin-stop text-[${coin_colour_primary}]`} /></span
 				>
 			</div>
 		{:else}

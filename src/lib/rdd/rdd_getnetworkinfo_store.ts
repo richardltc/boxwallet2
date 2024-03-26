@@ -1,6 +1,6 @@
 import { writable } from 'svelte/store';
 
-// From GetNetworkInfo API
+// From GetNetworkInfo API.
 export const walletConnections = writable(0);
 export const walletUnlockedUntil = writable(-5);
-export const walletVersion = writable(0);
+export const coinWalletVersion = writable(0);

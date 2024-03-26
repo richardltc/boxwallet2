@@ -8,10 +8,7 @@ export default {
 	content: [
 		'./src/**/*.{html,js,svelte,ts}',
 		// 3. Append the path to the Skeleton package
-		join(require.resolve(
-				'@skeletonlabs/skeleton'),
-			'../**/*.{html,js,svelte,ts}'
-		)
+		join(require.resolve('@skeletonlabs/skeleton'), '../**/*.{html,js,svelte,ts}')
 	],
 
 	theme: {
@@ -24,18 +21,13 @@ export default {
 		},
 		extend: {
 			colors: {
-				magnum: {
-					'50': '#fff9ed',
-					'100': '#fef2d6',
-					'200': '#fce0ac',
-					'300': '#f9c978',
-					'400': '#f7b155',
-					'500': '#f38d1c',
-					'600': '#e47312',
-					'700': '#bd5711',
-					'800': '#964516',
-					'900': '#793a15',
-					'950': '#411c09'
+				divi: {
+					'100': '#ed2c57'
+				},
+				rdd: {
+					'100': '#00aeef',
+					'200': '#fdbb30',
+					'300': '#e31b23'
 				}
 			},
 			fontFamily: {

@@ -41,7 +41,7 @@ export async function POST({ request }: RequestEvent) {
 	// Wait for the asynchronous initialization to complete
 
 	switch (method_type) {
-		//////////////////////////////
+		/////////////////////////////
 		// CORE_FILES_EXIST
 		case CoinMethodType.core_files_exist: {
 			// Check that core files exist
@@ -112,7 +112,7 @@ export async function POST({ request }: RequestEvent) {
 			bw_api_response.core_files_exists = core_files_exist;
 			bw_api_response.is_ready = is_ready;
 			bw_api_response.is_running = is_running;
-			// console.log(`Returning ${JSON.stringify(bw_api_response)})...`);
+			console.log(`Returning ${JSON.stringify(bw_api_response)})...`);
 			return new Response(JSON.stringify(bw_api_response));
 
 		//////////////////////////////

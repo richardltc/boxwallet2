@@ -154,7 +154,7 @@ class Divi {
 
 				exec(command, (error, stdout, stderr) => {
 					if (error && stderr && !stderr.includes('grep:')) {
-						// Ignore the error if the command did not find any matching processes
+						// Ignore the error if the command did not find any matching processes.
 						resolve(false);
 					} else {
 						resolve(stdout.toLowerCase().includes(daemon_file_lin.toLowerCase()));
@@ -168,6 +168,7 @@ class Divi {
 	}
 
 	public async CoreFilesExist(): Promise<boolean> {
+		console.log('Hitting CoreFilesExist in server.ts ');
 		if (process.platform === 'win32') {
 			throw new Error('Not currently implemented for Windows');
 			// For Windows

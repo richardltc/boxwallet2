@@ -11,7 +11,7 @@
 	import * as divi_client from '$lib/divi/divi_client';
 	import type { GenericResponse, GetBlockchainInfoResponse, GetNetworkInfoResponse } from '$lib/divi/divi_types.js';
 	import { verificationProgress, blocks, difficulty, headers } from '$lib/divi/divi_getblockchaininfo_store';
-	import { coreFileStatus, daemonRunningStatus } from '$lib/bw_store';
+	import { coreFileStatus, daemonRunningStatus } from '$lib/divi/divi_core_status_store';
 	// import { walletConnections, walletUnlockedUntil, walletVersion } from '$lib/divi/divi_getnetworkinfo_store';
 	import type { ModalSettings, ToastSettings } from '@skeletonlabs/skeleton';
 	import { getModalStore, getToastStore } from '@skeletonlabs/skeleton';
@@ -24,7 +24,7 @@
 
 	let blocks_height = 0;
 	let coin_wallet_version = 0;
-	let core_file_status: CoreFileStatusType;
+	let core_files_status: CoreFileStatusType;
 	let daemon_running_status: DaemonRunningStatusType;
 	let difficulty_value =0;
 	let headers_height = 0;
@@ -38,7 +38,7 @@
 		coin_wallet_version = value;
 	});
 	const unsub_coreFileStatus = coreFileStatus.subscribe((value) => {
-		core_file_status = value;
+		core_files_status = value;
 	});
 	const unsub_daemonRunningStatus = daemonRunningStatus.subscribe((value) => {
 		daemon_running_status = value;
@@ -58,6 +58,10 @@
 
 	const coinClientAdapter = new DIVIClientAdapter;
 
+	const coin_colour_primary = '#ed2c57';
+	const coin_colour_secondary = '#ed2c57';
+	const coin_colour_thirdly = '#ed2c57';
+	const coin_colour_forthly = '#ed2c57';
 
 	const coin_logo = '../divi_logo.png';
 	const coin_alt_logo = '../divi_logo';
@@ -129,7 +133,6 @@
 		}
 	}
 
-	let bw_api_response: BWAPIResponse;
 	let coin_get_blockchain_info: GetBlockchainInfoResponse;
 	let coin_get_network_info_response: GetNetworkInfoResponse;
 	// let coin_api_response: CoinAPIResponse;
@@ -165,28 +168,39 @@
 
 <div class="container mx-auto p-8 space-y-4">
 	<div class="flex flex-wrap items-center sm:space-x-5">
-		<img src="{coin_logo}" alt="{coin_alt_logo}" class="mr-3 h-20" />
-		<div>
-		<h1 class="h1 pt-3 sm:pt-0">{coin_name} <span class="text-base inline-block">
-			<WalletVersion wallet_version={coin_wallet_version}/></span></h1>
-		<h2 class="h2">{coin_subtitle}</h2>
+		<div class="flex items-center flex-grow">
+			<img src="{coin_logo}" alt="{coin_alt_logo}" class="mr-3 h-20" />
+			<div>
+				<h1 class="h1 pt-3 sm:pt-0">{coin_name} <span class="text-base inline-block">
+        <WalletVersion wallet_version={coin_wallet_version}/></span></h1>
+				<h2 class="h2">{coin_subtitle}</h2>
+			</div>
+		</div>
+		<div class="ml-auto">
+			<CoinStatus
+				coin_colour_primary={coin_colour_primary}
+				coin_colour_secondary={coin_colour_secondary}
+				coin_colour_thirdly={coin_colour_thirdly}
+				coin_colour_forthly={coin_colour_forthly}
+				core_files_status={core_files_status}
+				block_height={blocks_height}
+				daemon_running_status={daemon_running_status}
+				wallet_verification_progress={verification_progress}
+				wallet_connections={wallet_connections}
+			/>
 		</div>
 	</div>
 	<p>
 		{coin_description}
 	</p>
 	<section>
-		<CoinStatus
-			core_file_status={core_file_status}
-			block_height={blocks_height}
-			daemon_running_status={daemon_running_status}
-			wallet_verification_progress={verification_progress}
-			wallet_connections={wallet_connections}
-		/>
+
 		<Toolbar
 			clientAdapter={coinClientAdapter}
 			coin_name={coin_name}
 			coin_name_api={coin_name_api}
+			bind:core_files_status={core_files_status}
+			daemon_running_status={daemon_running_status}
 		/>
 	</section>
 <!--	<section>-->

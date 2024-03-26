@@ -10,7 +10,7 @@ import {
 import {
 	walletConnections,
 	walletUnlockedUntil,
-	walletVersion
+	coinWalletVersion
 } from '$lib/rdd/rdd_getnetworkinfo_store';
 import {
 	blocks,
@@ -18,7 +18,7 @@ import {
 	headers,
 	verificationProgress
 } from '$lib/rdd/rdd_getblockchaininfo_store';
-import { coreFileStatus, daemonRunningStatus, isWorking } from '$lib/bw_store';
+import { coreFileStatus, daemonRunningStatus } from '$lib/rdd/rdd_core_status_store';
 // import { getModalStore, getToastStore, type ToastSettings } from '@skeletonlabs/skeleton';
 
 let bw_api_response: BWAPIResponse;
@@ -56,6 +56,9 @@ export async function GetBlockchainInfoAPIRequest(cmt: CoinMethodType) {
 	// walletUnlockedUntil.set(coin_get_blockchain_info)
 
 	verificationProgress.set(coin_get_blockchain_info.result.verificationprogress);
+	console.log(
+		`verification progress in rdd_client.ts ${coin_get_blockchain_info.result.verificationprogress}`
+	);
 }
 
 export async function GetCoreStatusAPIRequest(cmt: CoinMethodType) {
@@ -95,7 +98,7 @@ export async function GetNetworkInfoAPIRequest(cmt: CoinMethodType) {
 	const json_result = JSON.stringify(coin_get_network_info_response);
 	console.log(`doPost json response: ${json_result}`);
 	walletConnections.set(coin_get_network_info_response.result.connections);
-	walletVersion.set(coin_get_network_info_response.result.version);
+	coinWalletVersion.set(coin_get_network_info_response.result.version);
 	// wallet_unlocked_until = coin_get_network_info_response.result.unlocked_until;
 	// walletUnlockedUntil.set(coin_get_network_info_response.result.unlocked_until);
 	if (coin_get_network_info_response.result.connections > 0) {
@@ -127,7 +130,7 @@ export const IsReady = async () => {
 	daemon_is_ready = bw_api_response.is_ready;
 	daemon_is_running = bw_api_response.is_running;
 	if (bw_api_response.is_ready === true) {
-		isWorking.set(false);
+		// isWorking.set(false);
 		daemonRunningStatus.set(DaemonRunningStatusType.drst_running);
 		// walletRunningStatus.set(WalletRunningStatusType.wrst_stopped);
 		clearInterval(is_ready_interval_id);
@@ -144,7 +147,7 @@ export const IsReady = async () => {
 /////////////////////////////////
 // Start Daemon
 export async function StartDaemonAPIRequest() {
-	isWorking.set(true);
+	// isWorking.set(true);
 	is_ready_interval_id = setInterval(IsReady, 2000);
 	daemonRunningStatus.set(DaemonRunningStatusType.drst_starting);
 
@@ -160,11 +163,6 @@ export async function StartDaemonAPIRequest() {
 	const json_result = JSON.stringify(bw_api_response);
 	console.log(`doPost json response: ${json_result}`);
 	console.log(`doPost is_running response: ${bw_api_response.is_running}`);
-	// daemon_is_ready = bw_api_response.is_ready;
-	// daemon_is_running = bw_api_response.is_running;
-	// if (bw_api_response.core_files_exists) {
-	// 	core_files_downloaded = true;
-	// }
 }
 
 /////////////////////////////////

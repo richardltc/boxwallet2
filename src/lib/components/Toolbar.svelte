@@ -3,7 +3,7 @@
 
 	// Icons
 	import { Download, Play, StopCircle, Unlock } from 'lucide-svelte';
-	import { coreFileStatus, daemonRunningStatus, isWorking } from '$lib/bw_store';
+	import { isWorking } from '$lib/bw_store';
 	import {
 		type BWAPIResponse,
 		CoinMethodType,
@@ -13,15 +13,16 @@
 	} from '$lib/bw_types';
 	import { PUBLIC_HOST_IP } from '$env/static/public';
 	import { getModalStore, getToastStore, type ToastSettings } from '@skeletonlabs/skeleton';
-	import { walletConnections, walletUnlockedUntil, walletVersion } from '$lib/rdd/rdd_getnetworkinfo_store';
+	import { walletConnections, walletUnlockedUntil, coinWalletVersion } from '$lib/rdd/rdd_getnetworkinfo_store';
 	import type { GetBlockchainInfoResponse, GetNetworkInfoResponse } from '$lib/rdd/rdd_types';
-	import { blocks, difficulty, headers, verificationProgress } from '$lib/rdd/rdd_getblockchaininfo_store';
 	import type { CoinData, CoinClientAdapter } from '$lib/coin_types';
 
 	// export let coinData: CoinData;
 	export let clientAdapter: CoinClientAdapter
 	export let coin_name: string;
 	export let coin_name_api: string;
+	export let core_files_status: CoreFileStatusType;
+	export let daemon_running_status: DaemonRunningStatusType;
 
 	const modalStore = getModalStore();
 	const toastStore = getToastStore();
@@ -50,7 +51,7 @@
 	let bw_api_response: BWAPIResponse;
 	let coin_get_blockchain_info: GetBlockchainInfoResponse;
 	let coin_get_network_info_response: GetNetworkInfoResponse;
-	let core_files_status: CoreFileStatusType;
+	// let core_files_status: CoreFileStatusType;
 	let daemon_is_ready: null | boolean = false;
 	let daemon_is_running: null | boolean = false;
 	let disable_download_button = false;
@@ -59,14 +60,14 @@
 	let is_ready_interval_id: ReturnType<typeof setInterval>;
 	let timer_get_blockchain_info_running = false;
 	let timer_get_network_info_running = false;
-	let daemon_running_status: DaemonRunningStatusType;
+	// let daemon_running_status: DaemonRunningStatusType;
 
-	const unsub_core_file_status = coreFileStatus.subscribe((value) => {
-		core_files_status = value;
-	});
-	const unsub_daemon_running_status = daemonRunningStatus.subscribe((value) => {
-		daemon_running_status = value;
-	});
+	// const unsub_core_file_status = coreFileStatus.subscribe((value) => {
+	// 	core_files_status = value;
+	// });
+	// const unsub_daemon_running_status = daemonRunningStatus.subscribe((value) => {
+	// 	daemon_running_status = value;
+	// });
 
 	/////////////////////////////////
 	// Download
@@ -95,7 +96,8 @@
 
 		disable_download_button = true;
 		isWorking.set(true);
-		coreFileStatus.set(CoreFileStatusType.cfst_downloading);
+		// coreFileStatus.set(CoreFileStatusType.cfst_downloading);
+		core_files_status = CoreFileStatusType.cfst_downloading;
 		const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/${coin_name_api}/api`, {
 			method: 'POST',
 			body: JSON.stringify({
@@ -117,7 +119,8 @@
 
 		bw_api_response = await response.json();
 		if (bw_api_response.core_files_exists) {
-			coreFileStatus.set(CoreFileStatusType.cfst_installed);
+			core_files_status = CoreFileStatusType.cfst_installed;
+			// coreFileStatus.set(CoreFileStatusType.cfst_installed);
 		}
 	}
 
@@ -127,6 +130,8 @@
 	async function stopDaemon() {
 		await clientAdapter.stopDaemon();
 	}
+
+	console.log(`disabled button = ${disable_download_button}`)
 </script>
 
 <div
@@ -134,6 +139,7 @@
 	class="flex min-w-max items-center gap-4 rounded-md bg-white px-3 py-2 text-neutral-700 shadow-sm lg:w-[35rem]"
 >
 	<div class="flex items-center gap-1 hover:opacity-95" use:melt={$fontGroup}>
+    <!--	DOWNLOAD Button	-->
 		{#if core_files_status === CoreFileStatusType.cfst_installed}
 			<button
 				class="item"
@@ -157,6 +163,8 @@
 				<Download class="square-5" />
 			</button>
 		{/if}
+
+		<!--	START Button	-->
 		{#if daemon_running_status === DaemonRunningStatusType.drst_stopped}
 			<button
 				class="item"
@@ -180,6 +188,8 @@
 				<Play class="square-5" />
 			</button>
 		{/if}
+
+		<!--	STOP Button	-->
 		{#if daemon_running_status === DaemonRunningStatusType.drst_running}
 		<button
 			class="item"
