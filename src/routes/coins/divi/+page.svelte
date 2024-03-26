@@ -61,7 +61,7 @@
 	const coin_colour_primary = '#ed2c57';
 	const coin_colour_secondary = '#ed2c57';
 	const coin_colour_thirdly = '#ed2c57';
-	const coin_colour_forthly = '#ed2c57';
+	const coin_colour_fourthly = '#ed2c57';
 
 	const coin_logo = '../divi_logo.png';
 	const coin_alt_logo = '../divi_logo';
@@ -181,7 +181,7 @@
 				coin_colour_primary={coin_colour_primary}
 				coin_colour_secondary={coin_colour_secondary}
 				coin_colour_thirdly={coin_colour_thirdly}
-				coin_colour_forthly={coin_colour_forthly}
+				coin_colour_fourthly={coin_colour_fourthly}
 				core_files_status={core_files_status}
 				block_height={blocks_height}
 				daemon_running_status={daemon_running_status}
