@@ -150,9 +150,10 @@
 			</div>
 		{/if}
 
+		<!--		Sync Progress -->
 		{#if (wallet_verification_progress < 0.99999) && (wallet_connections > 0)}
 			<div class="px-2 py-2">
-				<span title="Wallet verification: ${wallet_verification_progress} Blockchain is syncing... Blocks: {Math.round(block_height).toLocaleString()}"
+				<span title="Blockchain is syncing... Blocks: {Math.round(block_height).toLocaleString()}"
 					><i class={`fa-solid fa-rotate fa-2x fa-spin`} style="{`color: ${coin_colour_primary}`}" /></span
 				>
 			</div>
@@ -170,6 +171,7 @@
 			</div>
 		{/if}
 
+		<!--		Wallet security status -->
 		<div class="px-2 py-2">
 			<span title="Offline"><i class="fa-solid fa-lock-open fa-2x disabled-icon" /></span>
 		</div>
