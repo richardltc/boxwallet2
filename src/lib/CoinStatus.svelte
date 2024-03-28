@@ -10,11 +10,12 @@
 	export let coin_colour_thirdly: string;
 	export let coin_colour_fourthly: string;
 	export let core_files_status: CoreFileStatusType;
-  export let daemon_running_status: DaemonRunningStatusType
+	export let daemon_running_status: DaemonRunningStatusType;
 	export let wallet_connections: number;
 	export let wallet_verification_progress: number;
+	export let wallet_unlocked_until = -5;
 
-	console.log(`coin_colour_primary = ${coin_colour_primary}`)
+	console.log(`coin_colour_primary = ${coin_colour_primary}`);
 	import { setContext } from 'svelte';
 
 	setContext('--coin-colour-primary', coin_colour_primary); // Set the context with the coinColor prop
@@ -90,28 +91,39 @@
 	//
 	//     return `${sProg}%`;
 	// }
-
 </script>
 
 <main>
 	<div class="flex flex-wrap -mx-2 items-start">
 		<!--		Working-->
-		{#if (daemon_running_status === DaemonRunningStatusType.drst_starting) ||
-		(core_files_status === CoreFileStatusType.cfst_downloading) ||
-			((daemon_running_status === DaemonRunningStatusType.drst_running) && (wallet_connections < 1))}
+		{#if daemon_running_status === DaemonRunningStatusType.drst_starting || core_files_status === CoreFileStatusType.cfst_downloading || (daemon_running_status === DaemonRunningStatusType.drst_running && wallet_connections < 1)}
 			<div class="px-2 py-2">
-				<span title="Working..."><i class={`fa-solid fa-cog fa-spin fa-2x animate-spin duration-300`} style="{`color: ${coin_colour_primary}`}" /></span>
+				<span title="Working..."
+					><i
+						class={`fa-solid fa-cog fa-spin fa-2x animate-spin duration-300`}
+						style={`color: ${coin_colour_primary}`}
+					/></span
+				>
 			</div>
 		{:else}
 			<div class="px-2 py-2">
-				<span title="Idle"><i class={`fa-solid fa-cog fa-2x fa-spin-stop`} style="{`color: ${coin_colour_primary}`}" /></span>
+				<span title="Idle"
+					><i
+						class={`fa-solid fa-cog fa-2x fa-spin-stop`}
+						style={`color: ${coin_colour_primary}`}
+					/></span
+				>
 			</div>
 		{/if}
 
 		<!--		Core file status-->
 		{#if core_files_status === CoreFileStatusType.cfst_installed}
 			<div class="px-2 py-2">
-				<span title="Core files have been downloaded"><i class={`fa-solid fa-download fa-2x`} style="{`color: ${coin_colour_secondary}`}" /></span
+				<span title="Core files have been downloaded"
+					><i
+						class={`fa-solid fa-download fa-2x`}
+						style={`color: ${coin_colour_secondary}`}
+					/></span
 				>
 			</div>
 		{:else}
@@ -125,7 +137,12 @@
 		<!--		Daemon is running-->
 		{#if daemon_running_status === DaemonRunningStatusType.drst_running}
 			<div class="px-2 py-2">
-				<span title="Core wallet is ready."><i class={`fa-solid fa-face-smile fa-2x`} style="{`color: ${coin_colour_thirdly}`}" /></span>
+				<span title="Core wallet is ready."
+					><i
+						class={`fa-solid fa-face-smile fa-2x`}
+						style={`color: ${coin_colour_thirdly}`}
+					/></span
+				>
 			</div>
 		{:else}
 			<div class="px-2 py-2">
@@ -139,7 +156,10 @@
 		{#if wallet_connections > 0}
 			<div class="px-2 py-2">
 				<span title="{wallet_connections} connections"
-					><i class={`fa-solid fa-network-wired fa-2x`} style="{`color: ${coin_colour_fourthly}`}" /></span
+					><i
+						class={`fa-solid fa-network-wired fa-2x`}
+						style={`color: ${coin_colour_fourthly}`}
+					/></span
 				>
 			</div>
 		{:else}
@@ -151,16 +171,22 @@
 		{/if}
 
 		<!--		Sync Progress -->
-		{#if (wallet_verification_progress < 0.99999) && (wallet_connections > 0)}
+		{#if wallet_verification_progress < 0.99999 && wallet_connections > 0}
 			<div class="px-2 py-2">
 				<span title="Blockchain is syncing... Blocks: {Math.round(block_height).toLocaleString()}"
-					><i class={`fa-solid fa-rotate fa-2x fa-spin`} style="{`color: ${coin_colour_primary}`}" /></span
+					><i
+						class={`fa-solid fa-rotate fa-2x fa-spin`}
+						style={`color: ${coin_colour_primary}`}
+					/></span
 				>
 			</div>
 		{:else if wallet_connections > 0}
 			<div class="px-2 py-2">
 				<span title="Blockchain is synced. Blocks: {Math.round(block_height).toLocaleString()}"
-					><i class={`fa-solid fa-rotate fa-2x fa-spin-stop`} style="{`color: ${coin_colour_primary}`}" /></span
+					><i
+						class={`fa-solid fa-rotate fa-2x fa-spin-stop`}
+						style={`color: ${coin_colour_primary}`}
+					/></span
 				>
 			</div>
 		{:else}
@@ -172,14 +198,56 @@
 		{/if}
 
 		<!--		Wallet security status -->
-		<div class="px-2 py-2">
-			<span title="Offline"><i class="fa-solid fa-lock-open fa-2x disabled-icon" /></span>
-		</div>
-		<div class="px-2 py-2">
-			<span title="Offline"
-				><i class="fa-solid fa-microchip fa-2x fa-spin-stop disabled-icon" /></span
-			>
-		</div>
+		{#if wallet_unlocked_until === 0}
+			<div class="px-2 py-2">
+				<span title="Wallet locked."
+					><i class={`fa-solid fa-lock fa-2x`} style={`color: ${coin_colour_secondary}`} /></span
+				>
+			</div>
+		{:else if wallet_unlocked_until === -1}
+			<div class="px-2 py-2">
+				<span title="Wallet unlocked!"
+					><i
+						class={`fa-solid fa-lock-open fa-2x`}
+						style={`color: ${coin_colour_secondary}`}
+					/></span
+				>
+			</div>
+		{:else if wallet_unlocked_until === -5}
+			<div class="px-2 py-2">
+				<span title="Offline"><i class="fa-solid fa-lock fa-2x disabled-icon" /></span>
+			</div>
+		{:else if wallet_unlocked_until > 0}
+			<div class="px-2 py-2">
+				<span title="Wallet unlocked for staking."
+					><i class={`fa-solid fa-lock fa-2x`} style={`color: ${coin_colour_secondary}`} /></span
+				>
+			</div>
+		{/if}
+
+		<!--		Wallet Staking Status -->
+		{#if wallet_unlocked_until === 0}
+			<div class="px-2 py-2">
+				<span title="Not staking - wallet locked"
+					><i class="fa-solid fa-microchip fa-2x fa-spin-stop disabled-icon" /></span
+				>
+			</div>
+		{:else if wallet_unlocked_until === -5}
+			<div class="px-2 py-2">
+				<span title="Wallet offline"
+					><i class="fa-solid fa-microchip fa-2x fa-spin-stop disabled-icon" /></span
+				>
+			</div>
+		{:else if wallet_unlocked_until > 0}
+			<div class="px-2 py-2">
+				<span title="Wallet offline"
+					><i
+						class={`fa-solid fa-microchip fa-2x fa-spin-stop fa-fade`}
+						style={`color: ${coin_colour_secondary}; --fa-animation-duration: 5s; --fa-fade-opacity: 0.4;`}
+					/></span
+				>
+			</div>
+		{/if}
 	</div>
 </main>
 
