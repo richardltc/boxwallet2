@@ -57,22 +57,15 @@ export interface GetNetworkInfoResponse {
 }
 
 export interface GetNetworkInfoResult {
-	version: number;
+	version: string;
 	subversion: string;
 	protocolversion: number;
 	localservices: string;
-	localservicesnames: string[];
-	localrelay: boolean;
 	timeoffset: number;
-	networkactive: boolean;
 	connections: number;
-	connections_in: number;
-	connections_out: number;
 	networks: Network[];
 	relayfee: number;
-	incrementalfee: number;
 	localaddresses: any[];
-	warnings: string;
 }
 
 export interface Network {
@@ -83,13 +76,45 @@ export interface Network {
 	proxy_randomize_credentials: boolean;
 }
 
-export interface GetWalletInfo {
-	result: any;
-	error: Error;
-	id: string;
-}
-
 export interface Error {
 	code: number;
 	message: string;
+}
+
+export interface GetStakingStatusResponse {
+	result: GetStakingStatusResult;
+	error: any;
+	id: string;
+}
+
+interface GetStakingStatusResult {
+	validtime: boolean;
+	haveconnections: boolean;
+	walletunlocked: boolean;
+	mintablecoins: boolean;
+	staking_balance: number;
+	enoughcoins: boolean;
+	mnsync: boolean;
+	'staking status': boolean;
+	'stake split threshold': number;
+}
+
+export interface GetWalletInfoResponse {
+	result: GetWalletInfoResult;
+	error: any;
+	id: string;
+}
+
+interface GetWalletInfoResult {
+	active_wallet: string;
+	walletversion: number;
+	balance: number;
+	unconfirmed_balance: number;
+	immature_balance: number;
+	spendable_balance: number;
+	vaulted_balance: number;
+	txcount: number;
+	keypoolsize: number;
+	unlocked_until: number;
+	encryption_status: string;
 }

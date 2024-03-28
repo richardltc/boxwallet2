@@ -16,6 +16,7 @@
 	import { walletConnections, walletUnlockedUntil, coinWalletVersion } from '$lib/rdd/rdd_getnetworkinfo_store';
 	import type { GetBlockchainInfoResponse, GetNetworkInfoResponse } from '$lib/rdd/rdd_types';
 	import type { CoinData, CoinClientAdapter } from '$lib/coin_types';
+	import type { GenericResponse } from '$lib/divi/divi_types';
 
 	// export let coinData: CoinData;
 	export let clientAdapter: CoinClientAdapter
@@ -23,6 +24,7 @@
 	export let coin_name_api: string;
 	export let core_files_status: CoreFileStatusType;
 	export let daemon_running_status: DaemonRunningStatusType;
+	export let wallet_unlocked_until = -5;
 
 	const modalStore = getModalStore();
 	const toastStore = getToastStore();
@@ -60,6 +62,7 @@
 	let is_ready_interval_id: ReturnType<typeof setInterval>;
 	let timer_get_blockchain_info_running = false;
 	let timer_get_network_info_running = false;
+	let wallet_unlockfs_response: GenericResponse;
 	// let daemon_running_status: DaemonRunningStatusType;
 
 	// const unsub_core_file_status = coreFileStatus.subscribe((value) => {
@@ -120,7 +123,6 @@
 		bw_api_response = await response.json();
 		if (bw_api_response.core_files_exists) {
 			core_files_status = CoreFileStatusType.cfst_installed;
-			// coreFileStatus.set(CoreFileStatusType.cfst_installed);
 		}
 	}
 
@@ -131,7 +133,61 @@
 		await clientAdapter.stopDaemon();
 	}
 
-	console.log(`disabled button = ${disable_download_button}`)
+	/////////////////////////////////
+	// Unlock Wallet for Staking
+	async function walletUnlockFS() {
+		const password = await new Promise<string>((resolve) => {
+			const modal: ModalSettings = {
+				type: 'prompt',
+				title: 'Enter Password',
+				body: `Please enter your password to unlock your ${coin_name} wallet:`,
+				valueAttr: { type: 'password', minlength: 1, maxlength: 10, required: true },
+				response: (password: string) => {
+					resolve(password);
+				}
+			};
+			modalStore.trigger(modal);
+		});
+
+		// Proceed with actions based on the response
+		if (password) {
+			console.log(`password sent: ${password}`);
+			const response = await fetch(`http://${PUBLIC_HOST_IP}:5173/coins/${coin_name_api}/api`, {
+				method: 'POST',
+				body: JSON.stringify({
+					coin_type: CoinType.reddcoin,
+					method_type: CoinMethodType.wallet_unlockfs,
+					password: password
+				})
+			});
+
+			wallet_unlockfs_response = await response.json();
+			const json_result = JSON.stringify(wallet_unlockfs_response);
+			console.log(`unlock wallet response: ${json_result}`);
+			// If the wallet response is anything other than what it would be for a correct password then...
+			if (!json_result.includes('"result":null,"error":null,"id"')) {
+				const t: ToastSettings = {
+					message: `Failed to unlock your ${coin_name} wallet!`,
+					timeout: 5000,
+					hideDismiss: true,
+					background: 'variant-filled-error'
+				};
+				toastStore.trigger(t);
+				console.log('Incorrect passphrase detected...');
+			} else {
+				// We're good, so let the user know! :)
+				const t: ToastSettings = {
+					message: `Your ${coin_name} wallet has been unlocked for staking.`,
+					timeout: 5000,
+					hideDismiss: true,
+					background: 'variant-filled-success'
+				};
+				toastStore.trigger(t);
+			}
+		} else {
+			console.log('Password not entered...');
+		}
+	}
 </script>
 
 <div
@@ -163,6 +219,8 @@
 				<Download class="square-5" />
 			</button>
 		{/if}
+
+		<div class="separator" use:melt={$separator} />
 
 		<!--	START Button	-->
 		{#if daemon_running_status === DaemonRunningStatusType.drst_stopped}
@@ -213,11 +271,53 @@
 				<StopCircle class="square-5" />
 			</button>
 			{/if}
+
 		<div class="separator" use:melt={$separator} />
-		<button class="item" aria-label="unlock" use:melt={$button}>
+		{#if wallet_unlocked_until === -5}
+		<button
+			class="item"
+			disabled={true}
+			aria-label="unlock"
+			title="Unlock {coin_name} wallet"
+			use:melt={$button}
+		>
 			<Unlock class="square-5" />
 		</button>
+
+		{:else if wallet_unlocked_until === 0}
+			<button
+				class="item"
+				disabled={false}
+				aria-label="unlock"
+				title="Unlock {coin_name} wallet"
+				on:click={() => walletUnlockFS()}
+				use:melt={$button}
+			>
+				<Unlock class="square-5" />
+			</button>
+		{:else if wallet_unlocked_until - 1}
+			<button
+				class="item"
+				disabled={false}
+				aria-label="lock"
+				title="Lock {coin_name} wallet"
+				use:melt={$button}
+			>
+				<Unlock class="square-5" />
+			</button>
+		{:else if wallet_unlocked_until > 0}
+			<button
+				class="item"
+				disabled={false}
+				aria-label="lock"
+				title="Lock {coin_name} wallet"
+				use:melt={$button}
+			>
+				<Unlock class="square-5" />
+			</button>
+		{/if}
 	</div>
+
 	<div class="separator" use:melt={$separator} />
 	<!--	<a href="/" class="link nowrap flex-shrink-0" use:melt={$link}> Edited 2 hours ago </a>-->
 <!--	<button-->

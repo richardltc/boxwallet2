@@ -7,7 +7,9 @@ import Divi from '$lib/divi/divi';
 import type {
 	GetBlockchainInfoResponse,
 	GetNetworkInfoResponse,
-	GenericResponse
+	GenericResponse,
+	GetWalletInfoResponse,
+	GetStakingStatusResponse
 } from '$lib/divi/divi_types';
 import path from 'path';
 
@@ -27,6 +29,8 @@ export async function POST({ request }: RequestEvent) {
 
 	let get_blockchain_info_api_response: GetBlockchainInfoResponse;
 	let get_network_info_api_response: GetNetworkInfoResponse;
+	let get_staking_status_api_response: GetStakingStatusResponse;
+	let get_wallet_info_api_response: GetWalletInfoResponse;
 	let core_files_exist = false;
 	const bw_api_response: BWAPIResponse = {
 		core_files_exists: null,
@@ -53,7 +57,6 @@ export async function POST({ request }: RequestEvent) {
 				method_type: CoinMethodType.core_files_exist
 			};
 
-			console.log('Talking to Go app');
 			const api_response = await fetch('http://127.0.0.1:3000/api/v1/coin', {
 				method: 'POST',
 				body: JSON.stringify(api_request)
@@ -95,6 +98,18 @@ export async function POST({ request }: RequestEvent) {
 		case CoinMethodType.get_network_info:
 			get_network_info_api_response = await coin.GetNetworkInfo();
 			return new Response(JSON.stringify(get_network_info_api_response));
+
+		//////////////////////////////
+		// GET_STAKING_STATUS
+		case CoinMethodType.get_staking_status:
+			get_staking_status_api_response = await coin.GetStakingStatus();
+			return new Response(JSON.stringify(get_staking_status_api_response));
+
+		//////////////////////////////
+		// GET_WALLET_INFO
+		case CoinMethodType.get_wallet_info:
+			get_wallet_info_api_response = await coin.GetWalletInfo();
+			return new Response(JSON.stringify(get_wallet_info_api_response));
 
 		//////////////////////////////
 		// GET_CORE_STATUS
@@ -143,7 +158,6 @@ export async function POST({ request }: RequestEvent) {
 				console.log(`${coin.coin_name} daemon is not running`);
 			}
 			bw_api_response.is_running = is_running;
-			// console.log(`Returning ${JSON.stringify(bw_api_response)})...`);
 			return new Response(JSON.stringify(bw_api_response));
 
 		//////////////////////////////

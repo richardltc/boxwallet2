@@ -4,7 +4,9 @@ import { getValueFromFile } from '$lib/string_utils';
 import type {
 	GetNetworkInfoResponse,
 	GetBlockchainInfoResponse,
-	GenericResponse
+	GenericResponse,
+	GetWalletInfoResponse,
+	GetStakingStatusResponse
 } from '$lib/divi/divi_types';
 import os from 'os';
 import { exec } from 'child_process';
@@ -332,7 +334,7 @@ class Divi {
 	}
 
 	//************************************************
-	// GetInfo
+	// GetNetworkInfo
 	public async GetNetworkInfo(): Promise<GetNetworkInfoResponse> {
 		const body = '{"jsonrpc":"1.0","id":"curltext","method":"getnetworkinfo","params":[]}';
 		const url = `http://${this.ip_address}:${this.rpc_port}`;
@@ -382,6 +384,107 @@ class Divi {
 			return response_data;
 		}
 	}
+
+	//************************************************
+	// GetStakingStatus
+	public async GetStakingStatus(): Promise<GetStakingStatusResponse> {
+		const body = '{"jsonrpc":"1.0","id":"curltext","method":"getstakingstatus","params":[]}';
+		const url = `http://${this.ip_address}:${this.rpc_port}`;
+		const config = {
+			auth: {
+				username: rpc_user,
+				password: this.rpc_password
+			},
+			headers: {
+				'Content-Type': 'text/plain'
+			}
+		};
+
+		let response_data: GetStakingStatusResponse;
+		try {
+			const response = await axios.post(url, body, config);
+			response_data = response.data as GetStakingStatusResponse;
+
+			// If we get here, it's because we didn't get any kind of error...
+			console.log('response', JSON.stringify(response_data)); //log(`response: ${response_data}`);
+			return response_data;
+		} catch (error: any | AxiosError) {
+			console.log('In catch...');
+			// Check if the error contains Loading, and if so return a good response
+			if (axios.isAxiosError(error) && error.response) {
+				console.log('Error detected...');
+				const json = JSON.stringify(error.response.data);
+				console.log(`json = ${json}`);
+				if (json.includes('Loading')) {
+					console.log('Loading...');
+					response_data = error.response.data;
+					return response_data;
+				} else {
+					console.log(`Loading not found, instead error: ${error.response.data}`);
+					console.error('Error data:', error.response.data);
+				}
+				// Axios error with a response from the server
+
+				// You can handle the error data here or return it as needed
+				// return { error: 'An error occurred', status: error.response.status, data: error.response.data };
+
+				// You can return an error object or throw the error for further handling
+				// return { error: 'An error occurred' };		}
+			}
+			return response_data;
+		}
+	}
+
+	//************************************************
+	// GetWalletInfo
+	public async GetWalletInfo(): Promise<GetWalletInfoResponse> {
+		const body = '{"jsonrpc":"1.0","id":"curltext","method":"getwalletinfo","params":[]}';
+		const url = `http://${this.ip_address}:${this.rpc_port}`;
+		const config = {
+			auth: {
+				username: rpc_user,
+				password: this.rpc_password
+			},
+			headers: {
+				'Content-Type': 'text/plain'
+			}
+		};
+
+		let response_data: GetWalletInfoResponse;
+		try {
+			const response = await axios.post(url, body, config);
+			response_data = response.data as GetWalletInfoResponse;
+
+			// If we get here, it's because we didn't get any kind of error...
+			console.log('response', JSON.stringify(response_data)); //log(`response: ${response_data}`);
+			return response_data;
+		} catch (error: any | AxiosError) {
+			console.log('In catch...');
+			// Check if the error contains Loading, and if so return a good response
+			if (axios.isAxiosError(error) && error.response) {
+				console.log('Error detected...');
+				const json = JSON.stringify(error.response.data);
+				console.log(`json = ${json}`);
+				if (json.includes('Loading')) {
+					console.log('Loading...');
+					response_data = error.response.data;
+					return response_data;
+				} else {
+					console.log(`Loading not found, instead error: ${error.response.data}`);
+					console.error('Error data:', error.response.data);
+				}
+				// Axios error with a response from the server
+
+				// You can handle the error data here or return it as needed
+				// return { error: 'An error occurred', status: error.response.status, data: error.response.data };
+
+				// You can return an error object or throw the error for further handling
+				// return { error: 'An error occurred' };		}
+			}
+			return response_data;
+		}
+	}
+
 	public async StartDaemon(): Promise<boolean> {
 		let is_running = await this.CoinDaemonIsRunning();
 
@@ -389,8 +492,6 @@ class Divi {
 			const command = path.join(home_dir, home_dir_boxwallet, daemon_file_lin);
 
 			if (process.platform === 'win32') {
-				// const command = `${home_dir}${daemon_file_win}`;
-
 				const process: ChildProcess = child_process.spawn(command);
 
 				await new Promise((resolve, reject) => {
@@ -496,7 +597,25 @@ class Divi {
 			console.log(`response: ${response_data}`);
 			return response_data;
 		} catch (error: any | AxiosError) {
-			console.error('Error data:', error.response.data);
+			console.log('Error detected...');
+			const json = JSON.stringify(error.response.data);
+			console.log(`json = ${json}`);
+			if (json.includes('The wallet passphrase entered was incorrect')) {
+				console.log('Incorrect passphrase detected...');
+				response_data = error.response.data;
+				console.log('returning:', response_data);
+				return response_data;
+			} else {
+				console.log(`Incorrect passphrase detected, instead error: ${error.response.data}`);
+				console.error('Error data:', error.response.data);
+			}
+			// Axios error with a response from the server
+
+			// You can handle the error data here or return it as needed
+			// return { error: 'An error occurred', status: error.response.status, data: error.response.data };
+
+			// You can return an error object or throw the error for further handling
+			// return { error: 'An error occurred' };		}
 		}
 		return response_data;
 	}

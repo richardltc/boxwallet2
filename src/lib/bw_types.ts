@@ -18,9 +18,11 @@ export enum CoinMethodType {
 	is_running,
 	get_network_info,
 	is_ready,
-	get_core_status = 7,
+	get_core_status,
 	get_blockchain_info,
-	wallet_unlockfs
+	wallet_unlockfs,
+	get_wallet_info,
+	get_staking_status
 }
 
 export enum CoreFileStatusType {
@@ -41,6 +43,7 @@ export enum CoinType {
 	reddcoin
 }
 
+//
 export enum IconStatusType {
 	is_disabled,
 	is_enabled,

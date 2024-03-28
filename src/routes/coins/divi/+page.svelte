@@ -20,16 +20,18 @@
 	import WalletVersion from '$lib/components/WalletVersion.svelte';
 	import {DIVIClientAdapter} from '$lib/divi/divi_client_adapter'
 	import type { CoinClientAdapter } from '$lib/coin_types';
-	import { coinWalletVersion, walletConnections } from '$lib/divi/divi_getnetworkinfo_store';
+	import { coinWalletVersion, walletConnections} from '$lib/divi/divi_getnetworkinfo_store';
+	import { walletUnlockedUntil } from '$lib/divi/divi_getwalletinfo_store';
 
 	let blocks_height = 0;
-	let coin_wallet_version = 0;
+	let coin_wallet_version = "";
 	let core_files_status: CoreFileStatusType;
 	let daemon_running_status: DaemonRunningStatusType;
 	let difficulty_value =0;
 	let headers_height = 0;
 	let verification_progress = 0;
 	let wallet_connections = 0;
+	let wallet_unlocked_until = -5;
 
 	const unsub_blocks = blocks.subscribe((value) => {
 		blocks_height = value;
@@ -54,6 +56,10 @@
 	});
 	const unsub_walletConnections = walletConnections.subscribe((value) => {
 		wallet_connections = value;
+	});
+	const unsub_walletUnlockUntil = walletUnlockedUntil.subscribe((value) => {
+		wallet_unlocked_until = value;
+		console.log(`page.svelte - wallet_unlocked until: ${wallet_unlocked_until}`)
 	});
 
 	const coinClientAdapter = new DIVIClientAdapter;
@@ -148,7 +154,6 @@
 	let timer_get_blockchain_info_running = false;
 	let timer_get_network_info_running = false;
 	let wallet_offline: boolean;
-	let wallet_unlocked_until: number;
 	let wallet_unlockfs_response: GenericResponse;
 	let wallet_verification_progress: number;
 	let wallet_version: number;
@@ -187,6 +192,7 @@
 				daemon_running_status={daemon_running_status}
 				wallet_verification_progress={verification_progress}
 				wallet_connections={wallet_connections}
+				wallet_unlocked_until={wallet_unlocked_until}
 			/>
 		</div>
 	</div>
@@ -201,6 +207,7 @@
 			coin_name_api={coin_name_api}
 			bind:core_files_status={core_files_status}
 			daemon_running_status={daemon_running_status}
+			wallet_unlocked_until={wallet_unlocked_until}
 		/>
 	</section>
 <!--	<section>-->
