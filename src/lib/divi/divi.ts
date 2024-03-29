@@ -237,6 +237,8 @@ class Divi {
 				dl_file = download_file_lin64;
 				break;
 		}
+		// Make sure the .boxwallet directory exists before download.
+		fs.mkdirSync(path.join(home_dir, home_dir_boxwallet));
 		await download_file(dl_url, path.join(home_dir, home_dir_boxwallet, dl_file))
 			.then(() => {
 				console.log(
