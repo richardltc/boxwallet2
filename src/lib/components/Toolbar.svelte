@@ -273,18 +273,8 @@
 			{/if}
 
 		<div class="separator" use:melt={$separator} />
-		{#if wallet_unlocked_until === -5}
-		<button
-			class="item"
-			disabled={true}
-			aria-label="unlock"
-			title="Unlock {coin_name} wallet"
-			use:melt={$button}
-		>
-			<Unlock class="square-5" />
-		</button>
 
-		{:else if wallet_unlocked_until === 0}
+		{#if wallet_unlocked_until === 0}
 			<button
 				class="item"
 				disabled={false}
@@ -311,6 +301,16 @@
 				disabled={false}
 				aria-label="lock"
 				title="Lock {coin_name} wallet"
+				use:melt={$button}
+			>
+				<Unlock class="square-5" />
+			</button>
+		{:else}
+			<button
+				class="item"
+				disabled={true}
+				aria-label="unlock"
+				title="Unlock {coin_name} wallet"
 				use:melt={$button}
 			>
 				<Unlock class="square-5" />
