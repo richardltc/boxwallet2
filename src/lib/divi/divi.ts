@@ -56,7 +56,7 @@ const home_dir_win = 'DIVI';
 
 const conf_file = 'divi.conf';
 const rpc_user = 'divirpc';
-const rpc_port = '45443';
+const rpc_port = '51473';
 
 const tip_address = 'DM5XJbB6kpyDXpbnYcb1ZidrNpubf2gmSN';
 
