@@ -223,7 +223,7 @@
 		<div class="separator" use:melt={$separator} />
 
 		<!--	START Button	-->
-		{#if daemon_running_status === DaemonRunningStatusType.drst_stopped}
+		{#if (daemon_running_status === DaemonRunningStatusType.drst_stopped) && (core_files_status === CoreFileStatusType.cfst_installed)}
 			<button
 				class="item"
 				disabled={false}
