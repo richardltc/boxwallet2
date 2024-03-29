@@ -232,19 +232,19 @@
 					><i class="fa-solid fa-microchip fa-2x fa-spin-stop disabled-icon" /></span
 				>
 			</div>
-		{:else if wallet_unlocked_until === -5}
-			<div class="px-2 py-2">
-				<span title="Wallet offline"
-					><i class="fa-solid fa-microchip fa-2x fa-spin-stop disabled-icon" /></span
-				>
-			</div>
 		{:else if wallet_unlocked_until > 0}
 			<div class="px-2 py-2">
 				<span title="Wallet offline"
 					><i
 						class={`fa-solid fa-microchip fa-2x fa-spin-stop fa-fade`}
-						style={`color: ${coin_colour_secondary}; --fa-animation-duration: 5s; --fa-fade-opacity: 0.4;`}
+						style={`color: ${coin_colour_secondary}; --fa-animation-duration: 5s; --fa-fade-opacity: 0.1;`}
 					/></span
+				>
+			</div>
+		{:else}
+			<div class="px-2 py-2">
+				<span title="Wallet offline"
+				><i class="fa-solid fa-microchip fa-2x fa-spin-stop disabled-icon" /></span
 				>
 			</div>
 		{/if}
