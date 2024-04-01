@@ -233,7 +233,9 @@ class ReddCoin {
 				break;
 		}
 		// Make sure the .boxwallet directory exists before download.
-		fs.mkdirSync(path.join(home_dir, home_dir_boxwallet));
+		if (!fs.existsSync(path.join(home_dir, home_dir_boxwallet))) {
+			fs.mkdirSync(path.join(home_dir, home_dir_boxwallet));
+		}
 		await download_file(dl_url, path.join(home_dir, home_dir_boxwallet, dl_file))
 			.then(() => {
 				console.log(
