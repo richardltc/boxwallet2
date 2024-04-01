@@ -57,9 +57,7 @@ export async function GetBlockchainInfoAPIRequest(cmt: CoinMethodType) {
 	const json_result = JSON.stringify(coin_get_blockchain_info);
 	console.log(`doPost json response: ${json_result}`);
 	// block_height = coin_get_blockchain_info.result.blocks;
-	console.log(`Setting headers to: ${coin_get_blockchain_info.result.headers}`);
 	headers.set(coin_get_blockchain_info.result.headers);
-	console.log(`Setting blocks to: ${coin_get_blockchain_info.result.blocks}`);
 	blocks.set(coin_get_blockchain_info.result.blocks);
 	difficulty.set(coin_get_blockchain_info.result.difficulty);
 

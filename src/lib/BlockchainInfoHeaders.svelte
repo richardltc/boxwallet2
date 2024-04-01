@@ -16,7 +16,6 @@
 	//const unsub_headers = headers.subscribe((value) => {
 	//	$header_height = value;
 	//});
-	console.log(`header height is: ${header_height}`);
 </script>
 
 <main>

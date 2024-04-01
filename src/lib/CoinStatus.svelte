@@ -15,7 +15,6 @@
 	export let wallet_verification_progress: number;
 	export let wallet_unlocked_until = -5;
 
-	console.log(`coin_colour_primary = ${coin_colour_primary}`);
 	import { setContext } from 'svelte';
 
 	setContext('--coin-colour-primary', coin_colour_primary); // Set the context with the coinColor prop
