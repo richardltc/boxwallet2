@@ -48,7 +48,7 @@
 					<img src="../BoxWallet.png" alt="logo" class="mr-3 h-20">
 					<div class="flex flex-col">
 						<strong class="text-2xl mr-3 sm:text-4xl">BoxWallet</strong>
-						<div class="text-xs">v0.06 BETA</div>
+						<div class="text-xs">v0.07 BETA</div>
 					</div>
 				</div>
 			</svelte:fragment>
