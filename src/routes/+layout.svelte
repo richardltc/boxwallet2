@@ -20,7 +20,7 @@
 <!-- <AppShell>...</AppShell> -->
 
 <!-- App Shell -->
-<AppShell slotSidebarLeft="bg-surface-500/5 p-4 w-64 sm:w-48">
+<AppShell slotSidebarLeft="bg-surface-500/5 p-4 w-16 sm:w-48">
 	<svelte:fragment slot="sidebarLeft">
 		<!-- Insert the list: -->
 		<nav class="list-nav">
@@ -28,7 +28,7 @@
 				<li><a href="/">Home</a></li>
 				<li class="flex items-center">
 					<img src="../divi_logo.png" alt="logo" class="h-6 mr-0">
-					<a href="/coins/divi">DIVI</a>
+					<a href="/coins/divi" class="sm:hidden md:block lg:block xl:block 2xl:block">DIVI</a>
 				</li>
 				<li class="flex items-center">
 					<img src="../rdd_logo.png" alt="logo" class="h-6 mr-0">
