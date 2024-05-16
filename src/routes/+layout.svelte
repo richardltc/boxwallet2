@@ -28,11 +28,11 @@
 				<li><a href="/">Home</a></li>
 				<li class="flex items-center">
 					<img src="../divi_logo.png" alt="logo" class="h-6 mr-0">
-					<a href="/coins/divi" class="sm:hidden md:block lg:block xl:block 2xl:block">DIVI</a>
+					<a href="/coins/divi" class="display-text hidden sm:block">DIVI</a>
 				</li>
 				<li class="flex items-center">
 					<img src="../rdd_logo.png" alt="logo" class="h-6 mr-0">
-					<a href="/coins/reddcoin">ReddCoin</a>
+					<a href="/coins/reddcoin" class="display-text hidden sm:block">ReddCoin</a>
 				</li>
 <!--				<li><a href="/about">About</a></li>-->
 			</ul>
@@ -84,3 +84,14 @@
 	<slot />
 </AppShell>
 
+<style>
+    .display-text {
+        display: none; /* Hide by default */
+    }
+
+    @media (min-width: 640px) {
+        .display-text {
+            display: block; /* Show on screens 640px and wider */
+        }
+    }
+</style>
