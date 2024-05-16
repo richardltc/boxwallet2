@@ -17,8 +17,6 @@
 <Toast />
 <Modal position="items-center" />
 
-<!-- <AppShell>...</AppShell> -->
-
 <!-- App Shell -->
 <AppShell slotSidebarLeft="bg-surface-500/5 p-4 w-16 sm:w-48">
 	<svelte:fragment slot="sidebarLeft">
