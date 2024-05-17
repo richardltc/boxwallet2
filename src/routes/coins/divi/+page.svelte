@@ -178,7 +178,7 @@
 			<div>
 				<h1 class="h1 pt-3 sm:pt-0">{coin_name} <span class="text-base inline-block">
         <WalletVersion wallet_version={coin_wallet_version}/></span></h1>
-				<h2 class="h2">{coin_subtitle}</h2>
+				<h2 class="h3 sm:h2">{coin_subtitle}</h2>
 			</div>
 		</div>
 		<div class="ml-auto">
