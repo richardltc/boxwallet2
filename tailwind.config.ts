@@ -20,7 +20,8 @@ export default {
 				xl: '1280px', // Add this line
 				lg: '1024px', // Add this line
 				md: '768px', // Add this line
-				sm: '640px'
+				sm: '640px',
+				xs: '250px'
 			}
 		},
 		extend: {
