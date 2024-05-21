@@ -171,14 +171,14 @@
 
 </script>
 
-<div class="container mx-auto p-8 space-y-4">
-	<div class="flex flex-wrap items-center sm:space-x-5">
-		<div class="flex items-center flex-grow">
-			<img src="{coin_logo}" alt="{coin_alt_logo}" class="mr-3 h-20" />
+<div class="container mx-auto p-4 space-y-4">
+	<div class="flex-col flex-wrap items-center sm:space-x-5">
+		<div class="flex items-center">
+			<img src="{coin_logo}" alt="{coin_alt_logo}" class="mr-3 h-10 sm:h-20" />
 			<div>
-				<h1 class="h1 pt-3 sm:pt-0">{coin_name} <span class="text-base inline-block">
+				<h1 class="h1 pt-2 sm:pt-0">{coin_name} <span class="text-base inline-block">
         <WalletVersion wallet_version={coin_wallet_version}/></span></h1>
-				<h2 class="h3 sm:h2">{coin_subtitle}</h2>
+				<h2 class="h5 sm:h2">{coin_subtitle}</h2>
 			</div>
 		</div>
 		<div class="ml-auto">

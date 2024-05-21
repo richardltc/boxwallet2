@@ -192,7 +192,7 @@
 
 <div
 	use:melt={$root}
-	class="flex min-w-max items-center gap-4 rounded-md bg-white px-3 py-2 text-neutral-700 shadow-sm lg:w-[35rem]"
+	class="flex min-w-max items-center gap-4 rounded-md bg-white px-3 py-1 text-neutral-700 shadow-sm lg:w-[35rem]"
 >
 	<div class="flex items-center gap-1 hover:opacity-95" use:melt={$fontGroup}>
     <!--	DOWNLOAD Button	-->

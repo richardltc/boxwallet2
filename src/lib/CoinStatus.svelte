@@ -96,7 +96,7 @@
 	<div class="flex flex-wrap -mx-2 items-start">
 		<!--		Working-->
 		{#if daemon_running_status === DaemonRunningStatusType.drst_starting || core_files_status === CoreFileStatusType.cfst_downloading || (daemon_running_status === DaemonRunningStatusType.drst_running && wallet_connections < 1)}
-			<div class="px-2 py-2">
+			<div class="px-1 sm:px-2 py-2 sm:py-5">
 				<span title="Working..."
 					><i
 						class="fa-solid fa-cog fa-spin animate-spin duration-300" id="icon-size"
@@ -105,7 +105,7 @@
 				>
 			</div>
 		{:else}
-			<div class="px-2 py-2">
+			<div class="px-1 sm:px-2 py-2 sm:py-5">
 				<span title="Idle"
 					><i
 						class="fa-solid fa-cog fa-spin-stop" id="icon-size"
@@ -117,7 +117,7 @@
 
 		<!--		Core file status-->
 		{#if core_files_status === CoreFileStatusType.cfst_installed}
-			<div class="px-2 py-2">
+			<div class="px-1 sm:px-2 py-2 sm:py-5">
 				<span title="Core files have been downloaded"
 					><i
 						class="fa-solid fa-download" id="icon-size"
@@ -126,7 +126,7 @@
 				>
 			</div>
 		{:else}
-			<div class="px-2 py-2">
+			<div class="px-1 sm:px-2 py-2 sm:py-5">
 				<span title="Core files need to be downloaded"
 					><i class="fa-solid fa-download disabled-icon" id="icon-size"/></span
 				>
@@ -135,7 +135,7 @@
 
 		<!--		Daemon is running-->
 		{#if daemon_running_status === DaemonRunningStatusType.drst_running}
-			<div class="px-2 py-2">
+			<div class="px-1 sm:px-2 py-2 sm:py-5">
 				<span title="Core wallet is ready."
 					><i
 						class="fa-solid fa-face-smile" id="icon-size"
@@ -144,7 +144,7 @@
 				>
 			</div>
 		{:else}
-			<div class="px-2 py-2">
+			<div class="px-1 sm:px-2 py-2 sm:py-5">
 				<span title="Core wallet is not ready."
 					><i class="fa-solid fa-face-smile disabled-icon" id="icon-size"/></span
 				>
@@ -153,7 +153,7 @@
 
 		<!--		Wallet connections-->
 		{#if wallet_connections > 0}
-			<div class="px-2 py-2">
+			<div class="px-1 sm:px-2 py-2 sm:py-5">
 				<span title="{wallet_connections} connections"
 					><i
 						class="fa-solid fa-network-wired" id="icon-size"
@@ -162,7 +162,7 @@
 				>
 			</div>
 		{:else}
-			<div class="px-2 py-2">
+			<div class="px-1 sm:px-2 py-2 sm:py-5">
 				<span title="Not connected"
 					><i class="fa-solid fa-network-wired disabled-icon" id="icon-size"/></span
 				>
@@ -171,7 +171,7 @@
 
 		<!--		Sync Progress -->
 		{#if wallet_verification_progress < 0.99999 && wallet_connections > 0}
-			<div class="px-2 py-2">
+			<div class="px-1 sm:px-2 py-2 sm:py-5">
 				<span title="Blockchain is syncing... Blocks: {Math.round(block_height).toLocaleString()}"
 					><i
 						class="fa-solid fa-rotate fa-spin" id="icon-size"
@@ -180,7 +180,7 @@
 				>
 			</div>
 		{:else if wallet_connections > 0}
-			<div class="px-2 py-2">
+			<div class="px-1 sm:px-2 py-2 sm:py-5">
 				<span title="Blockchain is synced. Blocks: {Math.round(block_height).toLocaleString()}"
 					><i
 						class="fa-solid fa-rotate fa-spin-stop" id="icon-size"
@@ -189,7 +189,7 @@
 				>
 			</div>
 		{:else}
-			<div class="px-2 py-2">
+			<div class="px-1 sm:px-2 py-2 sm:py-5">
 				<span title="Offline"
 					><i class="fa-solid fa-rotate fa-spin-stop disabled-icon" id="icon-size"/></span
 				>
@@ -198,13 +198,13 @@
 
 		<!--		Wallet security status -->
 		{#if wallet_unlocked_until === 0}
-			<div class="px-2 py-2">
+			<div class="px-1 sm:px-2 py-2 sm:py-5">
 				<span title="Wallet locked."
 					><i class="fa-solid fa-lock" id="icon-size" style={`color: ${coin_colour_secondary}`} /></span
 				>
 			</div>
 		{:else if wallet_unlocked_until === -1}
-			<div class="px-2 py-2">
+			<div class="px-1 sm:px-2 py-2 sm:py-5">
 				<span title="Wallet unlocked!"
 					><i
 						class="fa-solid fa-lock-open" id="icon-size"
@@ -213,11 +213,11 @@
 				>
 			</div>
 		{:else if wallet_unlocked_until === -5}
-			<div class="px-2 py-2">
+			<div class="px-1 sm:px-2 py-2 sm:py-5">
 				<span title="Offline"><i class="fa-solid fa-lock disabled-icon" id="icon-size"/></span>
 			</div>
 		{:else if wallet_unlocked_until > 0}
-			<div class="px-2 py-2">
+			<div class="px-1 sm:px-2 py-2 sm:py-5">
 				<span title="Wallet unlocked for staking."
 					><i class="fa-solid fa-lock" id="icon-size" style={`color: ${coin_colour_secondary}`} /></span
 				>
@@ -226,13 +226,13 @@
 
 		<!--		Wallet Staking Status -->
 		{#if wallet_unlocked_until === 0}
-			<div class="px-2 py-2">
+			<div class="px-1 sm:px-2 py-2 sm:py-5">
 				<span title="Not staking - wallet locked"
 					><i class="fa-solid fa-microchip fa-spin-stop disabled-icon" id="icon-size"/></span
 				>
 			</div>
 		{:else if wallet_unlocked_until > 0}
-			<div class="px-2 py-2">
+			<div class="px-1 sm:px-2 py-2 sm:py-5">
 				<span title="Wallet offline"
 					><i
 						class="fa-solid fa-microchip fa-spin-stop fa-fade"
@@ -241,7 +241,7 @@
 				>
 			</div>
 		{:else}
-			<div class="px-2 py-2">
+			<div class="px-1 sm:px-2 py-2 sm:py-5">
 				<span title="Wallet offline"
 				><i class="fa-solid fa-microchip fa-spin-stop disabled-icon" id="icon-size"/></span
 				>
