@@ -1,0 +1,29 @@
+defmodule BoxwalletWeb.LightLive do
+  use BoxwalletWeb, :live_view
+  alias Boxwallet.Coins.Divi
+
+  def mount(_params, _session, socket) do
+    socket = assign(socket, brightness: 10)
+    {:ok, socket}
+  end
+
+  def handle_event("download_divi", _, socket) do
+    IO.puts("Download Divi button clicked")
+    Divi.download_coin(System.tmp_dir!())
+    {:noreply, socket}
+  end
+
+  def render(assigns) do
+    ~H"""
+    <h1>Light Control</h1>
+    <div id="light">
+      <div class="meter">
+        <span style={"width: #{@brightness}%"}>
+          <%= assigns.brightness %>%
+        </span>
+      </div>
+    </div>
+    <button phx-click="download_divi">Download Divi</button>
+    """
+  end
+end
