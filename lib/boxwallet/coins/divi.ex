@@ -55,32 +55,37 @@ defmodule Boxwallet.Coins.Divi do
   @rpc_credentials [username: "rpcuser", password: "rpcpass"]
 
   def download_coin(location) do
+    IO.puts("Downloading to: #{location}")
+    IO.puts("System detected as: #{:erlang.system_info(:system_architecture)}")
+    sys_info = to_string(:erlang.system_info(:system_architecture))
     # Determine the file path and URL based on OS and architecture
     # The result will be either {:ok, {path, url}} or {:error, message}
     result =
       case :os.type() do
         {:unix, :linux} ->
-          case :erlang.system_info(:system_architecture) do
-            # Covers arm32
-            "armv7l" ->
+          cond do
+            String.contains?(sys_info,"arm71") ->
+              IO.puts("arm71 detected")
               {:ok,
                {Path.join(location, @download_file_arm32), @download_url <> @download_file_arm32}}
 
-            # Covers arm64
-            "aarch64" ->
+            String.contains?(sys_info,"aarch64") ->
+              IO.puts("aarch64 detected")
               {:error, "arm64 is not currently supported for: #{@coin_name}"}
 
-            # Covers 386
-            "i386" ->
+            String.contains?(sys_info,"i386") ->
+              IO.puts("i386 detected")
               {:error, "linux 386 is not currently supported for: #{@coin_name}"}
 
-            # Covers amd64
-            "x86_64" ->
-              {:ok,
-               {Path.join(location, @download_file_linux), @download_url <> @download_file_linux}}
 
-            _ ->
-              {:error, "Unsupported Linux architecture"}
+            String.contains?(sys_info,"x86_64") ->
+              IO.puts("x86_64 detected")
+              {:ok,
+              {Path.join(location, @download_file_linux), @download_url <> @download_file_linux}}
+
+
+            true ->
+             IO.puts("Unsupported")
           end
 
         # Covers Windows
