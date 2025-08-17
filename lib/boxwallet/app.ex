@@ -6,7 +6,27 @@ defmodule BoxWallet.App do
   @app_filename_win "boxwallet.exe"
 
   @app_working_dir_lin ".boxwallet"
-  @app_working_dir_lin  "BoxWallet"
+  @app_working_dir_win  "BoxWallet"
+
+  def home_folder do
+    user_home_dir = System.user_home()
+    case :os.type() do
+      {:unix, :darwin} ->
+        IO.puts("Running on a Mac.")
+        Path.join(user_home_dir, "Library/Application Support/" <> @app_working_dir_win)
+
+      {:unix, :linux} ->
+        IO.puts("Running on Linux.")
+        Path.join(user_home_dir, @app_working_dir_lin)
+
+      {:win32, _} ->
+        IO.puts("Running on Windows.")
+        Path.join(user_home_dir, "appdata\\roaming\\" <> @app_working_dir_win)
+
+      _ ->
+        IO.puts("Running on an unknown OS.")
+    end
+  end
 
   def name do
     @app_name
