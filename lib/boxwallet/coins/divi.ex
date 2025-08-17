@@ -56,6 +56,7 @@ defmodule Boxwallet.Coins.Divi do
   @rpc_credentials [username: "rpcuser", password: "rpcpass"]
 
   def download_coin(location) do
+    File.mkdir_p(location)
     IO.puts("#{BoxWallet.App.name} is downloading to: #{location}")
     IO.puts("System detected as: #{:erlang.system_info(:system_architecture)}")
     sys_info = to_string(:erlang.system_info(:system_architecture))
