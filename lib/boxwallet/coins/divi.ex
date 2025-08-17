@@ -1,6 +1,7 @@
 # lib/my_app/coins/divi.ex
 defmodule Boxwallet.Coins.Divi do
   @behaviour BoxWallet.CoinDaemon
+  import BoxWallet.App
 
   @coin_name "DIVI"
   @coin_name_abbrev "DIVI"
@@ -55,7 +56,7 @@ defmodule Boxwallet.Coins.Divi do
   @rpc_credentials [username: "rpcuser", password: "rpcpass"]
 
   def download_coin(location) do
-    IO.puts("Downloading to: #{location}")
+    IO.puts("#{BoxWallet.App.name} is downloading to: #{location}")
     IO.puts("System detected as: #{:erlang.system_info(:system_architecture)}")
     sys_info = to_string(:erlang.system_info(:system_architecture))
     # Determine the file path and URL based on OS and architecture
@@ -77,12 +78,10 @@ defmodule Boxwallet.Coins.Divi do
               IO.puts("i386 detected")
               {:error, "linux 386 is not currently supported for: #{@coin_name}"}
 
-
             String.contains?(sys_info,"x86_64") ->
               IO.puts("x86_64 detected")
               {:ok,
               {Path.join(location, @download_file_linux), @download_url <> @download_file_linux}}
-
 
             true ->
              IO.puts("Unsupported")
