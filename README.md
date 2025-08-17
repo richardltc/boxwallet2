@@ -1,10 +1,10 @@
-# What is BoxWallet?
+# What is BoxWallet 2?
 
-BoxWallet is a browser based,  multi-coin wallet, that can get your coin-of-choice up and running fast and securely staking with just a few clicks.
+BoxWallet 2 is a browser based,  multi-coin wallet, that can get your coin-of-choice up and running fast and securely staking with just a few clicks.
 
-# Getting started with BoxWallet
+# Getting started with BoxWallet 2
 
-The best way of getting started with BoxWallet is to clone this repository (`git clone`), install it's dependencies via `npm install` and then run it via `npm run dev`. Don't worry if none of that makes sense, we'll go through everything, step-by-step below.
+As there are no current releases of BoxWallet 2, the best way of getting started is to clone this repository (`git clone`), install Elixir and Erlang (which is the platform that BoxWallet runs on) and then run it. Don't worry if none of that makes sense, we'll go through everything, step-by-step below.
 
 ## Installing `git`
 
@@ -20,31 +20,15 @@ With `git` now installed, you can change into the directory where you'd like to 
 
 You should now have a directory full of files.
 
-## Installing `NodeJS` or `bun`
-Before we're able to run BoxWallet we need to install `NodeJS` or `bun` as that will be the engine that BoxWallet uses in order to run.
+## Installing `Elixir` and `Erlang`
+Before we're able to run BoxWallet we need to install `Elixir` and `Erlang` as that is the platform that BoxWallet runs on.
 
-To install `bun` head over to [`https://bun.sh/`](https://bun.sh/) and follow the really simple instructions on how to install it.
+To install `Elixir` and `Erlang` head over to [`https://elixir-lang.org/install.html`](https://elixir-lang.org/install) and follow the instructions there.
 
-If you're running on Linux you'll be able to install `NodeJS` from your package manager (`sudo apt install nodejs`), on Windows, you can go to:
- [`www.nodejs.org`](https://www.nodejs.org).
+With `Elixir` and `Erlang` now installed, the last step we need to do before running BoxWallet is to install some dependencies that
+it requires. Don't worry, as this is a simple process. Open a command prompt in your BoxWallet directory and
+run either `mix deps.get`
 
-With `bun` or `NodeJS` now installed, the last step we need to do before running BoxWallet is to install some dependencies that 
-it requires. Don't worry, as this is a simple process. Open a command prompt in your BoxWallet directory and 
-run either `bun install` or `npm install`
-
-One final step is to tell BoxWallet what it's server IP address is.  To do this, you need to create a file called `.env`
-in the same directory as this `README.md` file. Then, if your doing all of this on a single machine, that is, you're 
-going to be running your browser on the same machine that's you're also running the server on, you need to add 
-exactly `PUBLIC_HOST_IP=localhost` into the `.env`, otherwise, if the server is running on a different machine than
-your browser is running, you need to enter that IP address as `PUBLIC_HOST_IP=your_server_ip` so, if the IP address of
-your server was 192.168.1.1 you'd enter `PUBLIC_HOST_IP=192.168.1.1`
-
-After this step is complete, you're now ready to run BoxWallet
-
-If you want to run BoxWallet locally on the machine you've just installed it on type the command: `npm run dev --open`
-
-This should now automatically open your browser and run BoxWallet
-
-If you want to run BoxWallet and access it from another machine on your local network run the command: `npm run host`
+After this step is complete, you're now ready to run BoxWallet. In the same directory, simply run `mix phx.server` and open your browser to `http://localhost:4000/light`
 
 Congratulations, and thank you for using BoxWallet
