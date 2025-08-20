@@ -20,6 +20,7 @@ defmodule BoxwalletWeb.Router do
     get "/", PageController, :home
 
     live "/light", LightLive
+    live "/reddcoin", ReddCoinLive
   end
 
   # Other scopes may use custom stacks.
