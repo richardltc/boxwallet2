@@ -1,5 +1,5 @@
 defmodule BoxwalletWeb.LightLive do
-  import BoxWallet.App
+  # import BoxWallet.App
   use BoxwalletWeb, :live_view
   alias Boxwallet.Coins.Divi
 
@@ -9,8 +9,8 @@ defmodule BoxwalletWeb.LightLive do
   end
 
   def handle_event("download_divi", _, socket) do
-    IO.puts("Download Divi button clicked - Downloading to #{BoxWallet.App.home_folder}")
-    Divi.download_coin(BoxWallet.App.home_folder)
+    IO.puts("Download Divi button clicked - Downloading to #{BoxWallet.App.home_folder()}")
+    Divi.download_coin(BoxWallet.App.home_folder())
     {:noreply, socket}
   end
 
