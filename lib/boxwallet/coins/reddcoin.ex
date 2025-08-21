@@ -159,7 +159,6 @@ defmodule Boxwallet.Coins.ReddCoin do
               case result do
                 :ok ->
                   IO.puts("Successfully extracted files")
-
                   :ok
 
                 {:error, reason} ->
