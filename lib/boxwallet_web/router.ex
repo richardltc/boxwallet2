@@ -19,6 +19,7 @@ defmodule BoxwalletWeb.Router do
 
     get "/", PageController, :home
 
+    live "/divi", DiviLive
     live "/light", LightLive
     live "/reddcoin", ReddCoinLive
   end
