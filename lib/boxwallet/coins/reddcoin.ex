@@ -56,6 +56,36 @@ defmodule Boxwallet.Coins.ReddCoin do
   @install_path Path.expand("~/.my_app/bitcoin")
   @rpc_credentials [username: "rpcuser", password: "rpcpass"]
 
+  def all_binary_files_exist(dir) do
+    case :os.type() do
+      {:win32, _} ->
+        check_windows_files(dir)
+
+      _ ->
+        check_unix_files(dir)
+    end
+  end
+
+  defp check_windows_files(dir) do
+    files = [
+      Path.join(dir, @cli_file_win),
+      Path.join(dir, @daemon_file_win)
+      # Path.join(dir, @tx_file_win)
+    ]
+
+    Enum.all?(files, &File.exists?/1)
+  end
+
+  defp check_unix_files(dir) do
+    files = [
+      Path.join(dir, @cli_file_lin),
+      Path.join(dir, @daemon_file_lin)
+      # Path.join(dir, @tx_file)
+    ]
+
+    Enum.all?(files, &File.exists?/1)
+  end
+
   def download_coin(location) do
     File.mkdir_p(location)
     IO.puts("#{BoxWallet.App.name()} is downloading to: #{location}")
