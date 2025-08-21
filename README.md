@@ -25,8 +25,7 @@ Before we're able to run BoxWallet we need to install `Elixir` and `Erlang` as t
 
 To install `Elixir` and `Erlang` head over to [`https://elixir-lang.org/install.html`](https://elixir-lang.org/install) and follow the instructions there.
 
-With `Elixir` and `Erlang` now installed, the last step we need to do before running BoxWallet is to install some dependencies that
-it requires. Don't worry, as this is a simple process. Open a command prompt in your BoxWallet directory and
+With `Elixir` and `Erlang` now installed, the last step we need to do before running BoxWallet is to install some dependencies that it requires. Don't worry, as this is a simple process. Open a command prompt in your BoxWallet directory and
 run either `mix deps.get`
 
 After this step is complete, you're now ready to run BoxWallet. In the same directory, simply run `mix phx.server` and open your browser to `http://localhost:4000/light`
