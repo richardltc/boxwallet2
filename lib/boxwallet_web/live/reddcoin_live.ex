@@ -10,6 +10,7 @@ defmodule BoxwalletWeb.ReddCoinLive do
 
   def handle_event("download_reddcoin", _, socket) do
     IO.puts("Download ReddCoin button clicked - Downloading to #{BoxWallet.App.home_folder()}")
+    IO.inspect(ReddCoin.all_binary_files_exist(BoxWallet.App.home_folder()))
     ReddCoin.download_coin(BoxWallet.App.home_folder())
     {:noreply, socket}
   end
