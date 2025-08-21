@@ -137,32 +137,63 @@ defmodule Boxwallet.Coins.ReddCoin do
     unless File.exists?(full_file_path) do
       {:error, "Source file does not exist: #{full_file_path}"}
     else
+      IO.puts("Source file exists: #{full_file_path}")
+
       case :os.type() do
         {:unix, :linux} ->
-          case Path.extname(full_file_path) do
-            ".tar.gz" ->
+          IO.puts("Linux detected")
+
+          cond do
+            String.contains?(full_file_path, ".tar.gz") ->
               IO.puts("Extracting #{full_file_path} to #{location}")
 
               result =
                 :erl_tar.extract(
                   to_charlist(full_file_path),
-                  [:compressed, :verbose, {:cwd, to_charlist(location)}]
+                  [:compressed, {:cwd, to_charlist(location)}]
+                  # [:compressed, :verbose, {:cwd, to_charlist(location)}]
                 )
 
               IO.inspect(result, label: "Extract result")
 
               case result do
-                {:ok, file_list} ->
-                  IO.puts("Successfully extracted #{length(file_list)} files")
+                :ok ->
+                  IO.puts("Successfully extracted files")
+
                   :ok
 
                 {:error, reason} ->
                   {:error, "Failed to extract tar.gz: #{inspect(reason)}"}
               end
 
-            _ ->
+            true ->
               {:error, "Unsupported file format for Linux: #{full_file_path}"}
           end
+
+        # case Path.extname(full_file_path) do
+        #   ".tar.gz" ->
+        #     IO.puts("Extracting #{full_file_path} to #{location}")
+
+        #     result =
+        #       :erl_tar.extract(
+        #         to_charlist(full_file_path),
+        #         [:compressed, :verbose, {:cwd, to_charlist(location)}]
+        #       )
+
+        #     IO.inspect(result, label: "Extract result")
+
+        #     case result do
+        #       {:ok, file_list} ->
+        #         IO.puts("Successfully extracted #{length(file_list)} files")
+        #         :ok
+
+        #       {:error, reason} ->
+        #         {:error, "Failed to extract tar.gz: #{inspect(reason)}"}
+        #     end
+
+        #   _ ->
+        #     {:error, "Unsupported file format for Linux: #{full_file_path}"}
+        # end
 
         {:win32, :nt} ->
           case Path.extname(full_file_path) do
