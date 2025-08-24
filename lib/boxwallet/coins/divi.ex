@@ -124,9 +124,13 @@ defmodule Boxwallet.Coins.Divi do
     # Use a `with` statement to handle the success or error of determining the paths
     with {:ok, {full_file_path, full_file_dl_url}} <- result do
       # If `result` was {:ok, {path, url}}, these variables are now bound and accessible
-      case Req.get(full_file_dl_url) do
-        {:ok, %Req.Response{status: 200, body: body}} ->
-          File.write(full_file_path, body)
+      IO.puts("Downloading from: #{full_file_dl_url}")
+      IO.puts("Downloading to: #{full_file_path}")
+
+      case Req.get(full_file_dl_url, into: File.stream!(full_file_path)) do
+        {:ok, %Req.Response{status: 200}} ->
+          IO.puts("Download complete, now extracting...")
+          unarchive_(full_file_path, location)
 
         {:ok, %Req.Response{status: status}} ->
           {:error, "HTTP error: #{status}"}
