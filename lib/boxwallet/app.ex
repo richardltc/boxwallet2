@@ -1,15 +1,16 @@
 defmodule BoxWallet.App do
-  @app_name       "BoxWallet"
+  @app_name "BoxWallet"
   @updater_app_name "bwupdater"
-  @app_version      "0.0.1"
-  @app_filename     "boxwallet"
+  @app_version "0.0.1"
+  @app_filename "boxwallet"
   @app_filename_win "boxwallet.exe"
 
   @app_working_dir_lin ".boxwallet"
-  @app_working_dir_win  "BoxWallet"
+  @app_working_dir_win "BoxWallet"
 
   def home_folder do
     user_home_dir = System.user_home()
+
     case :os.type() do
       {:unix, :darwin} ->
         IO.puts("Running on a Mac.")
