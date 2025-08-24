@@ -12,6 +12,7 @@ defmodule Boxwallet.Coins.Divi do
   @core_version "3.0.0"
   @download_file_arm32 "divi-" <> @core_version <> "-RPi2-9e2f76c.tar.gz"
   @download_file_linux "divi-" <> @core_version <> "-x86_64-linux-gnu-9e2f76c.tar.gz"
+  @download_file_mac64 "divi-" <> @core_version <> "-osx64-9e2f76c.tar.gz"
   @download_file_windows "divi-" <> @core_version <> "-win64-9e2f76c.zip"
   @download_file_bs "primer.zip"
 
@@ -57,7 +58,7 @@ defmodule Boxwallet.Coins.Divi do
 
   def download_coin(location) do
     File.mkdir_p(location)
-    IO.puts("#{BoxWallet.App.name} is downloading to: #{location}")
+    IO.puts("#{BoxWallet.App.name()} is downloading to: #{location}")
     IO.puts("System detected as: #{:erlang.system_info(:system_architecture)}")
     sys_info = to_string(:erlang.system_info(:system_architecture))
     # Determine the file path and URL based on OS and architecture
@@ -66,26 +67,49 @@ defmodule Boxwallet.Coins.Divi do
       case :os.type() do
         {:unix, :linux} ->
           cond do
-            String.contains?(sys_info,"arm71") ->
+            String.contains?(sys_info, "arm71") ->
               IO.puts("arm71 detected")
+
               {:ok,
                {Path.join(location, @download_file_arm32), @download_url <> @download_file_arm32}}
 
-            String.contains?(sys_info,"aarch64") ->
+            String.contains?(sys_info, "aarch64") ->
               IO.puts("aarch64 detected")
               {:error, "arm64 is not currently supported for: #{@coin_name}"}
 
-            String.contains?(sys_info,"i386") ->
+            String.contains?(sys_info, "i386") ->
               IO.puts("i386 detected")
               {:error, "linux 386 is not currently supported for: #{@coin_name}"}
 
-            String.contains?(sys_info,"x86_64") ->
+            String.contains?(sys_info, "x86_64") ->
               IO.puts("x86_64 detected")
+
               {:ok,
-              {Path.join(location, @download_file_linux), @download_url <> @download_file_linux}}
+               {Path.join(location, @download_file_linux), @download_url <> @download_file_linux}}
 
             true ->
-             IO.puts("Unsupported")
+              IO.puts("Unsupported systtem: #{:erlang.system_info(:system_architecture)}")
+          end
+
+        {:unix, :darwin} ->
+          cond do
+
+            String.contains?(sys_info, "aarch64") ->
+              {:ok,
+               {Path.join(location, @download_file_mac64), @download_url <> @download_file_mac64}}
+
+            String.contains?(sys_info, "i386") ->
+              IO.puts("i386 detected")
+              {:error, "mac 386 is not currently supported for: #{@coin_name}"}
+
+            String.contains?(sys_info, "x86_64") ->
+              IO.puts("x86_64 detected")
+
+              {:ok,
+               {Path.join(location, @download_file_mac64), @download_url <> @download_file_mac64}}
+
+            true ->
+              IO.puts("Unsupported system: #{:erlang.system_info(:system_architecture)}")
           end
 
         # Covers Windows
