@@ -130,7 +130,7 @@ defmodule Boxwallet.Coins.Divi do
       case Req.get(full_file_dl_url, into: File.stream!(full_file_path)) do
         {:ok, %Req.Response{status: 200}} ->
           IO.puts("Download complete, now extracting...")
-          unarchive_(full_file_path, location)
+          BoxWallet.Coins.CoinHelper.unarchive(full_file_path, location)
 
         {:ok, %Req.Response{status: status}} ->
           {:error, "HTTP error: #{status}"}
@@ -141,33 +141,6 @@ defmodule Boxwallet.Coins.Divi do
     else
       # This block handles any {:error, message} returned from the `result` assignment
       {:error, message} -> {:error, message}
-    end
-  end
-
-  defp unarchive_(full_file_path, location) do
-    case :os.type() do
-      {:unix, :linux} ->
-        case Path.extname(full_file_path) do
-          ".tar.gz" ->
-            :erl_tar.extract(full_file_path, [:compressed, {:cwd, to_charlist(location)}])
-            :ok
-
-          _ ->
-            {:error, "Unsupported file format for Linux: #{full_file_path}"}
-        end
-
-      {:win32, :nt} ->
-        case Path.extname(full_file_path) do
-          ".zip" ->
-            # unarchive_file(full_file_path, location)
-            :ok
-
-          _ ->
-            {:error, "Unsupported file format for Windows: #{full_file_path}"}
-        end
-
-      _ ->
-        {:error, "Unsupported operating system for unarchiving"}
     end
   end
 
