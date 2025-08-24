@@ -31,7 +31,7 @@ defmodule Boxwallet.Coins.ReddCoin do
 
   # divi.conf file constants
   @rpc_user "reddcoinrpc"
-  @rpc_port "51473"
+  @rpc_port "45443"
 
   @tip_address "RaPRrgr3ztttsMY7MWitGWvxJYS2hA6quN"
 
