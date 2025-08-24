@@ -42,6 +42,7 @@ defmodule BoxWallet.Coins.CoinHelper do
               {:error, "Unsupported file format for Linux: #{full_file_path}"}
           end
 
+        # For Mac...
         {:unix, :darwin} ->
           IO.puts("Mac detected")
 
