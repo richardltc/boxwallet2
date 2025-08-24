@@ -1,6 +1,7 @@
 # lib/my_app_web/live/daemon_live.ex
 defmodule BoxWalletWeb.DaemonLive do
   use BoxwalletWeb, :live_view
+
   @coins [
     %{name: "Bitcoin", module: MyApp.Coins.Bitcoin},
     %{name: "Litecoin", module: MyApp.Coins.Litecoin}
@@ -11,7 +12,15 @@ defmodule BoxWalletWeb.DaemonLive do
     if connected?(socket), do: :timer.send_interval(5000, :update_sync)
     coin = List.first(@coins)
     status = if coin.module.daemon_running?(), do: "Running", else: "Stopped"
-    {:ok, assign(socket, coins: @coins, selected_coin: coin, daemon_status: status, install_status: :not_started, sync_info: coin.module.get_sync_info())}
+
+    {:ok,
+     assign(socket,
+       coins: @coins,
+       selected_coin: coin,
+       daemon_status: status,
+       install_status: :not_started,
+       sync_info: coin.module.get_sync_info()
+     )}
   end
 
   def render(assigns) do
@@ -20,26 +29,28 @@ defmodule BoxWalletWeb.DaemonLive do
       <h1>Crypto Daemon Control</h1>
       <select phx-change="select_coin">
         <%= for coin <- @coins do %>
-          <option value={coin.name} selected={@selected_coin.name == coin.name}><%= coin.name %></option>
+          <option value={coin.name} selected={@selected_coin.name == coin.name}>{coin.name}</option>
         <% end %>
       </select>
       <button phx-click="install_daemon" disabled={elem(@install_status, 0) == :in_progress}>
-        <%= case @install_status do
-              :completed -> "Daemon Installed"
-              :in_progress -> "Installing..."
-              {:failed, reason} -> "Install Failed: #{reason}"
-              _ -> "Install Daemon"
-            end %>
+        {case @install_status do
+          :completed -> "Daemon Installed"
+          :in_progress -> "Installing..."
+          {:failed, reason} -> "Install Failed: #{reason}"
+          _ -> "Install Daemon"
+        end}
       </button>
       <button phx-click="toggle_daemon">
-        <%= if @daemon_status == "Running", do: "Stop Daemon", else: "Start Daemon" %>
+        {if @daemon_status == "Running", do: "Stop Daemon", else: "Start Daemon"}
       </button>
-      <p>Daemon Status: <%= @daemon_status %></p>
-      <p>Install Status: <%= elem(@install_status, 0) %></p>
+      <p>Daemon Status: {@daemon_status}</p>
+      <p>Install Status: {elem(@install_status, 0)}</p>
 
-      <h2><%= @selected_coin.name %> Blockchain Sync</h2>
+      <h2>{@selected_coin.name} Blockchain Sync</h2>
       <div class="progress-container">
-        <div class="progress-bar" style={"width: #{@sync_info.progress}%"}><%= @sync_info.progress %>%</div>
+        <div class="progress-bar" style={"width: #{@sync_info.progress}%"}>
+          {@sync_info.progress}%
+        </div>
       </div>
       <div class="counters">
         <div class="counter">
@@ -106,31 +117,61 @@ defmodule BoxWalletWeb.DaemonLive do
   def handle_event("select_coin", %{"value" => coin_name}, socket) do
     coin = Enum.find(@coins, &(&1.name == coin_name))
     status = if coin.module.daemon_running?(), do: "Running", else: "Stopped"
-    {:noreply, assign(socket, selected_coin: coin, daemon_status: status, sync_info: coin.module.get_sync_info())}
+
+    {:noreply,
+     assign(socket,
+       selected_coin: coin,
+       daemon_status: status,
+       sync_info: coin.module.get_sync_info()
+     )}
   end
 
   def handle_event("install_daemon", _params, socket) do
     socket = assign(socket, install_status: :in_progress)
     coin_module = socket.assigns.selected_coin.module
+
     Task.start(fn ->
       case coin_module.install_daemon() do
         :ok -> send(self(), :install_complete)
         {:error, reason} -> send(self(), {:install_failed, reason})
       end
     end)
+
     {:noreply, socket}
   end
 
   def handle_event("toggle_daemon", _params, socket) do
     coin_module = socket.assigns.selected_coin.module
-    new_status = if coin_module.daemon_running?(), do: (coin_module.stop_daemon(); "Stopped"), else: (coin_module.start_daemon(); "Running")
-    sync_info = if new_status == "Running", do: coin_module.get_sync_info(), else: %{blocks: 0, headers: 0, progress: 0}
+
+    new_status =
+      if coin_module.daemon_running?(),
+        do:
+          (
+            coin_module.stop_daemon()
+            "Stopped"
+          ),
+        else:
+          (
+            coin_module.start_daemon()
+            "Running"
+          )
+
+    sync_info =
+      if new_status == "Running",
+        do: coin_module.get_sync_info(),
+        else: %{blocks: 0, headers: 0, progress: 0}
+
     {:noreply, assign(socket, daemon_status: new_status, sync_info: sync_info)}
   end
 
   def handle_info(:update_sync, socket) do
     coin_module = socket.assigns.selected_coin.module
-    sync_info = if socket.assigns.daemon_status == "Running", do: coin_module.get_sync_info(), else: %{blocks: 0, headers: 0, progress: 0}
+
+    sync_info =
+      if socket.assigns.daemon_status == "Running",
+        do: coin_module.get_sync_info(),
+        else: %{blocks: 0, headers: 0, progress: 0}
+
     {:noreply, assign(socket, sync_info: sync_info)}
   end
 
