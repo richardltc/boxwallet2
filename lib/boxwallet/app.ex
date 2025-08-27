@@ -33,4 +33,8 @@ defmodule BoxWallet.App do
   def name do
     @app_name
   end
+
+  def version do
+    @app_version
+  end
 end
