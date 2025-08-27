@@ -46,17 +46,17 @@
         fill="#FD4F00"
       />
     </svg>
-    <h1 class="text-brand mt-10 flex items-center text-sm font-semibold leading-6">
-      Phoenix Framework
+    <h1 class="text-[2rem] mt-4 font-semibold leading-10 tracking-tighter text-zinc-900 text-balance">
+      {BoxWallet.App.name}
       <small class="bg-brand/5 text-[0.8125rem] ml-3 rounded-full px-2 font-medium leading-6">
-        v{Application.spec(:phoenix, :vsn)}
+        v{BoxWallet.App.version}
       </small>
     </h1>
     <p class="text-[2rem] mt-4 font-semibold leading-10 tracking-tighter text-zinc-900 text-balance">
-      Peace of mind from prototype to production.
+      The easy-to-use multi coin wallet that gives you the control.
     </p>
     <p class="mt-4 text-base leading-7 text-zinc-600">
-      Build rich, interactive web applications quickly, with less code and fewer moving parts. Join our growing community of developers using Phoenix to craft APIs, HTML5 apps and more, for fun or at scale.
+    {BoxWallet.App.name} is a browser based, multi-coin wallet, that gets your coin-of-choice up and running fast and securely, with just a few clicks!
     </p>
     <div class="flex">
       <div class="w-full sm:w-auto">
@@ -133,7 +133,7 @@
         <div class="mt-10 grid grid-cols-1 gap-y-4 text-sm leading-6 text-zinc-700 sm:grid-cols-2">
           <div>
             <a
-              href="https://twitter.com/elixirphoenix"
+              href="https://x.com/box_wallet"
               class="group -mx-2 -my-0.5 inline-flex items-center gap-3 rounded-lg px-2 py-0.5 hover:bg-zinc-50 hover:text-zinc-900"
             >
               <svg
