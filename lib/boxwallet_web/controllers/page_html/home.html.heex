@@ -70,23 +70,18 @@
       <div class="w-full sm:w-auto">
         <div class="mt-10 grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-3">
           <a
-            href="https://hexdocs.pm/phoenix/overview.html"
+            href="/divi"
             class="group relative rounded-2xl px-6 py-4 text-sm font-semibold leading-6 text-zinc-900 sm:py-6"
           >
             <span class="absolute inset-0 rounded-2xl bg-zinc-50 transition group-hover:bg-zinc-100 sm:group-hover:scale-105">
             </span>
             <span class="relative flex items-center gap-4 sm:flex-col">
-              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" class="h-6 w-6">
-                <path d="m12 4 10-2v18l-10 2V4Z" fill="#18181B" fill-opacity=".15" />
-                <path
-                  d="M12 4 2 2v18l10 2m0-18v18m0-18 10-2v18l-10 2"
-                  stroke="#18181B"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
-              Guides &amp; Docs
+
+            <img
+            src={static_path(@conn, "/images/divi_logo.png")}
+                alt="Divi logo"
+                class="h-6 w-6 rounded object-cover"
+            >              Divi
             </span>
           </a>
           <a
