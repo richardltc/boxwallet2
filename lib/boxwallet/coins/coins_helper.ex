@@ -93,5 +93,4 @@ defmodule BoxWallet.Coins.CoinHelper do
       end
     end
   end
-
 end
