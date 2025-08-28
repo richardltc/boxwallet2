@@ -93,7 +93,6 @@ defmodule Boxwallet.Coins.Divi do
 
         {:unix, :darwin} ->
           cond do
-
             String.contains?(sys_info, "aarch64") ->
               {:ok,
                {Path.join(location, @download_file_mac64), @download_url <> @download_file_mac64}}
