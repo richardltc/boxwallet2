@@ -4,7 +4,7 @@ defmodule BoxwalletWeb.DiviLive do
   alias Boxwallet.Coins.Divi
 
   def mount(_params, _session, socket) do
-    socket = assign(socket, brightness: 10)
+    socket = assign(socket, coin_name: "Divi", coin_title: "Crypto made easy!")
     {:ok, socket}
   end
 
@@ -16,7 +16,14 @@ defmodule BoxwalletWeb.DiviLive do
 
   def render(assigns) do
     ~H"""
-    <h1>Divi Core Test Page</h1>
+    <img src={~p"/images/divi_logo.png"} width="100"
+
+      alt="Divi logo"
+      class="h-100 w-100 rounded object-cover"
+    />
+
+    <h1><%= @coin_name %> Core Test Page</h1>
+    <h2><%= @coin_title %></h2>
     <%!-- <div id="light">
       <div class="meter">
         <span style={"width: #{@brightness}%"}>
