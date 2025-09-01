@@ -18,9 +18,7 @@ defmodule BoxwalletWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
-
     live "/divi", DiviLive
-    live "/light", LightLive
     live "/reddcoin", ReddCoinLive
   end
 

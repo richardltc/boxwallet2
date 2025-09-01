@@ -1,4 +1,4 @@
-<.flash_group flash={@flash} />
+<Layouts.flash_group flash={@flash} />
 <div class="left-[40rem] fixed inset-y-0 right-0 z-0 hidden lg:block xl:left-[50rem]">
   <svg
     viewBox="0 0 1480 957"
@@ -48,16 +48,20 @@
       width="100"
       height="100"
     />
-    <h1 class="text-[2rem] mt-4 font-semibold leading-10 tracking-tighter text-zinc-900 text-balance">
-      {BoxWallet.App.name()}
-      <small class="bg-brand/5 text-[0.8125rem] ml-3 rounded-full px-2 font-mono leading-6">
-        v{BoxWallet.App.version()}
-      </small>
-    </h1>
-    <p class="text-[2rem] mt-4 font-semibold leading-10 tracking-tighter text-zinc-900 text-balance">
+    <div class="mt-10 flex justify-between items-center">
+      <h1 class="text-[2.5rem] flex items-center text-md font-semibold leading-6">
+        {BoxWallet.App.name()}
+        <small class="badge badge-warning badge-sm ml-3">
+          v{BoxWallet.App.version()}
+        </small>
+      </h1>
+      <Layouts.theme_toggle />
+    </div>
+
+    <p class="text-[2rem] mt-4 font-semibold leading-10 tracking-tighter text-balance">
       The easy-to-use multi-coin wallet that gives you the control.
     </p>
-    <p class="mt-4 text-base leading-7 text-zinc-600">
+    <p class="mt-4 leading-7 text-base-content/70">
       {BoxWallet.App.name()} is a browser based, multi-coin wallet, that gets your coin-of-choice up and running fast and securely, with just a few clicks!
     </p>
     <div class="flex">
@@ -65,9 +69,9 @@
         <div class="mt-10 grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-3">
           <a
             href="/divi"
-            class="group relative rounded-2xl px-6 py-4 text-sm font-semibold leading-6 text-zinc-900 sm:py-6"
+            class="group relative rounded-box px-6 py-4 text-sm font-semibold leading-6 sm:py-6"
           >
-            <span class="absolute inset-0 rounded-2xl bg-zinc-50 transition group-hover:bg-zinc-100 sm:group-hover:scale-105">
+            <span class="absolute inset-0 rounded-box bg-base-200 transition group-hover:bg-base-300 sm:group-hover:scale-105">
             </span>
             <span class="relative flex items-center gap-4 sm:flex-col">
               <img
@@ -79,9 +83,9 @@
           </a>
           <a
             href="/reddcoin"
-            class="group relative rounded-2xl px-6 py-4 text-sm font-semibold leading-6 text-zinc-900 sm:py-6"
+            class="group relative rounded-box px-6 py-4 text-sm font-semibold leading-6 sm:py-6"
           >
-            <span class="absolute inset-0 rounded-2xl bg-zinc-50 transition group-hover:bg-zinc-100 sm:group-hover:scale-105">
+            <span class="absolute inset-0 rounded-box bg-base-200 transition group-hover:bg-base-300 sm:group-hover:scale-105">
             </span>
             <span class="relative flex items-center gap-4 sm:flex-col">
               <img
@@ -92,11 +96,11 @@
             </span>
           </a>
         </div>
-        <div class="mt-10 grid grid-cols-1 gap-y-4 text-sm leading-6 text-zinc-700 sm:grid-cols-2">
+        <div class="mt-10 grid grid-cols-1 gap-y-4 text-sm leading-6 text-base-content/80 sm:grid-cols-2">
           <div>
             <a
               href="https://x.com/box_wallet"
-              class="group -mx-2 -my-0.5 inline-flex items-center gap-3 rounded-lg px-2 py-0.5 hover:bg-zinc-50 hover:text-zinc-900"
+              class="group -mx-2 -my-0.5 inline-flex items-center gap-3 rounded-lg px-2 py-0.5 hover:bg-base-200 hover:text-base-content"
             >
               <svg
                 viewBox="0 0 16 16"
@@ -111,7 +115,7 @@
           <div>
             <a
               href="https://t.me/boxwallet"
-              class="group -mx-2 -my-0.5 inline-flex items-center gap-3 rounded-lg px-2 py-0.5 hover:bg-zinc-50 hover:text-zinc-900"
+              class="group -mx-2 -my-0.5 inline-flex items-center gap-3 rounded-lg px-2 py-0.5 hover:bg-base-200 hover:text-base-content"
             >
               <svg
                 viewBox="0 0 16 16"

@@ -38,9 +38,7 @@ defmodule BoxwalletWeb do
 
   def controller do
     quote do
-      use Phoenix.Controller,
-        formats: [:html, :json],
-        layouts: [html: BoxwalletWeb.Layouts]
+      use Phoenix.Controller, formats: [:html, :json]
 
       use Gettext, backend: BoxwalletWeb.Gettext
 
@@ -52,8 +50,7 @@ defmodule BoxwalletWeb do
 
   def live_view do
     quote do
-      use Phoenix.LiveView,
-        layout: {BoxwalletWeb.Layouts, :app}
+      use Phoenix.LiveView
 
       unquote(html_helpers())
     end
@@ -90,8 +87,9 @@ defmodule BoxwalletWeb do
       # Core UI components
       import BoxwalletWeb.CoreComponents
 
-      # Shortcut for generating JS commands
+      # Common modules used in templates
       alias Phoenix.LiveView.JS
+      alias BoxwalletWeb.Layouts
 
       # Routes generation with the ~p sigil
       unquote(verified_routes())

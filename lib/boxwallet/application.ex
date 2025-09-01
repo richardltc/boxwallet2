@@ -11,8 +11,6 @@ defmodule Boxwallet.Application do
       BoxwalletWeb.Telemetry,
       {DNSCluster, query: Application.get_env(:boxwallet, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Boxwallet.PubSub},
-      # Start the Finch HTTP client for sending emails
-      {Finch, name: Boxwallet.Finch},
       # Start a worker by calling: Boxwallet.Worker.start_link(arg)
       # {Boxwallet.Worker, arg},
       # Start to serve requests, typically the last entry

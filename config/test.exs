@@ -4,7 +4,7 @@ import Config
 # you can enable the server option below.
 config :boxwallet, BoxwalletWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4002],
-  secret_key_base: "JGVOHsVsthqdKVCOfn9jlBu3Lp1Wcl+tBYWUkcxgrWwiyUI0Mx6RPE6dmovd0sio",
+  secret_key_base: "cHaKYwEKmX+jxekCeli4nuSuhUQAgnQmAUYANdllMa4G170wQKZrW4GtzidO6okk",
   server: false
 
 # In test we don't send emails
