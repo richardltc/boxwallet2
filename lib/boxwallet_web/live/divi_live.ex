@@ -9,20 +9,101 @@ defmodule BoxwalletWeb.DiviLive do
         coin_name: "Divi",
         coin_title: "The foundation for a truly decentralized future.",
         coin_description:
-          "Our rapidly changing world requires flexible financial products. Through our innovative technology, we’re building the future of finance."
+          "Our rapidly changing world requires flexible financial products. Through our innovative technology, we’re building the future of finance.",
+        show_install_alert: false
       )
 
     {:ok, socket}
   end
 
   def handle_event("download_divi", _, socket) do
-    IO.puts("Download Divi button clicked - Downloading to #{BoxWallet.App.home_folder()}")
-    Divi.download_coin(BoxWallet.App.home_folder())
+    IO.puts("🚀 Starting download event")
+
+    socket =
+      socket
+      |> assign(show_install_alert: true)
+      |> assign_async(:download_result, fn ->
+        IO.puts("🔄 Inside async function, about to call download_coin")
+        result = Divi.download_coin(BoxWallet.App.home_folder())
+        IO.puts("🏁 Async function completed")
+        IO.inspect(result, label: "ASYNC FUNCTION RESULT")
+        result
+      end)
+
+    {:noreply, socket}
+  end
+
+  def handle_async(:download_result, {:ok, %{download_result: result}}, socket) do
+    IO.puts("🎉 SUCCESS HANDLER CALLED: Download completed successfully")
+    IO.inspect(result, label: "SUCCESS - Download result")
+
+    socket =
+      socket
+      |> assign(show_install_alert: false)
+      |> assign(download_complete: true)
+
+    {:noreply, socket}
+  end
+
+  def handle_async(:download_result, {:error, reason}, socket) do
+    IO.puts("❌ ERROR HANDLER CALLED: Download failed")
+    IO.inspect(reason, label: "ERROR - Error reason")
+
+    socket =
+      socket
+      |> assign(show_install_alert: false)
+      |> assign(download_error: "Download failed: #{inspect(reason)}")
+
+    {:noreply, socket}
+  end
+
+  def handle_async(:download_result, {:exit, reason}, socket) do
+    IO.puts("💥 EXIT HANDLER CALLED: Download failed")
+    IO.inspect(reason, label: "EXIT - Exit reason")
+
+    socket =
+      socket
+      |> assign(show_install_alert: false)
+      |> assign(download_error: "Download failed: #{inspect(reason)}")
+
+    {:noreply, socket}
+  end
+
+  # Optional: Handle auto-hiding the alert
+  def handle_info(:hide_install_alert, socket) do
+    socket = assign(socket, :show_install_alert, false)
     {:noreply, socket}
   end
 
   def render(assigns) do
     ~H"""
+    <!-- Alert (conditionally rendered) -->
+    <%= if assigns[:show_install_alert] do %>
+      <div role="alert" class="alert alert-info mb-4">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          class="h-6 w-6 shrink-0 stroke-current"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          >
+          </path>
+        </svg>
+        <span>Installation started successfully!</span>
+      </div>
+    <% end %>
+
+    <%= if assigns[:download_complete] do %>
+      <div role="alert" class="alert alert-success mb-4">
+        <span>Download complete!</span>
+      </div>
+    <% end %>
+
     <div class="flex justify-center items-center">
       <div class="card bg-base-100 w-full max-w-2xl shadow-xl p-8">
         <!-- Logo and title section -->
@@ -39,17 +120,17 @@ defmodule BoxwalletWeb.DiviLive do
             </div>
           </div>
         </div>
-        
+
     <!-- Description section -->
         <div class="text-center border-t border-gray-100 pt-6">
           <p class="text-gray-400 text-lg leading-relaxed max-w-2xl mx-auto">
             {@coin_description}
           </p>
         </div>
-        
+
     <!-- Action buttons -->
         <div class="card-actions justify-center mt-8">
-          <button class="btn btn-primary px-8">
+          <button class="btn btn-primary px-8" onclick="install_modal.showModal()">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
@@ -68,6 +149,30 @@ defmodule BoxwalletWeb.DiviLive do
             <i class="fas fa-download mr-2"></i>
             Install
           </button>
+
+    <!-- DaisyUI Modal Dialog -->
+          <dialog id="install_modal" class="modal">
+            <div class="modal-box">
+              <h3 class="font-bold text-lg">Confirm Installation</h3>
+              <p class="py-4">Are you sure you want to proceed with the installation?</p>
+              <div class="modal-action">
+                <!-- Yes button -->
+                <form method="dialog">
+                  <button
+                    class="btn btn-success mr-2"
+                    phx-click="download_divi"
+                    onclick="install_modal.close()"
+                  >
+                    Yes
+                  </button>
+                </form>
+                <!-- No button -->
+                <form method="dialog">
+                  <button class="btn btn-error">No</button>
+                </form>
+              </div>
+            </div>
+          </dialog>
 
           <button class="btn btn-outline btn-secondary px-8">
             <svg

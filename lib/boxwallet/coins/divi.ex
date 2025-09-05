@@ -61,8 +61,8 @@ defmodule Boxwallet.Coins.Divi do
     IO.puts("#{BoxWallet.App.name()} is downloading to: #{location}")
     IO.puts("System detected as: #{:erlang.system_info(:system_architecture)}")
     sys_info = to_string(:erlang.system_info(:system_architecture))
+
     # Determine the file path and URL based on OS and architecture
-    # The result will be either {:ok, {path, url}} or {:error, message}
     result =
       case :os.type() do
         {:unix, :linux} ->
@@ -88,7 +88,8 @@ defmodule Boxwallet.Coins.Divi do
                {Path.join(location, @download_file_linux), @download_url <> @download_file_linux}}
 
             true ->
-              IO.puts("Unsupported systtem: #{:erlang.system_info(:system_architecture)}")
+              IO.puts("Unsupported system: #{:erlang.system_info(:system_architecture)}")
+              {:error, "Unsupported Linux architecture: #{sys_info}"}
           end
 
         {:unix, :darwin} ->
@@ -109,6 +110,7 @@ defmodule Boxwallet.Coins.Divi do
 
             true ->
               IO.puts("Unsupported system: #{:erlang.system_info(:system_architecture)}")
+              {:error, "Unsupported macOS architecture: #{sys_info}"}
           end
 
         # Covers Windows
@@ -129,7 +131,22 @@ defmodule Boxwallet.Coins.Divi do
       case Req.get(full_file_dl_url, into: File.stream!(full_file_path)) do
         {:ok, %Req.Response{status: 200}} ->
           IO.puts("Download complete, now extracting...")
-          BoxWallet.Coins.CoinHelper.unarchive(full_file_path, location)
+
+          case BoxWallet.Coins.CoinHelper.unarchive(full_file_path, location) do
+            :ok ->
+              IO.inspect(result, label: "result")
+              IO.puts("Download and extraction completed successfully")
+              {:ok, %{download_result: {full_file_path, full_file_dl_url}}}
+
+            {:ok, extract_result} ->
+              IO.puts("Download and extraction completed successfully")
+              IO.inspect(extract_result, label: "Extract result")
+              {:ok, %{download_result: {full_file_path, full_file_dl_url}}}
+
+            {:error, reason} ->
+              IO.puts("Extraction failed: #{inspect(reason)}")
+              {:error, "Extraction failed: #{reason}"}
+          end
 
         {:ok, %Req.Response{status: status}} ->
           {:error, "HTTP error: #{status}"}
