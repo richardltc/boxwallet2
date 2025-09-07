@@ -14,7 +14,7 @@ If you're on Linux you can install `git` with your package manager, however, if 
 
 [`https://git-scm.com`](https://git-scm.com) and download and install `git`
 
-With `git` now installed, you can change into the directory where you'd like to install (clone) BoxWallet and type:
+With `git` now installed, you can open a command prompt and change into the directory where you'd like to install (`clone`) BoxWallet and type:
 
 `git clone https://github.com/richardltc/boxwallet2.git`
 
