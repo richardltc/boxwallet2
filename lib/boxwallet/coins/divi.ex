@@ -62,6 +62,51 @@ defmodule Boxwallet.Coins.Divi do
     IO.puts("System detected as: #{:erlang.system_info(:system_architecture)}")
     sys_info = to_string(:erlang.system_info(:system_architecture))
 
+    # The result will contain, :ok, the download_to and download_from
+    result = get_download_url(location)
+    IO.inspect(result, label: "download url")
+
+    # Use a `with` statement to handle the success or error of determining the paths
+    with {:ok, {full_file_path, full_file_dl_url}} <- result do
+      # If `result` was {:ok, {path, url}}, these variables are now bound and accessible
+      IO.puts("Downloading from: #{full_file_dl_url}")
+      IO.puts("Downloading to: #{full_file_path}")
+
+      case Req.get(full_file_dl_url, into: File.stream!(full_file_path)) do
+        {:ok, %Req.Response{status: 200}} ->
+          IO.puts("Download complete, now extracting...")
+
+          case BoxWallet.Coins.CoinHelper.unarchive(full_file_path, location) do
+            :ok ->
+              IO.inspect(result, label: "result")
+              IO.puts("Download and extraction completed successfully")
+              {:ok, %{download_result: {full_file_path, full_file_dl_url}}}
+
+            {:ok, extract_result} ->
+              IO.puts("Download and extraction completed successfully")
+              IO.inspect(extract_result, label: "Extract result")
+              {:ok, %{download_result: {full_file_path, full_file_dl_url}}}
+
+            {:error, reason} ->
+              IO.puts("Extraction failed: #{inspect(reason)}")
+              {:error, "Extraction failed: #{reason}"}
+          end
+
+        {:ok, %Req.Response{status: status}} ->
+          {:error, "HTTP error: #{status}"}
+
+        {:error, reason} ->
+          {:error, reason}
+      end
+    else
+      # This block handles any {:error, message} returned from the `result` assignment
+      {:error, message} -> {:error, message}
+    end
+  end
+
+  def get_download_url(location) do
+    sys_info = to_string(:erlang.system_info(:system_architecture))
+
     # Determine the file path and URL based on OS and architecture
     result =
       case :os.type() do
@@ -121,45 +166,22 @@ defmodule Boxwallet.Coins.Divi do
         _ ->
           {:error, "Unsupported operating system"}
       end
-
-    # Use a `with` statement to handle the success or error of determining the paths
-    with {:ok, {full_file_path, full_file_dl_url}} <- result do
-      # If `result` was {:ok, {path, url}}, these variables are now bound and accessible
-      IO.puts("Downloading from: #{full_file_dl_url}")
-      IO.puts("Downloading to: #{full_file_path}")
-
-      case Req.get(full_file_dl_url, into: File.stream!(full_file_path)) do
-        {:ok, %Req.Response{status: 200}} ->
-          IO.puts("Download complete, now extracting...")
-
-          case BoxWallet.Coins.CoinHelper.unarchive(full_file_path, location) do
-            :ok ->
-              IO.inspect(result, label: "result")
-              IO.puts("Download and extraction completed successfully")
-              {:ok, %{download_result: {full_file_path, full_file_dl_url}}}
-
-            {:ok, extract_result} ->
-              IO.puts("Download and extraction completed successfully")
-              IO.inspect(extract_result, label: "Extract result")
-              {:ok, %{download_result: {full_file_path, full_file_dl_url}}}
-
-            {:error, reason} ->
-              IO.puts("Extraction failed: #{inspect(reason)}")
-              {:error, "Extraction failed: #{reason}"}
-          end
-
-        {:ok, %Req.Response{status: status}} ->
-          {:error, "HTTP error: #{status}"}
-
-        {:error, reason} ->
-          {:error, reason}
-      end
-    else
-      # This block handles any {:error, message} returned from the `result` assignment
-      {:error, message} -> {:error, message}
-    end
   end
 
+  # specify the variables that need to be passed in here maybe "from" and "to" or something?
+  defp unarchive_file(full_file_path, location) do
+    case BoxWallet.Coins.CoinHelper.unarchive(full_file_path, location) do
+      :ok ->
+        # IO.inspect(result, label: "result")
+        IO.puts("Download and extraction completed successfully")
+        {:ok}
+
+      {:error, reason} ->
+        IO.puts("Extraction failed: #{inspect(reason)}")
+        {:error, "Extraction failed: #{reason}"}
+    end
+
+  end
   # def install_daemon do
   #   try do
   #     File.mkdir_p!(@install_path)
