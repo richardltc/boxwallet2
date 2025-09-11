@@ -33,7 +33,7 @@ defmodule BoxwalletWeb.DiviLive do
     {:noreply, socket}
   end
 
-  def handle_async(:download_result, {:ok, %{download_result: result}}, socket) do
+  def handle_async(:download_result, {:ok, result}, socket) do
     IO.puts("🎉 SUCCESS HANDLER CALLED: Download completed successfully")
     IO.inspect(result, label: "SUCCESS - Download result")
 
@@ -120,14 +120,14 @@ defmodule BoxwalletWeb.DiviLive do
             </div>
           </div>
         </div>
-        
+
     <!-- Description section -->
         <div class="text-center border-t border-gray-100 pt-6">
           <p class="text-gray-400 text-lg leading-relaxed max-w-2xl mx-auto">
             {@coin_description}
           </p>
         </div>
-        
+
     <!-- Action buttons -->
         <div class="card-actions justify-center mt-8">
           <button class="btn btn-primary px-8" onclick="install_modal.showModal()">
@@ -149,7 +149,7 @@ defmodule BoxwalletWeb.DiviLive do
             <i class="fas fa-download mr-2"></i>
             Install
           </button>
-          
+
     <!-- DaisyUI Modal Dialog -->
           <dialog id="install_modal" class="modal">
             <div class="modal-box">

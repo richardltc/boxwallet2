@@ -63,14 +63,8 @@ defmodule Boxwallet.Coins.Divi do
     sys_info = to_string(:erlang.system_info(:system_architecture))
 
     # The result will contain, :ok, the download_to and download_from
-    result = get_download_url(location)
-    IO.inspect(result, label: "download url")
-
-    # Use a `with` statement to handle the success or error of determining the paths
-    with {:ok, {full_file_path, full_file_dl_url}} <- result do
-      # If `result` was {:ok, {path, url}}, these variables are now bound and accessible
-      IO.puts("Downloading from: #{full_file_dl_url}")
-      IO.puts("Downloading to: #{full_file_path}")
+    download_url = get_download_url(location)
+    full_file_path = #todo construct the full dest file path
 
       case Req.get(full_file_dl_url, into: File.stream!(full_file_path)) do
         {:ok, %Req.Response{status: 200}} ->
@@ -98,10 +92,6 @@ defmodule Boxwallet.Coins.Divi do
         {:error, reason} ->
           {:error, reason}
       end
-    else
-      # This block handles any {:error, message} returned from the `result` assignment
-      {:error, message} -> {:error, message}
-    end
   end
 
   def get_download_url(location) do
@@ -115,8 +105,7 @@ defmodule Boxwallet.Coins.Divi do
             String.contains?(sys_info, "arm71") ->
               IO.puts("arm71 detected")
 
-              {:ok,
-               {Path.join(location, @download_file_arm32), @download_url <> @download_file_arm32}}
+              {:ok,@download_url <> @download_file_arm32}
 
             String.contains?(sys_info, "aarch64") ->
               IO.puts("aarch64 detected")
@@ -129,8 +118,7 @@ defmodule Boxwallet.Coins.Divi do
             String.contains?(sys_info, "x86_64") ->
               IO.puts("x86_64 detected")
 
-              {:ok,
-               {Path.join(location, @download_file_linux), @download_url <> @download_file_linux}}
+              {:ok,@download_url <> @download_file_linux}
 
             true ->
               IO.puts("Unsupported system: #{:erlang.system_info(:system_architecture)}")
@@ -140,8 +128,7 @@ defmodule Boxwallet.Coins.Divi do
         {:unix, :darwin} ->
           cond do
             String.contains?(sys_info, "aarch64") ->
-              {:ok,
-               {Path.join(location, @download_file_mac64), @download_url <> @download_file_mac64}}
+              {:ok, @download_url <> @download_file_mac64}
 
             String.contains?(sys_info, "i386") ->
               IO.puts("i386 detected")
@@ -150,8 +137,7 @@ defmodule Boxwallet.Coins.Divi do
             String.contains?(sys_info, "x86_64") ->
               IO.puts("x86_64 detected")
 
-              {:ok,
-               {Path.join(location, @download_file_mac64), @download_url <> @download_file_mac64}}
+              {:ok,@download_url <> @download_file_mac64}
 
             true ->
               IO.puts("Unsupported system: #{:erlang.system_info(:system_architecture)}")
@@ -160,8 +146,7 @@ defmodule Boxwallet.Coins.Divi do
 
         # Covers Windows
         {:win32, :nt} ->
-          {:ok,
-           {Path.join(location, @download_file_windows), @download_url <> @download_file_windows}}
+          {:ok,@download_url <> @download_file_windows}
 
         _ ->
           {:error, "Unsupported operating system"}
