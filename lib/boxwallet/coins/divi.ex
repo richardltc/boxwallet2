@@ -64,7 +64,7 @@ defmodule Boxwallet.Coins.Divi do
 
     # The result will contain, :ok, the download_to and download_from
     download_url = get_download_url(location)
-    full_file_path = #todo construct the full dest file path
+    full_file_path = BoxWallet.App.home_folder() <>  #todo construct the full dest file path
 
       case Req.get(full_file_dl_url, into: File.stream!(full_file_path)) do
         {:ok, %Req.Response{status: 200}} ->
@@ -151,6 +151,66 @@ defmodule Boxwallet.Coins.Divi do
         _ ->
           {:error, "Unsupported operating system"}
       end
+  end
+
+  defp get_filename() do
+    sys_info = to_string(:erlang.system_info(:system_architecture))
+
+    # Determine the file path and URL based on OS and architecture
+    result =
+      case :os.type() do
+        {:unix, :linux} ->
+          cond do
+            String.contains?(sys_info, "arm71") ->
+
+
+              {:ok,@download_file_arm32}
+
+            String.contains?(sys_info, "aarch64") ->
+
+              {:error, "arm64 is not currently supported for: #{@coin_name}"}
+
+            String.contains?(sys_info, "i386") ->
+
+              {:error, "linux 386 is not currently supported for: #{@coin_name}"}
+
+            String.contains?(sys_info, "x86_64") ->
+
+
+              {:ok, @download_file_linux}
+
+            true ->
+              IO.puts("Unsupported system: #{:erlang.system_info(:system_architecture)}")
+              {:error, "Unsupported Linux architecture: #{sys_info}"}
+          end
+
+        {:unix, :darwin} ->
+          cond do
+            String.contains?(sys_info, "aarch64") ->
+              {:ok, @download_file_mac64}
+
+            String.contains?(sys_info, "i386") ->
+
+              {:error, "mac 386 is not currently supported for: #{@coin_name}"}
+
+            String.contains?(sys_info, "x86_64") ->
+
+
+              {:ok,@download_file_mac64}
+
+            true ->
+              IO.puts("Unsupported system: #{:erlang.system_info(:system_architecture)}")
+              {:error, "Unsupported macOS architecture: #{sys_info}"}
+          end
+
+        # Covers Windows
+        {:win32, :nt} ->
+          {:ok,@download_file_windows}
+
+        _ ->
+          {:error, "Unsupported operating system"}
+      end
+
   end
 
   # specify the variables that need to be passed in here maybe "from" and "to" or something?
