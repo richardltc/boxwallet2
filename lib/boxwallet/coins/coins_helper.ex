@@ -1,11 +1,5 @@
 defmodule BoxWallet.Coins.CoinHelper do
   def unarchive(full_file_path, location) do
-    # Ensure destination directory exists
-    case File.mkdir_p(location) do
-      :ok -> :ok
-      {:error, reason} -> {:error, "Failed to create directory #{location}: #{reason}"}
-    end
-
     # Check if source file exists
     unless File.exists?(full_file_path) do
       {:error, "Source file does not exist: #{full_file_path}"}
@@ -27,7 +21,7 @@ defmodule BoxWallet.Coins.CoinHelper do
                   # [:compressed, :verbose, {:cwd, to_charlist(location)}]
                 )
 
-              IO.inspect(result, label: "Extract result")
+              #IO.inspect(result, label: "Extract result")
 
               case result do
                 :ok ->
