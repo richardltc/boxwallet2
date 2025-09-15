@@ -63,10 +63,10 @@ defmodule Boxwallet.Coins.Divi do
     sys_info = to_string(:erlang.system_info(:system_architecture))
 
     # The result will contain, :ok, the download_to and download_from
-    download_url = get_download_url(location)
+    # download_url = get_download_url(location)
 
-    full_file_dl_url =
-      full_file_path = BoxWallet.App.home_folder() <> get_filename()
+    full_file_dl_url = @download_url <> get_filename()
+    full_file_path = BoxWallet.App.home_folder() <> get_filename()
 
     case Req.get(full_file_dl_url, into: File.stream!(full_file_path)) do
       {:ok, %Req.Response{status: 200}} ->
@@ -74,7 +74,7 @@ defmodule Boxwallet.Coins.Divi do
 
         case BoxWallet.Coins.CoinHelper.unarchive(full_file_path, location) do
           :ok ->
-            IO.inspect(result, label: "result")
+            # IO.inspect(result, label: "result")
             IO.puts("Download and extraction completed successfully")
             {:ok, %{download_result: {full_file_path, full_file_dl_url}}}
 
