@@ -64,34 +64,36 @@ defmodule Boxwallet.Coins.Divi do
 
     # The result will contain, :ok, the download_to and download_from
     download_url = get_download_url(location)
-    full_file_path = BoxWallet.App.home_folder() <>  #todo construct the full dest file path
 
-      case Req.get(full_file_dl_url, into: File.stream!(full_file_path)) do
-        {:ok, %Req.Response{status: 200}} ->
-          IO.puts("Download complete, now extracting...")
+    full_file_dl_url =
+      full_file_path = BoxWallet.App.home_folder() <> get_filename()
 
-          case BoxWallet.Coins.CoinHelper.unarchive(full_file_path, location) do
-            :ok ->
-              IO.inspect(result, label: "result")
-              IO.puts("Download and extraction completed successfully")
-              {:ok, %{download_result: {full_file_path, full_file_dl_url}}}
+    case Req.get(full_file_dl_url, into: File.stream!(full_file_path)) do
+      {:ok, %Req.Response{status: 200}} ->
+        IO.puts("Download complete, now extracting...")
 
-            {:ok, extract_result} ->
-              IO.puts("Download and extraction completed successfully")
-              IO.inspect(extract_result, label: "Extract result")
-              {:ok, %{download_result: {full_file_path, full_file_dl_url}}}
+        case BoxWallet.Coins.CoinHelper.unarchive(full_file_path, location) do
+          :ok ->
+            IO.inspect(result, label: "result")
+            IO.puts("Download and extraction completed successfully")
+            {:ok, %{download_result: {full_file_path, full_file_dl_url}}}
 
-            {:error, reason} ->
-              IO.puts("Extraction failed: #{inspect(reason)}")
-              {:error, "Extraction failed: #{reason}"}
-          end
+          {:ok, extract_result} ->
+            IO.puts("Download and extraction completed successfully")
+            IO.inspect(extract_result, label: "Extract result")
+            {:ok, %{download_result: {full_file_path, full_file_dl_url}}}
 
-        {:ok, %Req.Response{status: status}} ->
-          {:error, "HTTP error: #{status}"}
+          {:error, reason} ->
+            IO.puts("Extraction failed: #{inspect(reason)}")
+            {:error, "Extraction failed: #{reason}"}
+        end
 
-        {:error, reason} ->
-          {:error, reason}
-      end
+      {:ok, %Req.Response{status: status}} ->
+        {:error, "HTTP error: #{status}"}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
   end
 
   def get_download_url(location) do
@@ -105,7 +107,7 @@ defmodule Boxwallet.Coins.Divi do
             String.contains?(sys_info, "arm71") ->
               IO.puts("arm71 detected")
 
-              {:ok,@download_url <> @download_file_arm32}
+              {:ok, @download_url <> @download_file_arm32}
 
             String.contains?(sys_info, "aarch64") ->
               IO.puts("aarch64 detected")
@@ -118,7 +120,7 @@ defmodule Boxwallet.Coins.Divi do
             String.contains?(sys_info, "x86_64") ->
               IO.puts("x86_64 detected")
 
-              {:ok,@download_url <> @download_file_linux}
+              {:ok, @download_url <> @download_file_linux}
 
             true ->
               IO.puts("Unsupported system: #{:erlang.system_info(:system_architecture)}")
@@ -137,7 +139,7 @@ defmodule Boxwallet.Coins.Divi do
             String.contains?(sys_info, "x86_64") ->
               IO.puts("x86_64 detected")
 
-              {:ok,@download_url <> @download_file_mac64}
+              {:ok, @download_url <> @download_file_mac64}
 
             true ->
               IO.puts("Unsupported system: #{:erlang.system_info(:system_architecture)}")
@@ -146,7 +148,7 @@ defmodule Boxwallet.Coins.Divi do
 
         # Covers Windows
         {:win32, :nt} ->
-          {:ok,@download_url <> @download_file_windows}
+          {:ok, @download_url <> @download_file_windows}
 
         _ ->
           {:error, "Unsupported operating system"}
@@ -162,21 +164,15 @@ defmodule Boxwallet.Coins.Divi do
         {:unix, :linux} ->
           cond do
             String.contains?(sys_info, "arm71") ->
-
-
-              {:ok,@download_file_arm32}
+              {:ok, @download_file_arm32}
 
             String.contains?(sys_info, "aarch64") ->
-
               {:error, "arm64 is not currently supported for: #{@coin_name}"}
 
             String.contains?(sys_info, "i386") ->
-
               {:error, "linux 386 is not currently supported for: #{@coin_name}"}
 
             String.contains?(sys_info, "x86_64") ->
-
-
               {:ok, @download_file_linux}
 
             true ->
@@ -190,13 +186,10 @@ defmodule Boxwallet.Coins.Divi do
               {:ok, @download_file_mac64}
 
             String.contains?(sys_info, "i386") ->
-
               {:error, "mac 386 is not currently supported for: #{@coin_name}"}
 
             String.contains?(sys_info, "x86_64") ->
-
-
-              {:ok,@download_file_mac64}
+              {:ok, @download_file_mac64}
 
             true ->
               IO.puts("Unsupported system: #{:erlang.system_info(:system_architecture)}")
@@ -205,12 +198,11 @@ defmodule Boxwallet.Coins.Divi do
 
         # Covers Windows
         {:win32, :nt} ->
-          {:ok,@download_file_windows}
+          {:ok, @download_file_windows}
 
         _ ->
           {:error, "Unsupported operating system"}
       end
-
   end
 
   # specify the variables that need to be passed in here maybe "from" and "to" or something?
@@ -225,8 +217,8 @@ defmodule Boxwallet.Coins.Divi do
         IO.puts("Extraction failed: #{inspect(reason)}")
         {:error, "Extraction failed: #{reason}"}
     end
-
   end
+
   # def install_daemon do
   #   try do
   #     File.mkdir_p!(@install_path)
