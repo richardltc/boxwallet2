@@ -1,7 +1,7 @@
 # lib/my_app/coins/divi.ex
 defmodule Boxwallet.Coins.ReddCoin do
   @behaviour BoxWallet.CoinDaemon
-  import BoxWallet.App
+  # import BoxWallet.App
 
   @coin_name "ReddCoin"
   # @coin_name_abbrev "RDD"
