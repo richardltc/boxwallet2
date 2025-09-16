@@ -1,4 +1,6 @@
 defmodule BoxWallet.Coins.CoinHelper do
+  require Logger
+
   def unarchive(full_file_path, location) do
     # Check if source file exists
     unless File.exists?(full_file_path) do
@@ -8,24 +10,19 @@ defmodule BoxWallet.Coins.CoinHelper do
 
       case :os.type() do
         {:unix, :linux} ->
-          IO.puts("Linux detected")
-
           cond do
             String.contains?(full_file_path, ".tar.gz") ->
-              IO.puts("Extracting #{full_file_path} to #{location}")
+              Logger.info("Extracting #{full_file_path} to #{location}")
 
               result =
                 :erl_tar.extract(
                   to_charlist(full_file_path),
                   [:compressed, {:cwd, to_charlist(location)}]
-                  # [:compressed, :verbose, {:cwd, to_charlist(location)}]
                 )
-
-              #IO.inspect(result, label: "Extract result")
 
               case result do
                 :ok ->
-                  IO.puts("Successfully extracted files")
+                  Logger.info("Successfully extracted files")
                   :ok
 
                 {:error, reason} ->
@@ -38,24 +35,19 @@ defmodule BoxWallet.Coins.CoinHelper do
 
         # For Mac...
         {:unix, :darwin} ->
-          IO.puts("Mac detected")
-
           cond do
             String.contains?(full_file_path, ".tar.gz") ->
-              IO.puts("Extracting #{full_file_path} to #{location}")
+              Logger.info("Extracting #{full_file_path} to #{location}")
 
               result =
                 :erl_tar.extract(
                   to_charlist(full_file_path),
                   [:compressed, {:cwd, to_charlist(location)}]
-                  # [:compressed, :verbose, {:cwd, to_charlist(location)}]
                 )
-
-              IO.inspect(result, label: "Extract result")
 
               case result do
                 :ok ->
-                  IO.puts("Successfully extracted files")
+                  Logger.info("Successfully extracted files")
                   :ok
 
                 {:error, reason} ->
@@ -70,8 +62,8 @@ defmodule BoxWallet.Coins.CoinHelper do
           case Path.extname(full_file_path) do
             ".zip" ->
               case :zip.unzip(to_charlist(full_file_path), [{:cwd, to_charlist(location)}]) do
-                {:ok, file_list} ->
-                  IO.puts("Successfully extracted #{length(file_list)} files")
+                {:ok} ->
+                  IO.puts("Successfully extracted files")
                   :ok
 
                 {:error, reason} ->
