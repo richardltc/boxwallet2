@@ -17,8 +17,8 @@ defmodule Boxwallet.Coins.Divi do
   @download_file_windows "divi-" <> @core_version <> "-win64-9e2f76c.zip"
   # @download_file_bs "primer.zip"
 
-  @extracted_dir_linux "divi-" <> @core_version <> "/"
-  @extracted_dir_windows "divi-" <> @core_version <> "\\"
+  @extracted_dir_linux "divi-" <> @core_version #<> "/"
+  @extracted_dir_windows "divi-" <> @core_version #<> "\\"
 
   @download_url "https://github.com/DiviProject/Divi/releases/download/v" <> @core_version <> "/"
   # @download_url_bs "https://divi-primer-snapshot.s3.us-east-2.amazonaws.com/snapshot/"
