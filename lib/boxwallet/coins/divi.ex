@@ -57,6 +57,14 @@ defmodule Boxwallet.Coins.Divi do
   @install_path Path.expand("~/.my_app/bitcoin")
   @rpc_credentials [username: "rpcuser", password: "rpcpass"]
 
+  defp copy_extracted_files(source_dir) do
+    full_source_dir = Path.join(source_dir)
+
+    case File.cp!(full_source_dir <> ) do
+
+    end
+  end
+
   def download_coin(location) do
     File.mkdir_p(location)
     IO.puts("#{BoxWallet.App.name()} is downloading to: #{location}")
@@ -101,63 +109,69 @@ defmodule Boxwallet.Coins.Divi do
     end
   end
 
-  def get_download_url(location) do
-    sys_info = to_string(:erlang.system_info(:system_architecture))
+  def get_cli_filename() do
+    do_get_cli_filename(:os.type(), to_string(:erlang.system_info(:system_architecture)))
+  end
 
-    # Determine the file path and URL based on OS and architecture
-    result =
-      case :os.type() do
-        {:unix, :linux} ->
-          cond do
-            String.contains?(sys_info, "arm71") ->
-              IO.puts("arm71 detected")
+  # Function clause for Windows. It ignores the second argument (sys_info).
+  defp do_get_cli_filename({:win32, :nt}, _sys_info) do
+    {:ok, @cli_file_win}
+  end
 
-              {:ok, @download_url <> @download_file_arm32}
+  # Function clause for Linux.
+  defp do_get_cli_filename({:unix, :linux}, sys_info) do
+    cond do
+      String.contains?(sys_info, "x86_64") or String.contains?(sys_info, "arm71") ->
+        {:ok, @cli_file_lin}
 
-            String.contains?(sys_info, "aarch64") ->
-              IO.puts("aarch64 detected")
-              {:error, "arm64 is not currently supported for: #{@coin_name}"}
+      # ... other error conditions for Linux
+      true ->
+        {:error, "Unsupported Linux architecture: #{sys_info}"}
+    end
+  end
 
-            String.contains?(sys_info, "i386") ->
-              IO.puts("i386 detected")
-              {:error, "linux 386 is not currently supported for: #{@coin_name}"}
+  # Function clause for macOS.
+  defp do_get_cli_filename({:unix, :darwin}, sys_info) do
+    cond do
+      String.contains?(sys_info, "aarch64") or String.contains?(sys_info, "x86_64") ->
+        {:ok, @cli_file_lin}
+      # ... other error conditions for macOS
+      true ->
+        {:error, "Unsupported macOS architecture: #{sys_info}"}
+    end
+  end
 
-            String.contains?(sys_info, "x86_64") ->
-              IO.puts("x86_64 detected")
 
-              {:ok, @download_url <> @download_file_linux}
+  def get_daemon_filename() do
+    do_get_daemon_filename(:os.type(), to_string(:erlang.system_info(:system_architecture)))
+  end
 
-            true ->
-              IO.puts("Unsupported system: #{:erlang.system_info(:system_architecture)}")
-              {:error, "Unsupported Linux architecture: #{sys_info}"}
-          end
+  # Function clause for Windows. It ignores the second argument (sys_info).
+  defp do_get_daemon_filename({:win32, :nt}, _sys_info) do
+    {:ok, @daemon_file_win}
+  end
 
-        {:unix, :darwin} ->
-          cond do
-            String.contains?(sys_info, "aarch64") ->
-              {:ok, @download_url <> @download_file_mac64}
+  # Function clause for Linux.
+  defp do_get_daemon_filename({:unix, :linux}, sys_info) do
+    cond do
+      String.contains?(sys_info, "x86_64") or String.contains?(sys_info, "arm71") ->
+        {:ok, @daemon_file_lin}
 
-            String.contains?(sys_info, "i386") ->
-              IO.puts("i386 detected")
-              {:error, "mac 386 is not currently supported for: #{@coin_name}"}
+      # ... other error conditions for Linux
+      true ->
+        {:error, "Unsupported Linux architecture: #{sys_info}"}
+    end
+  end
 
-            String.contains?(sys_info, "x86_64") ->
-              IO.puts("x86_64 detected")
-
-              {:ok, @download_url <> @download_file_mac64}
-
-            true ->
-              IO.puts("Unsupported system: #{:erlang.system_info(:system_architecture)}")
-              {:error, "Unsupported macOS architecture: #{sys_info}"}
-          end
-
-        # Covers Windows
-        {:win32, :nt} ->
-          {:ok, @download_url <> @download_file_windows}
-
-        _ ->
-          {:error, "Unsupported operating system"}
-      end
+  # Function clause for macOS.
+  defp do_get_daemon_filename({:unix, :darwin}, sys_info) do
+    cond do
+      String.contains?(sys_info, "aarch64") or String.contains?(sys_info, "x86_64") ->
+        {:ok, @daemon_file_lin}
+      # ... other error conditions for macOS
+      true ->
+        {:error, "Unsupported macOS architecture: #{sys_info}"}
+    end
   end
 
   defp get_filename() do
