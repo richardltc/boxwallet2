@@ -1,5 +1,6 @@
 # lib/my_app/coins/divi.ex
 defmodule Boxwallet.Coins.Divi do
+  require Logger
   @behaviour BoxWallet.CoinDaemon
   import BoxWallet.App
 
@@ -65,8 +66,16 @@ defmodule Boxwallet.Coins.Divi do
     # The result will contain, :ok, the download_to and download_from
     # download_url = get_download_url(location)
 
-    full_file_dl_url = @download_url <> get_filename()
-    full_file_path = BoxWallet.App.home_folder() <> get_filename()
+    file_name = case get_filename() do
+      {:ok, name} -> name
+      {:error, reason} ->
+        Logger.error("Error: #{reason}")
+        ""  # Keep empty string or use some default
+    end
+
+    full_file_dl_url = @download_url <> file_name
+
+    full_file_path = BoxWallet.App.home_folder() <> file_name
 
     case Req.get(full_file_dl_url, into: File.stream!(full_file_path)) do
       {:ok, %Req.Response{status: 200}} ->
@@ -74,17 +83,13 @@ defmodule Boxwallet.Coins.Divi do
 
         case BoxWallet.Coins.CoinHelper.unarchive(full_file_path, location) do
           :ok ->
-            # IO.inspect(result, label: "result")
-            IO.puts("Download and extraction completed successfully")
-            {:ok, %{download_result: {full_file_path, full_file_dl_url}}}
 
-          {:ok, extract_result} ->
-            IO.puts("Download and extraction completed successfully")
-            IO.inspect(extract_result, label: "Extract result")
-            {:ok, %{download_result: {full_file_path, full_file_dl_url}}}
+            Logger.info("Download and extraction completed successfully")
+            {:ok}
+
 
           {:error, reason} ->
-            IO.puts("Extraction failed: #{inspect(reason)}")
+            Logger.error("Extraction failed: #{inspect(reason)}")
             {:error, "Extraction failed: #{reason}"}
         end
 
