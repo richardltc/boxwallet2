@@ -60,9 +60,29 @@ defmodule Boxwallet.Coins.Divi do
   defp copy_extracted_files(source_dir) do
     full_source_dir = Path.join(source_dir)
 
-    case File.cp!(full_source_dir <> ) do
+    cli_filename = case get_cli_filename() do
+      {:ok, name} -> name
+      {:error, reason} ->
+        Logger.error("Error: #{reason}")
+        ""
 
     end
+
+    daemon_filename = case get_daemon_filename() do
+      {:ok, name} -> name
+      {:error, reason} ->
+        Logger.error("Error: #{reason}")
+        ""
+
+    end
+
+    File.cp!(full_source_dir <> cli_filename, BoxWallet.App.home_folder)
+    File.cp!(full_source_dir <> daemon_filename, BoxWallet.App.home_folder)
+
+    target_file = Path.join(BoxWallet.App.home_folder, cli_filename)
+    File.chmod!(target_file, 0o755)
+    target_file = Path.join(BoxWallet.App.home_folder, cli_filename)
+    File.chmod!(target_file, 0o755)
   end
 
   def download_coin(location) do
