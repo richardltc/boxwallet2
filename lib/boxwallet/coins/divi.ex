@@ -17,8 +17,10 @@ defmodule Boxwallet.Coins.Divi do
   @download_file_windows "divi-" <> @core_version <> "-win64-9e2f76c.zip"
   # @download_file_bs "primer.zip"
 
-  @extracted_dir_linux "divi-" <> @core_version #<> "/"
-  @extracted_dir_windows "divi-" <> @core_version #<> "\\"
+  # <> "/"
+  @extracted_dir_linux "divi-" <> @core_version
+  # <> "\\"
+  @extracted_dir_windows "divi-" <> @core_version
 
   @download_url "https://github.com/DiviProject/Divi/releases/download/v" <> @core_version <> "/"
   # @download_url_bs "https://divi-primer-snapshot.s3.us-east-2.amazonaws.com/snapshot/"
@@ -57,32 +59,49 @@ defmodule Boxwallet.Coins.Divi do
   @install_path Path.expand("~/.my_app/bitcoin")
   @rpc_credentials [username: "rpcuser", password: "rpcpass"]
 
-  defp copy_extracted_files(source_dir) do
-    full_source_dir = Path.join(source_dir)
+  defp copy_extracted_files() do
+    cli_filename =
+      case get_cli_filename() do
+        {:ok, name} ->
+          name
 
-    cli_filename = case get_cli_filename() do
-      {:ok, name} -> name
-      {:error, reason} ->
-        Logger.error("Error: #{reason}")
-        ""
+        {:error, reason} ->
+          Logger.error("Error: #{reason}")
+          ""
+      end
 
-    end
+    daemon_filename =
+      case get_daemon_filename() do
+        {:ok, name} ->
+          name
 
-    daemon_filename = case get_daemon_filename() do
-      {:ok, name} -> name
-      {:error, reason} ->
-        Logger.error("Error: #{reason}")
-        ""
+        {:error, reason} ->
+          Logger.error("Error: #{reason}")
+          ""
+      end
 
-    end
+    full_path_cli =
+      Path.join([BoxWallet.App.home_folder(), @extracted_dir_linux, "bin", cli_filename])
 
-    File.cp!(full_source_dir <> cli_filename, BoxWallet.App.home_folder)
-    File.cp!(full_source_dir <> daemon_filename, BoxWallet.App.home_folder)
+    full_path_daemon =
+      Path.join([BoxWallet.App.home_folder(), @extracted_dir_linux, "bin", daemon_filename])
 
-    target_file = Path.join(BoxWallet.App.home_folder, cli_filename)
-    File.chmod!(target_file, 0o755)
-    target_file = Path.join(BoxWallet.App.home_folder, cli_filename)
-    File.chmod!(target_file, 0o755)
+    dest_path_cli =
+      Path.join([BoxWallet.App.home_folder(), cli_filename])
+
+    dest_path_daemon =
+      Path.join([BoxWallet.App.home_folder(), daemon_filename])
+
+    Logger.info("Copying from #{full_path_cli} to #{dest_path_cli}")
+    File.cp!(full_path_cli, dest_path_cli)
+    Logger.info("Copying from #{full_path_daemon} to #{dest_path_daemon}")
+    File.cp!(full_path_daemon, dest_path_daemon)
+
+    File.chmod!(dest_path_cli, 0o755)
+    File.chmod!(dest_path_daemon, 0o755)
+
+    File.rm_rf!(Path.join(BoxWallet.App.home_folder(), @extracted_dir_linux))
+    Logger.info("Files copied and permissions set successfully.")
   end
 
   def download_coin(location) do
@@ -94,12 +113,16 @@ defmodule Boxwallet.Coins.Divi do
     # The result will contain, :ok, the download_to and download_from
     # download_url = get_download_url(location)
 
-    file_name = case get_filename() do
-      {:ok, name} -> name
-      {:error, reason} ->
-        Logger.error("Error: #{reason}")
-        ""  # Keep empty string or use some default
-    end
+    file_name =
+      case get_filename() do
+        {:ok, name} ->
+          name
+
+        {:error, reason} ->
+          Logger.error("Error: #{reason}")
+          # Keep empty string or use some default
+          ""
+      end
 
     full_file_dl_url = @download_url <> file_name
 
@@ -111,10 +134,9 @@ defmodule Boxwallet.Coins.Divi do
 
         case BoxWallet.Coins.CoinHelper.unarchive(full_file_path, location) do
           :ok ->
-
             Logger.info("Download and extraction completed successfully")
+            copy_extracted_files()
             {:ok}
-
 
           {:error, reason} ->
             Logger.error("Extraction failed: #{inspect(reason)}")
@@ -155,12 +177,12 @@ defmodule Boxwallet.Coins.Divi do
     cond do
       String.contains?(sys_info, "aarch64") or String.contains?(sys_info, "x86_64") ->
         {:ok, @cli_file_lin}
+
       # ... other error conditions for macOS
       true ->
         {:error, "Unsupported macOS architecture: #{sys_info}"}
     end
   end
-
 
   def get_daemon_filename() do
     do_get_daemon_filename(:os.type(), to_string(:erlang.system_info(:system_architecture)))
@@ -188,6 +210,7 @@ defmodule Boxwallet.Coins.Divi do
     cond do
       String.contains?(sys_info, "aarch64") or String.contains?(sys_info, "x86_64") ->
         {:ok, @daemon_file_lin}
+
       # ... other error conditions for macOS
       true ->
         {:error, "Unsupported macOS architecture: #{sys_info}"}
