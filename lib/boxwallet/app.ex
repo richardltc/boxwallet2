@@ -23,7 +23,7 @@ defmodule BoxWallet.App do
 
       {:win32, _} ->
         IO.puts("Running on Windows.")
-        Path.join(user_home_dir, "appdata\\roaming\\" <> @app_working_dir_win)
+        Path.join([user_home_dir, "appdata","roaming",@app_working_dir_win])
 
       _ ->
         IO.puts("Running on an unknown OS.")
