@@ -115,7 +115,7 @@ defmodule Boxwallet.Coins.Divi do
     # download_url = get_download_url(location)
 
     file_name =
-      case get_filename() do
+      case get_download_filename() do
         {:ok, name} ->
           name
 
@@ -219,7 +219,7 @@ defmodule Boxwallet.Coins.Divi do
     end
   end
 
-  defp get_filename() do
+  defp get_download_filename() do
     sys_info = to_string(:erlang.system_info(:system_architecture))
 
     # Determine the file path and URL based on OS and architecture
