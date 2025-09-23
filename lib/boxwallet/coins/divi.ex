@@ -126,7 +126,8 @@ defmodule Boxwallet.Coins.Divi do
 
     full_file_dl_url = @download_url <> file_name
 
-    full_file_path = BoxWallet.App.home_folder() <> file_name
+    full_file_path = Path.join(BoxWallet.App.home_folder(), file_name)
+    Logger.info("Downloading file to: #{full_file_path}")
 
     case Req.get(full_file_dl_url, into: File.stream!(full_file_path)) do
       {:ok, %Req.Response{status: 200}} ->
