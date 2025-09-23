@@ -15,8 +15,8 @@ config :boxwallet, BoxwalletWeb.Endpoint,
   debug_errors: true,
   secret_key_base: "BO2ujy5Rhi43vglLDpyJQSsyIuo5SB5tU3FD8E+jZCu9TGwg/qLxnKbVIfeeYBRk",
   watchers: [
-    esbuild: {Esbuild, :install_and_run, [:boxwallet, ~w(--sourcemap=inline --watch)]},
-    tailwind: {Tailwind, :install_and_run, [:boxwallet, ~w(--watch)]}
+    # esbuild: {Esbuild, :install_and_run, [:boxwallet, ~w(--sourcemap=inline --watch)]},
+    # tailwind: {Tailwind, :install_and_run, [:boxwallet, ~w(--watch)]}
   ]
 
 # ## SSL Support
