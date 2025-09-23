@@ -2,11 +2,22 @@ defmodule Boxwallet.Application do
   # See https://hexdocs.pm/elixir/Application.html
   # for more information on OTP Applications
   @moduledoc false
+require Logger
 
   use Application
 
   @impl true
   def start(_type, _args) do
+    # Make sure app directory exists
+    Logger.info("#{BoxWallet.App.name()} v#{BoxWallet.App.version} starting..." )
+    app_home_dir = BoxWallet.App.home_folder()
+    Logger.info("Creating #{app_home_dir} if required")
+    File.mkdir_p!(app_home_dir)
+
+
+
+
+
     children = [
       BoxwalletWeb.Telemetry,
       {DNSCluster, query: Application.get_env(:boxwallet, :dns_cluster_query) || :ignore},
