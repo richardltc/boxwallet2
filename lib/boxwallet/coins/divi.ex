@@ -104,9 +104,10 @@ defmodule Boxwallet.Coins.Divi do
     Logger.info("Files copied and permissions set successfully.")
   end
 
-  def download_coin(location) do
-    File.mkdir_p(location)
-    IO.puts("#{BoxWallet.App.name()} is downloading to: #{location}")
+  def download_coin() do
+    app_home_dir = BoxWallet.App.home_folder()
+    # File.mkdir_p!(app_home_dir)
+    IO.puts("#{BoxWallet.App.name()} is downloading to: #{app_home_dir}")
     IO.puts("System detected as: #{:erlang.system_info(:system_architecture)}")
     sys_info = to_string(:erlang.system_info(:system_architecture))
 
@@ -126,14 +127,14 @@ defmodule Boxwallet.Coins.Divi do
 
     full_file_dl_url = @download_url <> file_name
 
-    full_file_path = Path.join(BoxWallet.App.home_folder(), file_name)
+    full_file_path = Path.join(app_home_dir, file_name)
     Logger.info("Downloading file to: #{full_file_path}")
 
     case Req.get(full_file_dl_url, into: File.stream!(full_file_path)) do
       {:ok, %Req.Response{status: 200}} ->
         IO.puts("Download complete, now extracting...")
 
-        case BoxWallet.Coins.CoinHelper.unarchive(full_file_path, location) do
+        case BoxWallet.Coins.CoinHelper.unarchive(full_file_path, app_home_dir) do
           :ok ->
             Logger.info("Download and extraction completed successfully")
             copy_extracted_files()
