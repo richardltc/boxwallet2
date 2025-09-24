@@ -62,7 +62,7 @@ defmodule BoxWallet.Coins.CoinHelper do
           case Path.extname(full_file_path) do
             ".zip" ->
               case :zip.unzip(to_charlist(full_file_path), [{:cwd, to_charlist(location)}]) do
-                {:ok} ->
+                {:ok, _} ->
                   IO.puts("Successfully extracted files")
                   :ok
 
