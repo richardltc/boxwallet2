@@ -100,7 +100,6 @@ defmodule Boxwallet.Coins.Divi do
     File.chmod!(dest_path_cli, 0o755)
     File.chmod!(dest_path_daemon, 0o755)
 
-    File.rm_rf!(Path.join(BoxWallet.App.home_folder(), @extracted_dir_linux))
     Logger.info("Files copied and permissions set successfully.")
   end
 
@@ -112,7 +111,6 @@ defmodule Boxwallet.Coins.Divi do
     sys_info = to_string(:erlang.system_info(:system_architecture))
 
     # The result will contain, :ok, the download_to and download_from
-    # download_url = get_download_url(location)
 
     file_name =
       case get_download_filename() do
@@ -136,8 +134,9 @@ defmodule Boxwallet.Coins.Divi do
 
         case BoxWallet.Coins.CoinHelper.unarchive(full_file_path, app_home_dir) do
           :ok ->
-            Logger.info("Download and extraction completed successfully")
+            Logger.info("Extraction completed successfully")
             copy_extracted_files()
+            tidy_downloaded_files(full_file_path)
             {:ok}
 
           {:error, reason} ->
@@ -151,6 +150,10 @@ defmodule Boxwallet.Coins.Divi do
       {:error, reason} ->
         {:error, reason}
     end
+  end
+
+  defp files_exist do
+    daemon_file = get_daemon_filename()
   end
 
   def get_cli_filename() do
@@ -267,6 +270,12 @@ defmodule Boxwallet.Coins.Divi do
         _ ->
           {:error, "Unsupported operating system"}
       end
+  end
+
+  defp tidy_downloaded_files(downloaded_file) do
+    File.rm_rf!(Path.join(BoxWallet.App.home_folder(), @extracted_dir_linux))
+    Logger.info("Removing file: #{downloaded_file}")
+    File.rm_rf!(downloaded_file)
   end
 
   # specify the variables that need to be passed in here maybe "from" and "to" or something?
