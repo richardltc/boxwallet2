@@ -56,8 +56,8 @@ defmodule Boxwallet.Coins.Divi do
   # // cCommandMNSyncStatus2         string = "status"
   # cCommandDumpHDInfo string = "dumphdinfo" // ./divi-cli dumphdinfo
 
-  @install_path Path.expand("~/.my_app/bitcoin")
-  @rpc_credentials [username: "rpcuser", password: "rpcpass"]
+  # @install_path Path.expand("~/.my_app/bitcoin")
+  # @rpc_credentials [username: "rpcuser", password: "rpcpass"]
 
   defp copy_extracted_files() do
     cli_filename =

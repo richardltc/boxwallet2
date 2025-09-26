@@ -1,6 +1,6 @@
 # lib/my_app/coins/litecoin.ex
 defmodule Boxwallet.Coins.Litecoin do
-  @behaviour Boxwallet.CoinDaemon
+  # @behaviour Boxwallet.CoinDaemon
   # Replace with actual URL
   @daemon_url "https://example.com/litecoind.tar.gz"
   # @install_path Path.expand("~/.my_app/litecoin")
