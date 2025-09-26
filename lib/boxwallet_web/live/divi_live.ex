@@ -10,7 +10,10 @@ defmodule BoxwalletWeb.DiviLive do
         coin_title: "The foundation for a truly decentralized future.",
         coin_description:
           "Our rapidly changing world requires flexible financial products. Through our innovative technology, we’re building the future of finance.",
-        show_install_alert: false
+        show_install_alert: false,
+        download_complete: false,
+        download_error: nil,
+        downloading: false
       )
 
     {:ok, socket}
@@ -19,67 +22,80 @@ defmodule BoxwalletWeb.DiviLive do
   def handle_event("download_divi", _, socket) do
     IO.puts("🚀 Starting download event")
 
-    socket =
-      socket
-      |> assign(show_install_alert: true)
-      |> assign_async(:download_result, fn ->
-        IO.puts("🔄 Inside async function, about to call download_coin")
-        result = Divi.download_coin()
-        IO.puts("🏁 Async function completed")
-        IO.inspect(result, label: "ASYNC FUNCTION RESULT")
-        result
-      end)
+    # Set the loading state
+    socket = assign(socket, downloading: true, show_install_alert: true)
+
+    # Send a message to self to perform the download
+    # This keeps the UI responsive while downloading
+    send(self(), :perform_download)
 
     {:noreply, socket}
   end
 
-  def handle_async(:download_result, {:ok, result}, socket) do
-    IO.puts("🎉 SUCCESS HANDLER CALLED: Download completed successfully")
-    IO.inspect(result, label: "SUCCESS - Download result")
+  def handle_info(:perform_download, socket) do
+    IO.puts("🔄 Performing download")
 
-    socket =
-      socket
-      |> assign(show_install_alert: false)
-      |> assign(download_complete: true)
+    case Divi.download_coin() do
+      {:ok} ->
+        IO.puts("🎉 Download completed successfully")
 
-    {:noreply, socket}
+        socket =
+          socket
+          |> assign(downloading: false)
+          |> assign(show_install_alert: false)
+          |> assign(download_complete: true)
+          |> assign(download_error: nil)
+
+        # Auto-hide success message after 5 seconds.
+        Process.send_after(self(), :hide_success_message, 5000)
+
+        {:noreply, socket}
+
+      {:error, reason} ->
+        IO.puts("❌ Download failed")
+        IO.inspect(reason, label: "ERROR - Error reason")
+
+        socket =
+          socket
+          |> assign(downloading: false)
+          |> assign(show_install_alert: false)
+          |> assign(download_complete: false)
+          |> assign(download_error: "Download failed: #{inspect(reason)}")
+
+        {:noreply, socket}
+    end
   end
 
-  def handle_async(:download_result, {:error, reason}, socket) do
-    IO.puts("❌ ERROR HANDLER CALLED: Download failed")
-    IO.inspect(reason, label: "ERROR - Error reason")
-
-    socket =
-      socket
-      |> assign(show_install_alert: false)
-      |> assign(download_error: "Download failed: #{inspect(reason)}")
-
-    {:noreply, socket}
-  end
-
-  def handle_async(:download_result, {:exit, reason}, socket) do
-    IO.puts("💥 EXIT HANDLER CALLED: Download failed")
-    IO.inspect(reason, label: "EXIT - Exit reason")
-
-    socket =
-      socket
-      |> assign(show_install_alert: false)
-      |> assign(download_error: "Download failed: #{inspect(reason)}")
-
-    {:noreply, socket}
-  end
-
-  # Optional: Handle auto-hiding the alert
-  def handle_info(:hide_install_alert, socket) do
-    socket = assign(socket, :show_install_alert, false)
+  def handle_info(:hide_success_message, socket) do
+    socket = assign(socket, download_complete: false)
     {:noreply, socket}
   end
 
   def render(assigns) do
     ~H"""
-    <!-- Alert (conditionally rendered) -->
-    <%= if assigns[:show_install_alert] do %>
+    <!-- Download in progress alert -->
+    <%= if @downloading do %>
       <div role="alert" class="alert alert-info mb-4">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          class="h-6 w-6 shrink-0 stroke-current animate-spin"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+          />
+        </svg>
+        <span>Downloading and installing Divi... Please wait.</span>
+      </div>
+    <% end %>
+
+    <!-- Success alert -->
+    <%= if @download_complete do %>
+      <div role="alert" class="alert alert-success mb-4">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           fill="none"
@@ -90,17 +106,30 @@ defmodule BoxwalletWeb.DiviLive do
             stroke-linecap="round"
             stroke-linejoin="round"
             stroke-width="2"
-            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-          >
-          </path>
+            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
         </svg>
-        <span>Installation started successfully!</span>
+        <span>Download and installation completed successfully!</span>
       </div>
     <% end %>
 
-    <%= if assigns[:download_complete] do %>
-      <div role="alert" class="alert alert-success mb-4">
-        <span>Download complete!</span>
+    <!-- Error alert -->
+    <%= if @download_error do %>
+      <div role="alert" class="alert alert-error mb-4">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          class="h-6 w-6 shrink-0 stroke-current"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
+        <span><%= @download_error %></span>
       </div>
     <% end %>
 
@@ -115,42 +144,43 @@ defmodule BoxwalletWeb.DiviLive do
           />
           <div class="flex-1">
             <div class="text-left">
-              <h2 class="card-title text-3xl font-bold">{@coin_name}</h2>
-              <p class="text-lg mt-2">{@coin_title}</p>
+              <h2 class="card-title text-3xl font-bold"><%= @coin_name %></h2>
+              <p class="text-lg mt-2"><%= @coin_title %></p>
             </div>
           </div>
         </div>
-        
-    <!-- Description section -->
+
+        <!-- Description section -->
         <div class="text-center border-t border-gray-100 pt-6">
           <p class="text-gray-400 text-lg leading-relaxed max-w-2xl mx-auto">
-            {@coin_description}
+            <%= @coin_description %>
           </p>
         </div>
-        
-    <!-- Action buttons -->
-        <div class="card-actions justify-center mt-8">
-          <button class="btn btn-primary px-8" onclick="install_modal.showModal()">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke-width="1.5"
-              stroke="currentColor"
-              class="size-6"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"
-              />
-            </svg>
 
-            <i class="fas fa-download mr-2"></i>
-            Install
-          </button>
-          
-    <!-- DaisyUI Modal Dialog -->
+        <!-- Action buttons -->
+        <div class="card-actions justify-center mt-8">
+        <button
+             class="btn btn-primary px-8"
+             onclick="install_modal.showModal()"
+             disabled={@downloading}
+           >
+             <svg
+               xmlns="http://www.w3.org/2000/svg"
+               fill="none"
+               viewBox="0 0 24 24"
+               stroke-width="1.5"
+               stroke="currentColor"
+               class="size-6"
+             >
+               <path
+                 stroke-linecap="round"
+                 stroke-linejoin="round"
+                 d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"
+               />
+             </svg>
+             Install
+           </button>
+          <!-- DaisyUI Modal Dialog -->
           <dialog id="install_modal" class="modal">
             <div class="modal-box">
               <h3 class="font-bold text-lg">Confirm Installation</h3>
@@ -162,6 +192,7 @@ defmodule BoxwalletWeb.DiviLive do
                     class="btn btn-success mr-2"
                     phx-click="download_divi"
                     onclick="install_modal.close()"
+                    disabled={@downloading}
                   >
                     Yes
                   </button>
@@ -174,7 +205,7 @@ defmodule BoxwalletWeb.DiviLive do
             </div>
           </dialog>
 
-          <button class="btn btn-outline btn-secondary px-8">
+          <button class="btn btn-outline btn-secondary px-8" disabled={@downloading}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
@@ -189,11 +220,10 @@ defmodule BoxwalletWeb.DiviLive do
                 d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z"
               />
             </svg>
-
-            <i class="fas fa-info-circle mr-2"></i>
             Start
           </button>
-          <button class="btn btn-outline btn-secondary px-8">
+
+          <button class="btn btn-outline btn-secondary px-8" disabled={@downloading}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
@@ -208,8 +238,6 @@ defmodule BoxwalletWeb.DiviLive do
                 d="M11.412 15.655 9.75 21.75l3.745-4.012M9.257 13.5H3.75l2.659-2.849m2.048-2.194L14.25 2.25 12 10.5h8.25l-4.707 5.043M8.457 8.457 3 3m5.457 5.457 7.086 7.086m0 0L21 21"
               />
             </svg>
-
-            <i class="fas fa-info-circle mr-2"></i>
             Stop
           </button>
         </div>
