@@ -10,7 +10,7 @@ defmodule BoxwalletWeb.LightLive do
 
   def handle_event("download_divi", _, socket) do
     IO.puts("Download Divi button clicked - Downloading to #{BoxWallet.App.home_folder()}")
-    Divi.download_coin(BoxWallet.App.home_folder())
+    Divi.download_coin()
     {:noreply, socket}
   end
 

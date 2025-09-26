@@ -6,8 +6,8 @@ defmodule Boxwallet.Coins.ReddCoin do
   @coin_name "ReddCoin"
   # @coin_name_abbrev "RDD"
 
-  @home_dir ".reddcoin"
-  @home_dir_win "ReddCoin"
+  # @home_dir ".reddcoin"
+  # @home_dir_win "ReddCoin"
 
   @core_version "4.22.9"
   @download_file_arm32 "reddcoin-" <> @core_version <> "-arm-linux-gnueabihf.tar.gz"
@@ -17,13 +17,13 @@ defmodule Boxwallet.Coins.ReddCoin do
   # @download_file_bs "primer.zip"
 
   # https://download.reddcoin.com/bin/reddcoin-core-4.22.9/
-  @extracted_dir_linux "reddcoin-" <> @core_version <> "/"
-  @extracted_dir_windows "reddcoin-" <> @core_version <> "\\"
+  # @extracted_dir_linux "reddcoin-" <> @core_version <> "/"
+  # @extracted_dir_windows "reddcoin-" <> @core_version <> "\\"
 
   @download_url "https://download.reddcoin.com/bin/reddcoin-core-" <> @core_version <> "/"
-  @download_url_bs "https://"
+  # @download_url_bs "https://"
 
-  @conf_file "reddcoin.conf"
+  # @conf_file "reddcoin.conf"
   @cli_file_lin "reddcoin-cli"
   @cli_file_win "reddcoin-cli.exe"
   @daemon_file_lin "reddcoind"
