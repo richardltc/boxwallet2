@@ -11,6 +11,7 @@ defmodule BoxwalletWeb.DiviLive do
         coin_description:
           "Our rapidly changing world requires flexible financial products. Through our innovative technology, we’re building the future of finance.",
         show_install_alert: false,
+        coin_files_exist: Divi.files_exist(),
         download_complete: false,
         download_error: nil,
         downloading: false
@@ -44,6 +45,7 @@ defmodule BoxwalletWeb.DiviLive do
           |> assign(downloading: false)
           |> assign(show_install_alert: false)
           |> assign(download_complete: true)
+          |> assign(coin_files_exist: true)
           |> assign(download_error: nil)
 
         # Auto-hide success message after 5 seconds.
@@ -205,7 +207,7 @@ defmodule BoxwalletWeb.DiviLive do
             </div>
           </dialog>
 
-          <button class="btn btn-outline btn-secondary px-8" disabled={@downloading}>
+          <button class="btn btn-outline btn-secondary px-8" disabled={!@coin_files_exist}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
