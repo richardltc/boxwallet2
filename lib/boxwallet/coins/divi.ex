@@ -152,8 +152,21 @@ defmodule Boxwallet.Coins.Divi do
     end
   end
 
-  defp files_exist do
-    daemon_file = get_daemon_filename()
+  def files_exist() do
+    daemon_filename =
+      case get_daemon_filename() do
+        {:ok, name} ->
+          name
+
+        {:error, reason} ->
+          Logger.error("Error: #{reason}")
+          ""
+      end
+
+
+    s = Path.join(BoxWallet.App.home_folder,daemon_filename)
+    Logger.info("Checking for file: #{s}")
+    File.exists?(Path.join(BoxWallet.App.home_folder,daemon_filename))
   end
 
   def get_cli_filename() do
