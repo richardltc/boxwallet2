@@ -337,17 +337,26 @@ defmodule Boxwallet.Coins.Divi do
   #   :ok
   # end
 
-  # def stop_daemon do
-  #   if :os.type() in [{:win32, _} | _] do
-  #     System.cmd(@daemon_bin, ["stop"], stderr_to_stdout: true)
-  #     System.cmd("taskkill", ["/IM", "bitcoind.exe", "/F"], stderr_to_stdout: true)
-  #   else
-  #     System.cmd(@daemon_bin, ["stop"], stderr_to_stdout: true)
-  #   end
+  def stop_daemon(auth) do
+      body = Jason.encode!(%{
+        jsonrpc: "1.0",
+        id: "curltext",
+        method: "stop",
+        params: []
+      })
 
-  #   :ok
-  # end
+      url = "http://#{auth.ip_address}:#{auth.port}"
 
+      headers = [
+        {"Content-Type", "text/plain"},
+        {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
+      ]
+
+      case HTTPoison.post(url, body, headers) do
+        {:ok, _response} -> :ok
+        {:error, %HTTPoison.Error{reason: reason}} -> {:error, reason}
+      end
+    end
   # def daemon_running? do
   #   if :os.type() in [{:win32, _} | _] do
   #     {output, 0} =
