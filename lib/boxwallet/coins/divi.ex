@@ -7,7 +7,7 @@ defmodule Boxwallet.Coins.Divi do
   @coin_name "DIVI"
   @coin_name_abbrev "DIVI"
 
-  @home_dir ".divi"
+  @home_dir_lin ".divi"
   @home_dir_win "DIVI"
 
   @core_version "3.0.0"
@@ -168,6 +168,25 @@ defmodule Boxwallet.Coins.Divi do
     Logger.info("Checking for file: #{s}")
     File.exists?(Path.join(BoxWallet.App.home_folder,daemon_filename))
   end
+
+  def get_coin_home_dir() do
+    user_home_dir = System.user_home()
+
+    case :os.type() do
+      {:unix, :darwin} ->
+        Path.join(user_home_dir, "Library/Application Support/" <> @home_dir_lin)
+
+      {:unix, :linux} ->
+        Path.join(user_home_dir, @home_dir_lin)
+
+      {:win32, _} ->
+        Path.join([user_home_dir, "appdata", "roaming", @home_dir_win])
+
+      _ ->
+        Logger.error("get_coin_home_dir: Running on an unknown OS!")
+    end
+  end
+
 
   def get_cli_filename() do
     do_get_cli_filename(:os.type(), to_string(:erlang.system_info(:system_architecture)))
