@@ -131,7 +131,7 @@ defmodule BoxwalletWeb.DiviLive do
             d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
           />
         </svg>
-        <span><%= @download_error %></span>
+        <span>{@download_error}</span>
       </div>
     <% end %>
 
@@ -146,42 +146,42 @@ defmodule BoxwalletWeb.DiviLive do
           />
           <div class="flex-1">
             <div class="text-left">
-              <h2 class="card-title text-3xl font-bold"><%= @coin_name %></h2>
-              <p class="text-lg mt-2"><%= @coin_title %></p>
+              <h2 class="card-title text-3xl font-bold">{@coin_name}</h2>
+              <p class="text-lg mt-2">{@coin_title}</p>
             </div>
           </div>
         </div>
-
-        <!-- Description section -->
+        
+    <!-- Description section -->
         <div class="text-center border-t border-gray-100 pt-6">
           <p class="text-gray-400 text-lg leading-relaxed max-w-2xl mx-auto">
-            <%= @coin_description %>
+            {@coin_description}
           </p>
         </div>
-
-        <!-- Action buttons -->
+        
+    <!-- Action buttons -->
         <div class="card-actions justify-center mt-8">
-        <button
-             class="btn btn-primary px-8"
-             onclick="install_modal.showModal()"
-             disabled={@downloading}
-           >
-             <svg
-               xmlns="http://www.w3.org/2000/svg"
-               fill="none"
-               viewBox="0 0 24 24"
-               stroke-width="1.5"
-               stroke="currentColor"
-               class="size-6"
-             >
-               <path
-                 stroke-linecap="round"
-                 stroke-linejoin="round"
-                 d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"
-               />
-             </svg>
-             Install
-           </button>
+          <button
+            class="btn btn-primary px-8"
+            onclick="install_modal.showModal()"
+            disabled={@downloading}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="1.5"
+              stroke="currentColor"
+              class="size-6"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"
+              />
+            </svg>
+            Install
+          </button>
           <!-- DaisyUI Modal Dialog -->
           <dialog id="install_modal" class="modal">
             <div class="modal-box">
