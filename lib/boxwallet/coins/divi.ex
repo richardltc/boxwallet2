@@ -232,7 +232,7 @@ defmodule Boxwallet.Coins.Divi do
   # Function clause for Linux.
   defp do_get_daemon_filename({:unix, :linux}, sys_info) do
     cond do
-      String.contains?(sys_info, "x86_64") or String.contains?(sys_info, "arm71") ->
+      String.contains?(sys_info, "x86_64") or String.contains?(sys_info, "aarch64") ->
         {:ok, @daemon_file_lin}
 
       # ... other error conditions for Linux
@@ -265,7 +265,7 @@ defmodule Boxwallet.Coins.Divi do
               {:ok, @download_file_arm32}
 
             String.contains?(sys_info, "aarch64") ->
-              {:error, "arm64 is not currently supported for: #{@coin_name}"}
+              {:ok, @download_file_arm32}
 
             String.contains?(sys_info, "i386") ->
               {:error, "linux 386 is not currently supported for: #{@coin_name}"}
