@@ -169,6 +169,10 @@ defmodule Boxwallet.Coins.Divi do
     File.exists?(Path.join(BoxWallet.App.home_folder(), daemon_filename))
   end
 
+  defp get_conf_file_location() do
+    Path.join(get_coin_home_dir(),@conf_file)
+  end
+
   def get_coin_home_dir() do
     user_home_dir = System.user_home()
 
