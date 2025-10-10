@@ -2,15 +2,15 @@ defmodule BoxWallet.Coins.CoinHelper do
   require Logger
 
   def create_conf_file_if_not_exists(filepath) do
-      if File.exists?(filepath) do
-        {:ok, "File already exists: #{filepath}"}
-      else
-        case File.write(filepath, "") do
-          :ok -> {:ok, "File created: #{filepath}"}
-          {:error, reason} -> {:error, reason}
-        end
+    if File.exists?(filepath) do
+      {:ok, "File already exists: #{filepath}"}
+    else
+      case File.write(filepath, "") do
+        :ok -> {:ok, "File created: #{filepath}"}
+        {:error, reason} -> {:error, reason}
       end
     end
+  end
 
   def unarchive(full_file_path, location) do
     # Check if source file exists
