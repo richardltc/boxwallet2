@@ -199,7 +199,7 @@ defmodule Boxwallet.Coins.Divi do
   # Function clause for Linux.
   defp do_get_cli_filename({:unix, :linux}, sys_info) do
     cond do
-      String.contains?(sys_info, "x86_64") or String.contains?(sys_info, "arm71") ->
+      String.contains?(sys_info, "x86_64") or String.contains?(sys_info, "aarch64") ->
         {:ok, @cli_file_lin}
 
       # ... other error conditions for Linux
