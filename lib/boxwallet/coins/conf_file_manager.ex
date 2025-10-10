@@ -1,7 +1,9 @@
-defmodule ConfigManager do
+defmodule BoxWallet.Coins.ConfigManager do
   @moduledoc """
   Manages configuration file labels by checking for existence and adding new ones.
   """
+
+  @alphanumeric Enum.concat([?0..?9, ?A..?Z, ?a..?z])
 
   @doc """
   Checks if a label exists in a file, and if not, appends it with the given value.
@@ -56,6 +58,27 @@ defmodule ConfigManager do
         {:error, reason}
     end
   end
+
+  @doc """
+  Generates a random alphanumeric string of the specified length.
+
+  ## Parameters
+    - length: The length of the string to generate
+
+  ## Examples
+      iex> RandomString.generate(10)
+      "aB3xY7qZ9m"
+
+      iex> RandomString.generate(5)
+      "K4p2L"
+  """
+  def generate_random_string(length) when is_integer(length) and length > 0 do
+    @alphanumeric
+    |> Enum.take_random(length)
+    |> List.to_string()
+  end
+
+  def generate(_), do: {:error, "Length must be a positive integer"}
 end
 
 # Usage example:
