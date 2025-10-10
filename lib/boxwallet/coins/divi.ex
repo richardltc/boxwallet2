@@ -138,6 +138,7 @@ defmodule Boxwallet.Coins.Divi do
             Logger.info("Extraction completed successfully")
             copy_extracted_files()
             tidy_downloaded_files(full_file_path)
+            populate_conf_file()
             {:ok}
 
           {:error, reason} ->
@@ -170,7 +171,7 @@ defmodule Boxwallet.Coins.Divi do
   end
 
   defp get_conf_file_location() do
-    Path.join(get_coin_home_dir(),@conf_file)
+    Path.join(get_coin_home_dir(), @conf_file)
   end
 
   def get_coin_home_dir() do
@@ -305,6 +306,15 @@ defmodule Boxwallet.Coins.Divi do
         _ ->
           {:error, "Unsupported operating system"}
       end
+  end
+
+  defp populate_conf_file() do
+    File.mkdir_p!(get_coin_home_dir())
+    conf_file = get_conf_file_location()
+    password = BoxWallet.Coins.ConfigManager.generate_random_string(20)
+
+    BoxWallet.Coins.ConfigManager.add_label_if_missing(conf_file, "rpcuser", @rpc_user)
+    BoxWallet.Coins.ConfigManager.add_label_if_missing(conf_file, "rpcpassword", password)
   end
 
   defp tidy_downloaded_files(downloaded_file) do
