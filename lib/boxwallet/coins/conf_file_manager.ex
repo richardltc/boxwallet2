@@ -59,6 +59,27 @@ defmodule BoxWallet.Coins.ConfigManager do
     end
   end
 
+  defp get_label_value(file_path, label) do
+    case File.read(file_path) do
+      {:ok, content} ->
+        content
+        |> String.split("\n")
+        |> Enum.find_value(fn line ->
+          case String.split(line, "=", parts: 2) do
+            [^label, value] -> String.trim(value)
+            _ -> nil
+          end
+        end)
+        |> case do
+          nil -> {:error, :not_found}
+          value -> {:ok, value}
+        end
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
   @doc """
   Generates a random alphanumeric string of the specified length.
 
