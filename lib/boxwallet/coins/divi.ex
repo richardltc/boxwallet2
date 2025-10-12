@@ -328,6 +328,9 @@ defmodule Boxwallet.Coins.Divi do
 
     BoxWallet.Coins.ConfigManager.add_label_if_missing(conf_file, "rpcuser", @rpc_user)
     BoxWallet.Coins.ConfigManager.add_label_if_missing(conf_file, "rpcpassword", password)
+    BoxWallet.Coins.ConfigManager.add_label_if_missing(conf_file, "daemon", "1")
+    BoxWallet.Coins.ConfigManager.add_label_if_missing(conf_file, "server", "1")
+    BoxWallet.Coins.ConfigManager.add_label_if_missing(conf_file, "rpcport", @rpc_port)
   end
 
   defp tidy_downloaded_files(downloaded_file) do
