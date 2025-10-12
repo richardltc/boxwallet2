@@ -59,7 +59,7 @@ defmodule BoxWallet.Coins.ConfigManager do
     end
   end
 
-  defp get_label_value(file_path, label) do
+  def get_label_value(file_path, label) do
     case File.read(file_path) do
       {:ok, content} ->
         content

@@ -170,6 +170,19 @@ defmodule Boxwallet.Coins.Divi do
     File.exists?(Path.join(BoxWallet.App.home_folder(), daemon_filename))
   end
 
+  def get_auth_values() do
+    conf_file = get_conf_file_location()
+
+    auth = %BoxWallet.Coins.Auth{
+      ip: "127.0.0.1",
+      port: BoxWallet.Coins.ConfigManager.get_label_value(conf_file, "port"),
+      rpc_user: BoxWallet.Coins.ConfigManager.get_label_value(conf_file, "rpcuser"),
+      rpc_password: BoxWallet.Coins.ConfigManager.get_label_value(conf_file, "rpcpassword")
+    }
+
+    IO.inspect(auth, label: "Auth values")
+  end
+
   defp get_conf_file_location() do
     Path.join(get_coin_home_dir(), @conf_file)
   end
