@@ -14,7 +14,8 @@ defmodule BoxwalletWeb.DiviLive do
         coin_files_exist: Divi.files_exist(),
         download_complete: false,
         download_error: nil,
-        downloading: false
+        downloading: false,
+        coin_auth: Divi.get_auth_values()
       )
 
     {:ok, socket}
