@@ -172,16 +172,19 @@ defmodule Boxwallet.Coins.Divi do
 
   def get_auth_values() do
     conf_file = get_conf_file_location()
-
-    auth = %BoxWallet.Coins.Auth{
-      ip: "127.0.0.1",
-      port: BoxWallet.Coins.ConfigManager.get_label_value(conf_file, "rpcport"),
-      rpc_user: BoxWallet.Coins.ConfigManager.get_label_value(conf_file, "rpcuser"),
-      rpc_password: BoxWallet.Coins.ConfigManager.get_label_value(conf_file, "rpcpassword")
-    }
-
-    IO.inspect(auth, label: "Auth values")
-  end
+    with {:ok, rpcport} <- BoxWallet.Coins.ConfigManager.get_label_value(conf_file, "rpcport"),
+         {:ok, rpcuser} <- BoxWallet.Coins.ConfigManager.get_label_value(conf_file, "rpcuser"),
+         {:ok, rpcpassword} <- BoxWallet.Coins.ConfigManager.get_label_value(conf_file, "rpcpassword") do
+      auth = %BoxWallet.Coins.Auth{
+        rpc_port: rpcport,
+        rpc_user: rpcuser,
+        rpc_password: rpcpassword
+      }
+      IO.inspect(auth, label: "Auth values")
+      {:ok, auth}
+    else
+      {:error, reason} -> {:error, reason}
+    end  end
 
   defp get_conf_file_location() do
     Path.join(get_coin_home_dir(), @conf_file)
@@ -376,18 +379,43 @@ defmodule Boxwallet.Coins.Divi do
   # end
 
   def start_daemon do
-      # Run the daemon and capture initial output
-      case System.cmd("divid", [], stderr_to_stdout: true) do
-        {output, 0} ->
-          if String.contains?(output, "DIVI started") do
-            {:ok, "Daemon started successfully"}
-          else
-            {:error, "Daemon may not have started correctly: #{output}"}
-          end
+    daemon_filename =
+      case get_daemon_filename() do
+        {:ok, name} ->
+          name
 
-        {output, exit_code} ->
-          {:error, "Daemon failed to start (exit code #{exit_code}): #{output}"}
+        {:error, reason} ->
+          Logger.error("Error: #{reason}")
+          ""
       end
+
+    full_path_daemon =
+      Path.join([BoxWallet.App.home_folder(), daemon_filename])
+
+      # Start the daemon and immediately detach
+      spawn(fn ->
+        System.cmd(full_path_daemon, [])
+      end)
+
+      # Give it a moment to start, then check if it's running
+      Process.sleep(100)
+      # Check via other means (e.g., port check, pid file, etc.)
+      {:ok}
+
+      # # Run the daemon and capture initial output
+      # case System.cmd(full_path_daemon, []) do
+      #   {output, 0} ->
+      #     IO.inspect(output)
+      #     if String.contains?(output, "DIVI server starting") do
+      #       Logger.info("Divi output string contains server starting")
+      #       {:ok}
+      #     else
+      #       {:error, "Daemon may not have started correctly: #{output}"}
+      #     end
+
+      #   {output, exit_code} ->
+      #     {:error, "Daemon failed to start (exit code #{exit_code}): #{output}"}
+      # end
     end
 
   def stop_daemon(auth) do
@@ -399,16 +427,35 @@ defmodule Boxwallet.Coins.Divi do
         params: []
       })
 
-    url = "http://#{auth.ip_address}:#{auth.port}"
+    url = "http://127.0.0.1:#{auth.rpc_port}"
 
     headers = [
       {"Content-Type", "text/plain"},
       {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
     ]
 
+    do_stop_daemon(url, body, headers, max_retries, retry_delay)
+  end
+
+  defp do_stop_daemon(_url, _body, _headers, 0, _retry_delay) do
+    {:error, :max_retries_exceeded}
+  end
+
+  defp do_stop_daemon(url, body, headers, retries_left, retry_delay) do
     case HTTPoison.post(url, body, headers) do
-      {:ok, _response} -> :ok
-      {:error, %HTTPoison.Error{reason: reason}} -> {:error, reason}
+      {:ok, %{body: response_body}} ->
+        if String.contains?(response_body, "DIVI server stopping") do
+          {:ok, response_body}
+        else
+          # Got a response but not the message we want
+          Process.sleep(retry_delay)
+          do_stop_daemon(url, body, headers, retries_left - 1, retry_delay)
+        end
+
+      {:error, %HTTPoison.Error{reason: reason}} ->
+        # Network error, retry
+        Process.sleep(retry_delay)
+        do_stop_daemon(url, body, headers, retries_left - 1, retry_delay)
     end
   end
 
