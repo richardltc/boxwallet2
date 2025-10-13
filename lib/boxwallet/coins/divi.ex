@@ -175,7 +175,7 @@ defmodule Boxwallet.Coins.Divi do
 
     auth = %BoxWallet.Coins.Auth{
       ip: "127.0.0.1",
-      port: BoxWallet.Coins.ConfigManager.get_label_value(conf_file, "port"),
+      port: BoxWallet.Coins.ConfigManager.get_label_value(conf_file, "rpcport"),
       rpc_user: BoxWallet.Coins.ConfigManager.get_label_value(conf_file, "rpcuser"),
       rpc_password: BoxWallet.Coins.ConfigManager.get_label_value(conf_file, "rpcpassword")
     }
@@ -375,15 +375,20 @@ defmodule Boxwallet.Coins.Divi do
   #   end
   # end
 
-  # def start_daemon do
-  #   cmd =
-  #     if :os.type() in [{:win32, _} | _],
-  #       do: ["start", "/B", @daemon_bin, "-daemon"],
-  #       else: [@daemon_bin, "-daemon"]
+  def start_daemon do
+      # Run the daemon and capture initial output
+      case System.cmd("divid", [], stderr_to_stdout: true) do
+        {output, 0} ->
+          if String.contains?(output, "DIVI started") do
+            {:ok, "Daemon started successfully"}
+          else
+            {:error, "Daemon may not have started correctly: #{output}"}
+          end
 
-  #   System.cmd(List.first(cmd), tl(cmd), stderr_to_stdout: true)
-  #   :ok
-  # end
+        {output, exit_code} ->
+          {:error, "Daemon failed to start (exit code #{exit_code}): #{output}"}
+      end
+    end
 
   def stop_daemon(auth) do
     body =
