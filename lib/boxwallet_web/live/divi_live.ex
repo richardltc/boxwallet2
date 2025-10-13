@@ -1,6 +1,7 @@
 defmodule BoxwalletWeb.DiviLive do
   # import BoxWallet.App
   use BoxwalletWeb, :live_view
+  require Logger
   alias Boxwallet.Coins.Divi
 
   def mount(_params, _session, socket) do
@@ -15,6 +16,9 @@ defmodule BoxwalletWeb.DiviLive do
         download_complete: false,
         download_error: nil,
         downloading: false,
+        starting_coind_daemon: false,
+        stopping_coind_daemon: false,
+        coind_daemon_stopped: true,
         coin_auth: Divi.get_auth_values()
       )
 
@@ -32,6 +36,39 @@ defmodule BoxwalletWeb.DiviLive do
     send(self(), :perform_download)
 
     {:noreply, socket}
+  end
+
+  def handle_event("start_coin_daemon", _, socket) do
+    IO.puts("Attempting to start Divi Daemon...")
+    socket = case Divi.start_daemon() do
+      {:ok} ->
+        IO.puts("Divi Starting...")
+        assign(socket, starting_coind_daemon: true)
+
+      {:error, reason} ->
+        Logger.error("Failed to start #{reason}")
+        assign(socket, starting_coind_daemon: false)
+    end
+
+    {:noreply, socket}
+  end
+
+  def handle_event("stop_coin_daemon", _, socket) do
+    {:ok, coin_auth} = socket.assigns.coin_auth
+
+    IO.puts("Attempting to stop Divi Daemon...")
+    socket = case Divi.stop_daemon(coin_auth) do
+      :ok ->
+        IO.puts("Divi Stopping...")
+        assign(socket, starting_coind_daemon: false)
+
+      {:error, reason} ->
+        IO.puts("Failed to stop #{reason}")
+        assign(socket, starting_coind_daemon: false)
+    end
+
+
+    {:noreply, socket}  # <- This was missing!
   end
 
   def handle_info(:perform_download, socket) do
@@ -152,14 +189,14 @@ defmodule BoxwalletWeb.DiviLive do
             </div>
           </div>
         </div>
-        
+
     <!-- Description section -->
         <div class="text-center border-t border-gray-100 pt-6">
           <p class="text-gray-400 text-lg leading-relaxed max-w-2xl mx-auto">
             {@coin_description}
           </p>
         </div>
-        
+
     <!-- Action buttons -->
         <div class="card-actions justify-center mt-8">
           <button
@@ -208,7 +245,8 @@ defmodule BoxwalletWeb.DiviLive do
             </div>
           </dialog>
 
-          <button class="btn btn-outline btn-secondary px-8" disabled={!@coin_files_exist}>
+          <button class="btn btn-outline btn-secondary px-8" phx-click="start_coin_daemon"
+ disabled={!@coin_files_exist}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
@@ -226,7 +264,7 @@ defmodule BoxwalletWeb.DiviLive do
             Start
           </button>
 
-          <button class="btn btn-outline btn-secondary px-8" disabled={@downloading}>
+          <button class="btn btn-outline btn-secondary px-8" phx-click="stop_coin_daemon" disabled={@downloading}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
