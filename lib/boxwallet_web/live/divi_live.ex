@@ -16,9 +16,10 @@ defmodule BoxwalletWeb.DiviLive do
         download_complete: false,
         download_error: nil,
         downloading: false,
-        starting_coind_daemon: false,
-        stopping_coind_daemon: false,
-        coind_daemon_stopped: true,
+        coin_daemon_starting: false,
+        coin_daemon_started: false,
+        coin_daemon_stopping: false,
+        coin_daemon_stopped: true,
         coin_auth: Divi.get_auth_values()
       )
 
@@ -40,15 +41,17 @@ defmodule BoxwalletWeb.DiviLive do
 
   def handle_event("start_coin_daemon", _, socket) do
     IO.puts("Attempting to start Divi Daemon...")
-    socket = case Divi.start_daemon() do
-      {:ok} ->
-        IO.puts("Divi Starting...")
-        assign(socket, starting_coind_daemon: true)
 
-      {:error, reason} ->
-        Logger.error("Failed to start #{reason}")
-        assign(socket, starting_coind_daemon: false)
-    end
+    socket =
+      case Divi.start_daemon() do
+        {:ok} ->
+          IO.puts("Divi Starting...")
+          assign(socket, coin_daemon_started: true)
+
+        {:error, reason} ->
+          Logger.error("Failed to start #{reason}")
+          assign(socket, started_coind_daemon: false)
+      end
 
     {:noreply, socket}
   end
@@ -57,18 +60,30 @@ defmodule BoxwalletWeb.DiviLive do
     {:ok, coin_auth} = socket.assigns.coin_auth
 
     IO.puts("Attempting to stop Divi Daemon...")
-    socket = case Divi.stop_daemon(coin_auth) do
-      :ok ->
-        IO.puts("Divi Stopping...")
-        assign(socket, starting_coind_daemon: false)
 
-      {:error, reason} ->
-        IO.puts("Failed to stop #{reason}")
-        assign(socket, starting_coind_daemon: false)
-    end
+    parent = self()
 
+    spawn(fn ->
+      result = Divi.stop_daemon(coin_auth)
+      send(parent, {:daemon_stop_result, result})
+    end)
 
-    {:noreply, socket}  # <- This was missing!
+    {:noreply,
+     socket
+     |> put_flash(:info, "Stopping daemon...")
+     |> assign(:coin_daemon_stopping, true)}
+
+    # socket = case Divi.stop_daemon(coin_auth) do
+    #   :ok ->
+    #     IO.puts("Divi Stopping...")
+    #     assign(socket, starting_coind_daemon: false)
+
+    #   {:error, reason} ->
+    #     IO.puts("Failed to stop #{reason}")
+    #     assign(socket, starting_coind_daemon: false)
+    # end
+
+    # {:noreply, socket}  # <- This was missing!
   end
 
   def handle_info(:perform_download, socket) do
@@ -109,6 +124,23 @@ defmodule BoxwalletWeb.DiviLive do
   def handle_info(:hide_success_message, socket) do
     socket = assign(socket, download_complete: false)
     {:noreply, socket}
+  end
+
+  def handle_info({:daemon_stop_result, {:ok, _response}}, socket) do
+    {:noreply,
+     socket
+     |> put_flash(:info, "Daemon stopped successfully")
+     |> assign(:coin_daemon_starting, false)
+     |> assign(:coin_daemon_started, false)
+     |> assign(:coin_daemon_stopped, true)
+     |> assign(:daemon_status, :stopped)}
+  end
+
+  def handle_info({:daemon_stop_result, {:error, reason}}, socket) do
+    {:noreply,
+     socket
+     |> put_flash(:error, "Failed to stop daemon: #{inspect(reason)}")
+     |> assign(:daemon_stopping, false)}
   end
 
   def render(assigns) do
@@ -246,7 +278,7 @@ defmodule BoxwalletWeb.DiviLive do
           </dialog>
 
           <button class="btn btn-outline btn-secondary px-8" phx-click="start_coin_daemon"
- disabled={!@coin_files_exist}>
+    disabled={!@coin_files_exist}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
@@ -264,7 +296,7 @@ defmodule BoxwalletWeb.DiviLive do
             Start
           </button>
 
-          <button class="btn btn-outline btn-secondary px-8" phx-click="stop_coin_daemon" disabled={@downloading}>
+          <button class="btn btn-outline btn-secondary px-8" phx-click="stop_coin_daemon" disabled={!@coin_daemon_started or @coin_daemon_stopping}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
