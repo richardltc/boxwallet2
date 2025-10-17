@@ -33,7 +33,7 @@ defmodule Boxwallet.Coins.ReddCoin do
   @rpc_user "reddcoinrpc"
   @rpc_port "45443"
 
-  @tip_address "RaPRrgr3ztttsMY7MWitGWvxJYS2hA6quN"
+  # @tip_address "RaPRrgr3ztttsMY7MWitGWvxJYS2hA6quN"
 
   # CWalletESUnlockedForStaking = "unlocked-for-staking"
   # CWalletESLocked             = "locked"

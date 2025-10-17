@@ -36,7 +36,7 @@ defmodule Boxwallet.Coins.Divi do
   @rpc_user "divirpc"
   @rpc_port "51473"
 
-  @tip_address "DM5XJbB6kpyDXpbnYcb1ZidrNpubf2gmSN"
+  # @tip_address "DM5XJbB6kpyDXpbnYcb1ZidrNpubf2gmSN"
 
   @daemon_stop_attempts 25
 
