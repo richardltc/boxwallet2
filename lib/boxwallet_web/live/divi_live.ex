@@ -53,6 +53,8 @@ defmodule BoxwalletWeb.DiviLive do
           assign(socket, started_coind_daemon: false)
       end
 
+    IO.inspect(:coin_daemon_started)
+
     {:noreply, socket}
   end
 
@@ -133,6 +135,7 @@ defmodule BoxwalletWeb.DiviLive do
      |> assign(:coin_daemon_starting, false)
      |> assign(:coin_daemon_started, false)
      |> assign(:coin_daemon_stopped, true)
+     |> assign(:coin_daemon_stopping, true)
      |> assign(:daemon_status, :stopped)}
   end
 
@@ -277,7 +280,7 @@ defmodule BoxwalletWeb.DiviLive do
             </div>
           </dialog>
 
-          <button class="btn btn-outline btn-secondary px-8" phx-click="start_coin_daemon" disabled={!@coin_daemon_stopped or !@coin_files_exist}>
+          <button class="btn btn-outline btn-secondary px-8" phx-click="start_coin_daemon" disabled={!@coin_files_exist or !@coin_daemon_stopped}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
@@ -295,7 +298,7 @@ defmodule BoxwalletWeb.DiviLive do
             Start
           </button>
 
-          <button class="btn btn-outline btn-secondary px-8" phx-click="stop_coin_daemon" disabled={!@coin_daemon_started or @coin_daemon_stopping}>
+          <button class="btn btn-outline btn-secondary px-8" phx-click="stop_coin_daemon" disabled={!@coin_daemon_started and !@coin_daemon_starting}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
