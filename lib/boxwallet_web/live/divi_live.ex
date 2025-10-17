@@ -46,7 +46,7 @@ defmodule BoxwalletWeb.DiviLive do
       case Divi.start_daemon() do
         {:ok} ->
           IO.puts("Divi Starting...")
-          assign(socket, coin_daemon_started: true)
+          assign(socket, coin_daemon_started: true, coin_daemon_stopped: false)
 
         {:error, reason} ->
           Logger.error("Failed to start #{reason}")
@@ -277,8 +277,7 @@ defmodule BoxwalletWeb.DiviLive do
             </div>
           </dialog>
 
-          <button class="btn btn-outline btn-secondary px-8" phx-click="start_coin_daemon"
-    disabled={!@coin_files_exist}>
+          <button class="btn btn-outline btn-secondary px-8" phx-click="start_coin_daemon" disabled={!@coin_daemon_stopped or !@coin_files_exist}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
