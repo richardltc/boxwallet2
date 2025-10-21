@@ -1,5 +1,6 @@
 defmodule BoxwalletWeb.DiviLive do
   # import BoxWallet.App
+  import BoxwalletWeb.CoreWalletToolbar
   use BoxwalletWeb, :live_view
   require Logger
   alias Boxwallet.Coins.Divi
@@ -21,6 +22,46 @@ defmodule BoxwalletWeb.DiviLive do
         coin_daemon_stopping: false,
         coin_daemon_stopped: true,
         coin_auth: Divi.get_auth_values()
+      )
+
+    # Now add icons after coin_daemon_started is assigned
+    socket =
+      assign(socket,
+        icons: [
+          %{
+            name: "hero-arrow-down-tray",
+            hint: "Core files installed",
+            color: "text-red-400",
+            state: if(socket.assigns.coin_files_exist, do: :enabled, else: :disabled)
+          },
+          %{
+            name: "hero-face-smile",
+            hint: "Daemon running",
+            color: "text-red-400",
+            state:
+              cond do
+                socket.assigns.coin_daemon_starting -> :flashing
+                socket.assigns.coin_daemon_started -> :enabled
+                socket.assigns.coin_daemon_stopped -> :disabled
+                # default state
+                true -> :disabled
+              end
+          },
+          %{
+            name: "hero-signal",
+            hint: "Peer connections",
+            color: "text-red-400",
+            state: :flashing
+          },
+          %{
+            name: "hero-arrow-path",
+            hint: "Info",
+            color: "text-red-400",
+            state: :enabled
+          },
+          %{name: "hero-lock-open", hint: "Settings", color: "text-red-400", state: :disabled},
+          %{name: "hero-bolt", hint: "Stats", color: "text-red-400", state: :disabled}
+        ]
       )
 
     {:ok, socket}
@@ -232,7 +273,9 @@ defmodule BoxwalletWeb.DiviLive do
           </p>
         </div>
 
-    <!-- Action buttons -->
+    <.hero_icons_row icons={@icons} />
+
+        <!-- Action buttons -->
         <div class="card-actions justify-center mt-8">
           <button
             class="btn btn-primary px-8"
