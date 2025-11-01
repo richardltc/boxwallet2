@@ -10,7 +10,7 @@ As there are no current releases of BoxWallet 2, the best way of getting started
 
 `sudo apt update && sudo apt install git inotify-tools automake autoconf libssl-dev libncurses-dev`
 
-Now, we need to install a tool called `mise` which which handle Erlang and Elixir for us, so copy and paste and run these lines one after the other:
+Now, we need to install a tool called `mise` which will handle the Erlang and Elixir install for us. Copy and paste and run these lines one after the other:
 `curl https://mise.run | sh`
 `echo "eval \"\$(/home/richard/.local/bin/mise activate bash)\"" >> ~/.bashrc`
 
