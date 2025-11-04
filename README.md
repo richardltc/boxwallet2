@@ -41,7 +41,7 @@ Please continue to ***Installing BoxWallet2*** below.
 To install Ubuntu using WSL, open PowerShell as an administrator and run the command `wsl --install`, then restart your computer when prompted.
 This command installs the Windows Subsystem for Linux and automatically downloads and installs the default Ubuntu distribution.
 
-Now, please follow the *Installing on Ubuntu 24.04* instructions above, and then continue below.
+Now, please follow the ***Installing on Ubuntu 24.04*** instructions above, and then continue below.
 
 ## Installing BoxWallet2
 
