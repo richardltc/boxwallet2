@@ -34,7 +34,7 @@ Please continue to *Installing BoxWallet2* below.
 
 `sudo apt install elixir erlang-dev erlang-xmerl erlang-syntax-tools git` - To install packages that BoxWallet requires.
 
-Please continue to *Installing BoxWallet2* below.
+Please continue to ***Installing BoxWallet2*** below.
 
 ## Install on Windows (WSL)
 
