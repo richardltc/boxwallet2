@@ -348,7 +348,7 @@ defmodule Boxwallet.Coins.Divi do
     ]
 
     Enum.reduce_while(1..@daemon_rpc_attempts, {:error, :no_attempts}, fn attempt, _acc ->
-      Logger.info("Attempting to stop daemon (attempt #{attempt}/#{@daemon_rpc_attempts})")
+      Logger.info("Attempting to GetInfo (attempt #{attempt}/#{@daemon_rpc_attempts})")
 
       case HTTPoison.post(url, body, headers) do
         {:ok, %{body: response_body}} ->
@@ -359,6 +359,11 @@ defmodule Boxwallet.Coins.Divi do
             Process.sleep(3000)
             {:cont, {:error, :wrong_response}}
           else
+            # Now ew need to convert into a GetInfo before returning it to the UI
+            case(BoxWallet.Coins.Divi.Getinfo.from_json(response_body)) do
+              {:ok, response}
+            end
+
             {:halt, {:ok, response_body}}
           end
 
