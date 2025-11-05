@@ -1,4 +1,4 @@
-defmodule GetInfo do
+defmodule BoxWallet.Coins.Divi.GetInfo do
   @moduledoc """
   Represents a wallet RPC getinfo response
   """
@@ -71,7 +71,7 @@ defmodule GetInfo do
         }
 
   @doc """
-  Decodes JSON string into a WalletResponse struct
+  Decodes JSON string into a GetInfo struct
   """
   def from_json(json_string) do
     with {:ok, decoded} <- Jason.decode(json_string),

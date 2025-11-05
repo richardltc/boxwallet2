@@ -82,12 +82,25 @@ defmodule BoxwalletWeb.DiviLive do
 
   def handle_event("start_coin_daemon", _, socket) do
     IO.puts("Attempting to start Divi Daemon...")
+    {:ok, coin_auth} = socket.assigns.coin_auth
 
     socket =
       case Divi.start_daemon() do
         {:ok} ->
           IO.puts("Divi Starting...")
           assign(socket, coin_daemon_started: true, coin_daemon_stopped: false)
+
+          IO.puts("Calling getinfo...")
+
+          case Divi.get_info(coin_auth) do
+            {:ok, response} ->
+              IO.puts("Got OK, inspecting response...")
+
+              IO.inspect(response)
+
+            {:error, reason} ->
+              IO.puts("Error: #{inspect(reason)}")
+          end
 
         {:error, reason} ->
           Logger.error("Failed to start #{reason}")
