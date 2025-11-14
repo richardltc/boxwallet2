@@ -360,11 +360,16 @@ defmodule Boxwallet.Coins.Divi do
             {:cont, {:error, :wrong_response}}
           else
             # Now ew need to convert into a GetInfo before returning it to the UI
-            case(BoxWallet.Coins.Divi.Getinfo.from_json(response_body)) do
-              {:ok, response}
-            end
+            case BoxWallet.Coins.Divi.GetInfo.from_json(response_body) do
+              {:ok, response} ->
+                # Process the successful response - Halt with result
+                {:halt, {:ok, response}}
 
-            {:halt, {:ok, response_body}}
+              {:error, reason} ->
+                # Handle the error
+                Logger.error("Failed to parse: #{inspect(reason)}")
+                {:halt, {:error, reason}}
+            end
           end
 
         {:error, %HTTPoison.Error{reason: reason}} ->
