@@ -97,6 +97,8 @@ defmodule BoxwalletWeb.DiviLive do
               IO.puts("Got OK, inspecting response...")
 
               IO.inspect(response)
+              # Assign the response to socket assigns
+              assign(socket, getinfo_response: response)
 
             {:error, reason} ->
               IO.puts("Error: #{inspect(reason)}")
@@ -278,7 +280,7 @@ defmodule BoxwalletWeb.DiviLive do
             </div>
           </div>
         </div>
-
+        
     <!-- Description section -->
         <div class="text-center border-t border-gray-100 pt-6">
           <p class="text-gray-400 text-lg leading-relaxed max-w-2xl mx-auto">
@@ -286,9 +288,9 @@ defmodule BoxwalletWeb.DiviLive do
           </p>
         </div>
 
-    <.hero_icons_row icons={@icons} />
-
-        <!-- Action buttons -->
+        <.hero_icons_row icons={@icons} />
+        
+    <!-- Action buttons -->
         <div class="card-actions justify-center mt-8">
           <button
             class="btn btn-primary px-8"
@@ -336,7 +338,11 @@ defmodule BoxwalletWeb.DiviLive do
             </div>
           </dialog>
 
-          <button class="btn btn-outline btn-secondary px-8" phx-click="start_coin_daemon" disabled={!@coin_files_exist or !@coin_daemon_stopped}>
+          <button
+            class="btn btn-outline btn-secondary px-8"
+            phx-click="start_coin_daemon"
+            disabled={!@coin_files_exist or !@coin_daemon_stopped}
+          >
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
@@ -354,7 +360,11 @@ defmodule BoxwalletWeb.DiviLive do
             Start
           </button>
 
-          <button class="btn btn-outline btn-secondary px-8" phx-click="stop_coin_daemon" disabled={!@coin_daemon_started and !@coin_daemon_starting}>
+          <button
+            class="btn btn-outline btn-secondary px-8"
+            phx-click="stop_coin_daemon"
+            disabled={!@coin_daemon_started and !@coin_daemon_starting}
+          >
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
