@@ -344,7 +344,8 @@ defmodule Boxwallet.Coins.Divi do
 
     headers = [
       {"Content-Type", "text/plain"},
-      {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
+      {"Authorization",
+       "Basic #{Base.encode64("#{auth.rpc_userget_infget_infget_inf}:#{auth.rpc_password}")}"}
     ]
 
     Enum.reduce_while(1..@daemon_rpc_attempts, {:error, :no_attempts}, fn attempt, _acc ->
@@ -352,7 +353,10 @@ defmodule Boxwallet.Coins.Divi do
 
       case HTTPoison.post(url, body, headers) do
         {:ok, %{body: response_body}} ->
+          IO.inspect(response_body)
+
           if String.contains?(response_body, "Loading") or
+               String.contains?(response_body, "Preparing databases") or
                String.contains?(response_body, "Rewinding") or
                String.contains?(response_body, "Verifying") do
             Logger.info("Waiting for Daemon to be ready, attempt #{attempt}")
