@@ -88,7 +88,12 @@ defmodule BoxwalletWeb.DiviLive do
       case Divi.start_daemon() do
         {:ok} ->
           IO.puts("Divi Starting...")
-          assign(socket, coin_daemon_started: true, coin_daemon_stopped: false)
+          # assign(socket, coin_daemon_started: true, coin_daemon_stopped: false)
+          socket =
+            socket
+            |> assign(:coin_daemon_starting, true)
+            |> assign(:coin_daemon_started, false)
+            |> assign(:coin_daemon_stopped, false)
 
           IO.puts("Calling getinfo...")
 
