@@ -40,6 +40,7 @@ defmodule Boxwallet.Coins.Divi do
 
   @daemon_stop_attempts 25
   @daemon_rpc_attempts 25
+  @daemon_rpc_sleep_interval 1000
 
   # CWalletESUnlockedForStaking = "unlocked-for-staking"
   # CWalletESLocked             = "locked"
@@ -344,8 +345,7 @@ defmodule Boxwallet.Coins.Divi do
 
     headers = [
       {"Content-Type", "text/plain"},
-      {"Authorization",
-       "Basic #{Base.encode64("#{auth.rpc_userget_infget_infget_inf}:#{auth.rpc_password}")}"}
+      {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
     ]
 
     Enum.reduce_while(1..@daemon_rpc_attempts, {:error, :no_attempts}, fn attempt, _acc ->
@@ -355,9 +355,10 @@ defmodule Boxwallet.Coins.Divi do
         {:ok, %{body: response_body}} ->
           IO.inspect(response_body)
 
-          if String.contains?(response_body, "Loading") or
-               String.contains?(response_body, "Preparing databases") or
-               String.contains?(response_body, "Rewinding") or
+          if String.contains?(response_body, "Loading") ||
+               String.contains?(response_body, "Preparing databases") ||
+               String.contains?(response_body, "Rewinding") ||
+               String.contains?(response_body, "RPC server started") ||
                String.contains?(response_body, "Verifying") do
             Logger.info("Waiting for Daemon to be ready, attempt #{attempt}")
             Process.sleep(3000)
@@ -487,12 +488,12 @@ defmodule Boxwallet.Coins.Divi do
             Logger.info("Successfully stopped daemon on attempt #{attempt}")
             {:halt, {:ok, response_body}}
           else
-            Process.sleep(3000)
+            Process.sleep(@daemon_rpc_sleep_interval)
             {:cont, {:error, :wrong_response}}
           end
 
         {:error, %HTTPoison.Error{reason: reason}} ->
-          Process.sleep(3000)
+          Process.sleep(@daemon_rpc_sleep_interval)
           {:cont, {:error, reason}}
       end
     end)
