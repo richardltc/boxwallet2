@@ -43,7 +43,7 @@ defmodule BoxwalletWeb.DiviLive do
                 socket.assigns.coin_daemon_starting -> :flashing
                 socket.assigns.coin_daemon_started -> :enabled
                 socket.assigns.coin_daemon_stopped -> :disabled
-                # default state
+                # default state.
                 true -> :disabled
               end
           },
@@ -111,7 +111,7 @@ defmodule BoxwalletWeb.DiviLive do
 
         {:error, reason} ->
           Logger.error("Failed to start #{reason}")
-          assign(socket, started_coind_daemon: false)
+          assign(socket, :coin_daemon_started, false)
       end
 
     IO.inspect(:coin_daemon_started)
@@ -205,6 +205,41 @@ defmodule BoxwalletWeb.DiviLive do
      socket
      |> put_flash(:error, "Failed to stop daemon: #{inspect(reason)}")
      |> assign(:daemon_stopping, false)}
+  end
+
+  defp get_icon_state(name, socket) do
+    assigns = socket.assigns
+
+    case name do
+      :files ->
+        %{
+          name: "hero-arrow-down-tray",
+          hint: "Core files",
+          color: "text-red-400",
+          state: if(assigns.coin_files_exist, do: :enabled, else: :disabled)
+        }
+
+      :daemon ->
+        state =
+          cond do
+            assigns.coin_daemon_starting -> :flashing
+            assigns.coin_daemon_started -> :enabled
+            assigns.coin_daemon_stopped -> :disabled
+            true -> :disabled
+          end
+
+      :connections ->
+        %{
+          name: "hero-signal",
+          hint: "Peer connections",
+          color: "text-red-400",
+          state: :flashing
+        }
+
+        %{name: "hero-face-smile", hint: "Daemon", color: "text-red-400", state: state}
+
+        # ... add other icons here
+    end
   end
 
   def render(assigns) do
