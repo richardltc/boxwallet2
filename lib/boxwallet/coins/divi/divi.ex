@@ -361,7 +361,7 @@ defmodule Boxwallet.Coins.Divi do
                String.contains?(response_body, "RPC server started") ||
                String.contains?(response_body, "Verifying") do
             Logger.info("Waiting for Daemon to be ready, attempt #{attempt}")
-            Process.sleep(3000)
+            Process.sleep(1000)
             {:cont, {:error, :wrong_response}}
           else
             # Now ew need to convert into a GetInfo before returning it to the UI
