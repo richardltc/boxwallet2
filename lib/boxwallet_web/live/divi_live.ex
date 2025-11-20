@@ -207,9 +207,7 @@ defmodule BoxwalletWeb.DiviLive do
      |> assign(:daemon_stopping, false)}
   end
 
-  defp get_icon_state(name, socket) do
-    assigns = socket.assigns
-
+  defp get_icon_state(name, assigns) do
     case name do
       :files ->
         %{
@@ -228,6 +226,8 @@ defmodule BoxwalletWeb.DiviLive do
             true -> :disabled
           end
 
+        %{name: "hero-face-smile", hint: "Daemon", color: "text-red-400", state: state}
+
       :connections ->
         %{
           name: "hero-signal",
@@ -236,13 +236,36 @@ defmodule BoxwalletWeb.DiviLive do
           state: :flashing
         }
 
-        %{name: "hero-face-smile", hint: "Daemon", color: "text-red-400", state: state}
+      :syncing ->
+        %{
+          name: "hero-arrow-path",
+          hint: "Syncing",
+          color: "text-red-400",
+          state: :enabled
+        }
+
+      :encryption ->
+        %{name: "hero-lock-open", hint: "Settings", color: "text-red-400", state: :disabled}
+
+      :staking ->
+        %{name: "hero-bolt", hint: "Stats", color: "text-red-400", state: :disabled}
 
         # ... add other icons here
     end
   end
 
   def render(assigns) do
+    icon_list = [
+      get_icon_state(:files, assigns),
+      get_icon_state(:daemon, assigns),
+      get_icon_state(:connections, assigns),
+      get_icon_state(:syncing, assigns),
+      get_icon_state(:encryption, assigns),
+      get_icon_state(:staking, assigns)
+    ]
+
+    assigns = assign(assigns, :icons, icon_list)
+
     ~H"""
     <!-- Download in progress alert -->
     <%= if @downloading do %>
