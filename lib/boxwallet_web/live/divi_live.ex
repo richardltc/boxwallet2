@@ -21,50 +21,46 @@ defmodule BoxwalletWeb.DiviLive do
         coin_daemon_started: false,
         coin_daemon_stopping: false,
         coin_daemon_stopped: true,
+        connections: 0,
         coin_auth: Divi.get_auth_values()
       )
 
-    # Now add icons after coin_daemon_started is assigned
-    socket =
-      assign(socket,
-        icons: [
-          %{
-            name: "hero-arrow-down-tray",
-            hint: "Core files installed",
-            color: "text-red-400",
-            state: if(socket.assigns.coin_files_exist, do: :enabled, else: :disabled)
-          },
-          %{
-            name: "hero-face-smile",
-            hint: "Daemon running",
-            color: "text-red-400",
-            state:
-              cond do
-                socket.assigns.coin_daemon_starting -> :flashing
-                socket.assigns.coin_daemon_started -> :enabled
-                socket.assigns.coin_daemon_stopped -> :disabled
-                # default state.
-                true -> :disabled
-              end
-          },
-          %{
-            name: "hero-signal",
-            hint: "Peer connections",
-            color: "text-red-400",
-            state: :flashing
-          },
-          %{
-            name: "hero-arrow-path",
-            hint: "Info",
-            color: "text-red-400",
-            state: :enabled
-          },
-          %{name: "hero-lock-open", hint: "Settings", color: "text-red-400", state: :disabled},
-          %{name: "hero-bolt", hint: "Stats", color: "text-red-400", state: :disabled}
-        ]
-      )
-
     {:ok, socket}
+  end
+
+  def handle_info(:check_get_info_status, socket) do
+    # Only keep checking if we think we are supposed to be starting/running
+    if socket.assigns.coin_daemon_starting or socket.assigns.coin_daemon_started do
+      {:ok, coin_auth} = socket.assigns.coin_auth
+
+      case Divi.get_info(coin_auth) do
+        {:ok, response} ->
+          IO.puts("🎉 Daemon is alive!")
+
+          socket =
+            socket
+            |> assign(:coin_daemon_starting, false)
+            |> assign(:coin_daemon_started, true)
+            |> assign(:getinfo_response, response)
+            |> assign(:connections, response.result.connections || 0)
+            |> put_flash(:info, "Divi Daemon Started Successfully!")
+
+          Process.send_after(self(), :check_get_info_status, 2000)
+          {:noreply, socket}
+
+        {:error, _reason} ->
+          IO.puts("⏳ Daemon not ready yet... retrying in 2s")
+
+          # 4. Failed (daemon still booting).
+          # Schedule ANOTHER check for 2 seconds later.
+          Process.send_after(self(), :check_get_info_status, 2000)
+
+          {:noreply, socket}
+      end
+    else
+      # If the user clicked "Stop" while it was booting, we stop polling.
+      {:noreply, socket}
+    end
   end
 
   def handle_event("download_divi", _, socket) do
@@ -96,27 +92,32 @@ defmodule BoxwalletWeb.DiviLive do
             |> assign(:coin_daemon_stopped, false)
 
           IO.puts("Calling getinfo...")
+          # Send a message to 'self' to check status in 2000ms (2 seconds)
+          Process.send_after(self(), :check_get_info_status, 2000)
 
-          case Divi.get_info(coin_auth) do
-            {:ok, response} ->
-              IO.puts("Got OK, inspecting response...")
+          # case Divi.get_info(coin_auth) do
+          #   {:ok, response} ->
+          #     IO.puts("Got OK, inspecting response...")
 
-              IO.inspect(response)
-              # Assign the response to socket assigns
-              assign(socket, getinfo_response: response)
+          #     IO.inspect(response)
+          #     # Assign the response to socket assigns
+          #     assign(socket, getinfo_response: response)
 
-            {:error, reason} ->
-              IO.puts("Error: #{inspect(reason)}")
-          end
+          #   {:error, reason} ->
+          #     IO.puts("Error: #{inspect(reason)}")
+          # end
+          {:noreply, socket}
 
         {:error, reason} ->
           Logger.error("Failed to start #{reason}")
-          assign(socket, :coin_daemon_started, false)
+
+          socket =
+            socket
+            |> put_flash(:error, "Could not start daemon: #{inspect(reason)}")
+            |> assign(:coin_daemon_started, false)
+
+          {:noreply, socket}
       end
-
-    IO.inspect(:coin_daemon_started)
-
-    {:noreply, socket}
   end
 
   def handle_event("stop_coin_daemon", _, socket) do
@@ -135,18 +136,6 @@ defmodule BoxwalletWeb.DiviLive do
      socket
      |> put_flash(:info, "Stopping daemon...")
      |> assign(:coin_daemon_stopping, true)}
-
-    # socket = case Divi.stop_daemon(coin_auth) do
-    #   :ok ->
-    #     IO.puts("Divi Stopping...")
-    #     assign(socket, starting_coind_daemon: false)
-
-    #   {:error, reason} ->
-    #     IO.puts("Failed to stop #{reason}")
-    #     assign(socket, starting_coind_daemon: false)
-    # end
-
-    # {:noreply, socket}  # <- This was missing!
   end
 
   def handle_info(:perform_download, socket) do
@@ -196,6 +185,7 @@ defmodule BoxwalletWeb.DiviLive do
      |> assign(:coin_daemon_starting, false)
      |> assign(:coin_daemon_started, false)
      |> assign(:coin_daemon_stopped, true)
+     |> assign(:connections, 0)
      |> assign(:coin_daemon_stopping, true)
      |> assign(:daemon_status, :stopped)}
   end
@@ -229,11 +219,24 @@ defmodule BoxwalletWeb.DiviLive do
         %{name: "hero-face-smile", hint: "Daemon", color: "text-red-400", state: state}
 
       :connections ->
+        connections = assigns.connections
+
+        # Determine the hint text based on the connection count.
+        hint =
+          case connections do
+            0 -> "Waiting for connections..."
+            _ when connections > 0 -> "#{connections} connections"
+            # Fallback for unexpected values like -1, etc.
+            _ -> "Connecting..."
+          end
+
+        state = if connections > 0, do: :enabled, else: :disabled
+
         %{
           name: "hero-signal",
-          hint: "Peer connections",
+          hint: hint,
           color: "text-red-400",
-          state: :flashing
+          state: state
         }
 
       :syncing ->
@@ -241,7 +244,7 @@ defmodule BoxwalletWeb.DiviLive do
           name: "hero-arrow-path",
           hint: "Syncing",
           color: "text-red-400",
-          state: :enabled
+          state: :disabled
         }
 
       :encryption ->
