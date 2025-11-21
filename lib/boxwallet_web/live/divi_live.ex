@@ -202,7 +202,12 @@ defmodule BoxwalletWeb.DiviLive do
       :files ->
         %{
           name: "hero-arrow-down-tray",
-          hint: "Core files",
+          # "Core files",
+          hint:
+            if(assigns.coin_files_exist,
+              do: "Core files exist",
+              else: "Core files not downloaded"
+            ),
           color: "text-red-400",
           state: if(assigns.coin_files_exist, do: :enabled, else: :disabled)
         }
