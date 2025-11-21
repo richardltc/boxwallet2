@@ -237,10 +237,24 @@ defmodule BoxwalletWeb.DiviLive do
         # Determine the hint text based on the connection count.
         hint =
           case connections do
-            0 -> "Waiting for connections..."
-            _ when connections > 0 -> "#{connections} connections"
+            0 ->
+              if !assigns.coin_daemon_stopped do
+                "Searching for connections..."
+              else
+                "Idle"
+              end
+
+            _ when connections > 0 ->
+              "#{connections} connections"
+
             # Fallback for unexpected values like -1, etc.
-            _ -> "Connecting..."
+            _ ->
+              "Connecting..."
+
+              # 0 -> "Waiting for connections..."
+              # _ when connections > 0 -> "#{connections} connections"
+              # # Fallback for unexpected values like -1, etc.
+              # _ -> "Connecting..."
           end
 
         state = if connections > 0, do: :enabled, else: :disabled
