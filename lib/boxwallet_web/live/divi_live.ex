@@ -221,7 +221,15 @@ defmodule BoxwalletWeb.DiviLive do
             true -> :disabled
           end
 
-        %{name: "hero-face-smile", hint: "Daemon", color: "text-red-400", state: state}
+        hint =
+          cond do
+            assigns.coin_daemon_starting -> "Daemon starting..."
+            assigns.coin_daemon_started -> "Daemon running"
+            assigns.coin_daemon_stopped -> "Daemon stopped"
+            true -> "Idle"
+          end
+
+        %{name: "hero-face-smile", hint: hint, color: "text-red-400", state: state}
 
       :connections ->
         connections = assigns.connections
