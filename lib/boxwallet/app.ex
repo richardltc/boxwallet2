@@ -1,7 +1,6 @@
 defmodule BoxWallet.App do
   @app_name "BoxWallet"
-  @updater_app_name "bwupdater"
-  @app_version "0.0.2"
+  @app_version "0.0.3"
   @app_filename "boxwallet"
   @app_filename_win "boxwallet.exe"
   @app_github_url "https://github.com/richardltc/boxwallet2"
