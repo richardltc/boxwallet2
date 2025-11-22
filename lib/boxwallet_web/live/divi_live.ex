@@ -376,7 +376,8 @@ defmodule BoxwalletWeb.DiviLive do
                   v{@version}
                 </small>
               </h2>
-              <p class="text-lg mt-2">{@coin_title}</p>
+              <p class="text-lg mt-2 mb-4">{@coin_title}</p>
+              <.hero_icons_row icons={@icons} />
             </div>
           </div>
         </div>
@@ -387,8 +388,6 @@ defmodule BoxwalletWeb.DiviLive do
             {@coin_description}
           </p>
         </div>
-
-        <.hero_icons_row icons={@icons} />
         
     <!-- Action buttons -->
         <div class="card-actions justify-center mt-8">
