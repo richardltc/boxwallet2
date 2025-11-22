@@ -22,6 +22,7 @@ defmodule BoxwalletWeb.DiviLive do
         coin_daemon_stopping: false,
         coin_daemon_stopped: true,
         connections: 0,
+        version: "...",
         coin_auth: Divi.get_auth_values()
       )
 
@@ -43,6 +44,7 @@ defmodule BoxwalletWeb.DiviLive do
             |> assign(:coin_daemon_started, true)
             |> assign(:getinfo_response, response)
             |> assign(:connections, response.result.connections || 0)
+            |> assign(:version, response.result.version || "v...")
             |> put_flash(:info, "Divi Daemon Started Successfully!")
 
           Process.send_after(self(), :check_get_info_status, 2000)
@@ -368,7 +370,12 @@ defmodule BoxwalletWeb.DiviLive do
           />
           <div class="flex-1">
             <div class="text-left">
-              <h2 class="card-title text-3xl font-bold">{@coin_name}</h2>
+              <h2 class="card-title text-3xl font-bold items-baseline">
+                {@coin_name}
+                <small class="badge badge-sm ml-1 font-mono border-0">
+                  v{@version}
+                </small>
+              </h2>
               <p class="text-lg mt-2">{@coin_title}</p>
             </div>
           </div>
