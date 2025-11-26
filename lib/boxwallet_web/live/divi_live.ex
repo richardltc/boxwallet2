@@ -21,12 +21,47 @@ defmodule BoxwalletWeb.DiviLive do
         coin_daemon_started: false,
         coin_daemon_stopping: false,
         coin_daemon_stopped: true,
+        blocks: 0,
         connections: 0,
+        difficulty: 0,
+        headers: 0,
         version: "...",
         coin_auth: Divi.get_auth_values()
       )
 
     {:ok, socket}
+  end
+
+  def handle_info(:check_get_blockchain_info_status, socket) do
+    # Only keep checking if we think we are supposed to be starting/running
+    if socket.assigns.coin_daemon_starting or socket.assigns.coin_daemon_started do
+      {:ok, coin_auth} = socket.assigns.coin_auth
+
+      case Divi.get_blockchain_info(coin_auth) do
+        {:ok, response} ->
+          socket =
+            socket
+            |> assign(:get_blockchain_info_response, response)
+            |> assign(:blocks, response.result.blocks || 0)
+            |> assign(:difficulty, response.result.difficulty || 0)
+            |> assign(:headers, response.result.headers || 0)
+
+          Process.send_after(self(), :check_get_blockchain_info_status, 2000)
+          {:noreply, socket}
+
+        {:error, _reason} ->
+          IO.puts("⏳ Daemon not ready yet... retrying in 2s")
+
+          # 4. Failed (daemon still booting).
+          # Schedule ANOTHER check for 2 seconds later.
+          Process.send_after(self(), :check_get_blockchain_info_status, 2000)
+
+          {:noreply, socket}
+      end
+    else
+      # If the user clicked "Stop" while it was booting, we stop polling.
+      {:noreply, socket}
+    end
   end
 
   def handle_info(:check_get_info_status, socket) do
@@ -48,6 +83,7 @@ defmodule BoxwalletWeb.DiviLive do
             |> put_flash(:info, "Divi Daemon Started Successfully!")
 
           Process.send_after(self(), :check_get_info_status, 2000)
+          Process.send_after(self(), :check_get_blockchain_info_status, 2000)
           {:noreply, socket}
 
         {:error, _reason} ->
@@ -155,7 +191,7 @@ defmodule BoxwalletWeb.DiviLive do
           |> assign(coin_files_exist: true)
           |> assign(download_error: nil)
 
-        # Auto-hide success message after 5 seconds.
+        # Auto-hide success message after 5 seconds..
         Process.send_after(self(), :hide_success_message, 5000)
 
         {:noreply, socket}
@@ -390,27 +426,19 @@ defmodule BoxwalletWeb.DiviLive do
           <div class="stats shadow mt-3">
             <div class="stat place-items-center">
               <div class="stat-title">Headers</div>
-              <div class="stat-value">31K</div>
-              <div class="stat-desc">From January 1st to February 1st</div>
-              <div
-                class="radial-progress text-primary mt-3"
-                style="--value:70;"
-                aria-valuenow="70"
-                role="progressbar"
-              >
-                111,123
-              </div>
+              <div class="stat-value">{@headers}</div>
+              <div class="stat-desc">Headers</div>
             </div>
 
             <div class="stat place-items-center">
-              <div class="stat-title">Users</div>
-              <div class="stat-value text-secondary">4,200</div>
+              <div class="stat-title">Blocks</div>
+              <div class="stat-value text-secondary">{@blocks}</div>
               <div class="stat-desc text-secondary">↗︎ 40 (2%)</div>
             </div>
 
             <div class="stat place-items-center">
-              <div class="stat-title">New Registers</div>
-              <div class="stat-value">1,200</div>
+              <div class="stat-title">Difficulty</div>
+              <div class="stat-value">{@difficulty}</div>
               <div class="stat-desc">↘︎ 90 (14%)</div>
             </div>
           </div>
