@@ -56,7 +56,7 @@ defmodule BoxwalletWeb.CoreWalletToolbar do
           />
           <%= if Map.get(icon, :hint) do %>
             <span class={@hint_class}>
-              <%= icon.hint %>
+              {icon.hint}
             </span>
           <% end %>
         </div>
