@@ -387,6 +387,33 @@ defmodule BoxwalletWeb.DiviLive do
           <p class="text-gray-400 text-lg leading-relaxed max-w-2xl mx-auto">
             {@coin_description}
           </p>
+          <div class="stats shadow mt-3">
+            <div class="stat place-items-center">
+              <div class="stat-title">Headers</div>
+              <div class="stat-value">31K</div>
+              <div class="stat-desc">From January 1st to February 1st</div>
+              <div
+                class="radial-progress text-primary mt-3"
+                style="--value:70;"
+                aria-valuenow="70"
+                role="progressbar"
+              >
+                111,123
+              </div>
+            </div>
+
+            <div class="stat place-items-center">
+              <div class="stat-title">Users</div>
+              <div class="stat-value text-secondary">4,200</div>
+              <div class="stat-desc text-secondary">↗︎ 40 (2%)</div>
+            </div>
+
+            <div class="stat place-items-center">
+              <div class="stat-title">New Registers</div>
+              <div class="stat-value">1,200</div>
+              <div class="stat-desc">↘︎ 90 (14%)</div>
+            </div>
+          </div>
         </div>
         
     <!-- Action buttons -->
