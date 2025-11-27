@@ -133,17 +133,6 @@ defmodule BoxwalletWeb.DiviLive do
           # Send a message to 'self' to check status in 2000ms (2 seconds)
           Process.send_after(self(), :check_get_info_status, 2000)
 
-          # case Divi.get_info(coin_auth) do
-          #   {:ok, response} ->
-          #     IO.puts("Got OK, inspecting response...")
-
-          #     IO.inspect(response)
-          #     # Assign the response to socket assigns
-          #     assign(socket, getinfo_response: response)
-
-          #   {:error, reason} ->
-          #     IO.puts("Error: #{inspect(reason)}")
-          # end
           {:noreply, socket}
 
         {:error, reason} ->
