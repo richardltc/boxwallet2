@@ -417,19 +417,20 @@ defmodule BoxwalletWeb.DiviLive do
             <div class="stat place-items-center">
               <div class="stat-title">Headers</div>
               <div class="stat-value">{@headers}</div>
-              <div class="stat-desc">Headers</div>
+              <%!-- <div class="stat-desc">Headers</div> --%>
             </div>
 
             <div class="stat place-items-center">
               <div class="stat-title">Blocks</div>
-              <div class="stat-value text-secondary">{@blocks}</div>
-              <div class="stat-desc text-secondary">↗︎ 40 (2%)</div>
+              <div class="stat-value">{@blocks}</div>
+              <%!-- <div class="stat-value text-secondary">{@blocks}</div> --%>
+              <%!-- <div class="stat-desc text-secondary">↗︎ 40 (2%)</div> --%>
             </div>
 
             <div class="stat place-items-center">
               <div class="stat-title">Difficulty</div>
               <div class="stat-value">{@difficulty}</div>
-              <div class="stat-desc">↘︎ 90 (14%)</div>
+              <%!-- <div class="stat-desc">↘︎ 90 (14%)</div> --%>
             </div>
           </div>
         </div>
