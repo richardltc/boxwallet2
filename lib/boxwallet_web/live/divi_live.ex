@@ -46,14 +46,12 @@ defmodule BoxwalletWeb.DiviLive do
             |> assign(:difficulty, response.result.difficulty || 0)
             |> assign(:headers, response.result.headers || 0)
 
-          Process.send_after(self(), :check_get_blockchain_info_status, 2000)
+          # Process.send_after(self(), :check_get_blockchain_info_status, 2000)
           {:noreply, socket}
 
         {:error, _reason} ->
           IO.puts("⏳ Daemon not ready yet... retrying in 2s")
 
-          # 4. Failed (daemon still booting).
-          # Schedule ANOTHER check for 2 seconds later.
           Process.send_after(self(), :check_get_blockchain_info_status, 2000)
 
           {:noreply, socket}
