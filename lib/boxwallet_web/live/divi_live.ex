@@ -211,6 +211,9 @@ defmodule BoxwalletWeb.DiviLive do
      |> assign(:coin_daemon_started, false)
      |> assign(:coin_daemon_stopped, true)
      |> assign(:connections, 0)
+     |> assign(:blocks, 0)
+     |> assign(:headers, 0)
+     |> assign(:difficulty, 0)
      |> assign(:coin_daemon_stopping, true)
      |> assign(:daemon_status, :stopped)}
   end
