@@ -1,6 +1,7 @@
 defmodule BoxwalletWeb.DiviLive do
   # import BoxWallet.App
   import BoxwalletWeb.CoreWalletToolbar
+  use Number
   use BoxwalletWeb, :live_view
   require Logger
   alias Boxwallet.Coins.Divi
@@ -42,9 +43,18 @@ defmodule BoxwalletWeb.DiviLive do
           socket =
             socket
             |> assign(:get_blockchain_info_response, response)
-            |> assign(:blocks, response.result.blocks || 0)
-            |> assign(:difficulty, response.result.difficulty || 0)
-            |> assign(:headers, response.result.headers || 0)
+            |> assign(
+              :blocks,
+              Number.Delimit.number_to_delimited(response.result.blocks, precision: 0) || 0
+            )
+            |> assign(
+              :difficulty,
+              Number.Delimit.number_to_delimited(response.result.difficulty, precision: 0) || 0
+            )
+            |> assign(
+              :headers,
+              Number.Delimit.number_to_delimited(response.result.headers, precision: 0) || 0
+            )
 
           # Process.send_after(self(), :check_get_blockchain_info_status, 2000)
           {:noreply, socket}
@@ -416,20 +426,20 @@ defmodule BoxwalletWeb.DiviLive do
           <div class="stats shadow mt-3">
             <div class="stat place-items-center">
               <div class="stat-title">Headers</div>
-              <div class="stat-value">{@headers}</div>
+              <div class="stat-value text-2xl">{@headers}</div>
               <%!-- <div class="stat-desc">Headers</div> --%>
             </div>
 
             <div class="stat place-items-center">
               <div class="stat-title">Blocks</div>
-              <div class="stat-value">{@blocks}</div>
+              <div class="stat-value text-2xl">{@blocks}</div>
               <%!-- <div class="stat-value text-secondary">{@blocks}</div> --%>
               <%!-- <div class="stat-desc text-secondary">↗︎ 40 (2%)</div> --%>
             </div>
 
             <div class="stat place-items-center">
               <div class="stat-title">Difficulty</div>
-              <div class="stat-value">{@difficulty}</div>
+              <div class="stat-value text-2xl">{@difficulty}</div>
               <%!-- <div class="stat-desc">↘︎ 90 (14%)</div> --%>
             </div>
           </div>
