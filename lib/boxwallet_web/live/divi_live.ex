@@ -307,6 +307,23 @@ defmodule BoxwalletWeb.DiviLive do
       :syncing ->
         connections = assigns.connections
 
+        hint =
+          case connections do
+            0 ->
+              if !assigns.coin_daemon_stopped do
+                "Waiting for connections..."
+              else
+                "Idle"
+              end
+
+            _ when connections > 0 ->
+              "Syncing..."
+
+            # Fallback for unexpected values like -1, etc.
+            _ ->
+              "Idle."
+          end
+
         state =
           cond do
             assigns.coin_daemon_starting -> :disabled
@@ -317,7 +334,7 @@ defmodule BoxwalletWeb.DiviLive do
 
         %{
           name: "hero-arrow-path",
-          hint: "Syncing",
+          hint: hint,
           color: "text-red-400",
           state: state
         }
