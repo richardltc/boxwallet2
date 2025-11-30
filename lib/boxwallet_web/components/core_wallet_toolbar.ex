@@ -65,7 +65,7 @@ defmodule BoxwalletWeb.CoreWalletToolbar do
     """
   end
 
-  defp state_class(:disabled), do: "opacity-30 cursor-not-allowed"
+  defp state_class(:disabled), do: "opacity-30"
   defp state_class(:flashing), do: "flashing cursor-pointer"
   defp state_class(:enabled), do: "cursor-pointer"
   defp state_class(_), do: "cursor-pointer"
