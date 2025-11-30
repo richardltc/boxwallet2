@@ -436,6 +436,58 @@ defmodule Boxwallet.Coins.Divi do
     end)
   end
 
+  def get_mn_sync_status(auth) do
+    body =
+      Jason.encode!(%{
+        jsonrpc: "1.0",
+        id: "curltext",
+        method: "mnsync",
+        params: ["status"]
+      })
+
+    url = "http://127.0.0.1:#{auth.rpc_port}"
+
+    headers = [
+      {"Content-Type", "text/plain"},
+      {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
+    ]
+
+    Enum.reduce_while(1..@daemon_rpc_attempts, {:error, :no_attempts}, fn attempt, _acc ->
+      Logger.info("Attempting to GetMNSyncStatus (attempt #{attempt}/#{@daemon_rpc_attempts})")
+
+      case HTTPoison.post(url, body, headers) do
+        {:ok, %{body: response_body}} ->
+          IO.inspect(response_body)
+
+          if String.contains?(response_body, "Loading") ||
+               String.contains?(response_body, "Preparing databases") ||
+               String.contains?(response_body, "Rewinding") ||
+               String.contains?(response_body, "RPC server started") ||
+               String.contains?(response_body, "Verifying") do
+            Logger.info("Waiting for Daemon to be ready, attempt #{attempt}")
+            Process.sleep(1000)
+            {:cont, {:error, :wrong_response}}
+          else
+            # Now we need to convert into a GetBlockchainInfo before returning it to the UI
+            case BoxWallet.Coins.Divi.GetMNSyncStatus.from_json(response_body) do
+              {:ok, response} ->
+                # Process the successful response - Halt with result
+                {:halt, {:ok, response}}
+
+              {:error, reason} ->
+                # Handle the error
+                Logger.error("Failed to parse: #{inspect(reason)}")
+                {:halt, {:error, reason}}
+            end
+          end
+
+        {:error, %HTTPoison.Error{reason: reason}} ->
+          Process.sleep(3000)
+          {:cont, {:error, reason}}
+      end
+    end)
+  end
+
   defp populate_conf_file() do
     File.mkdir_p!(get_coin_home_dir())
     conf_file = get_conf_file_location()
