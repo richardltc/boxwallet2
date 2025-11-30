@@ -417,7 +417,7 @@ defmodule BoxwalletWeb.DiviLive do
             </div>
           </div>
         </div>
-        
+
     <!-- Description section -->
         <div class="text-center border-t border-gray-100 pt-6">
           <p class="text-gray-400 text-lg leading-relaxed max-w-2xl mx-auto">
@@ -444,7 +444,7 @@ defmodule BoxwalletWeb.DiviLive do
             </div>
           </div>
         </div>
-        
+
     <!-- Action buttons -->
         <div class="card-actions justify-center mt-8">
           <button
