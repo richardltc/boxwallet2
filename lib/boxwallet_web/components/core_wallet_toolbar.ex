@@ -19,7 +19,7 @@ defmodule BoxwalletWeb.CoreWalletToolbar do
   attr :icons, :list,
     required: true,
     doc:
-      "List of exactly 6 icon maps with :name, :hint, :color, and :state (:enabled, :disabled, or :flashing)"
+      "List of exactly 6 icon maps with :name, :hint, :color, and :state (:enabled, :disabled, :flashing and :rotating)"
 
   attr :class, :string, default: "flex gap-4 items-center"
   attr :icon_class, :string, default: "h-8 w-8"
