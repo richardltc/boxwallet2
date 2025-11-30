@@ -305,11 +305,21 @@ defmodule BoxwalletWeb.DiviLive do
         }
 
       :syncing ->
+        connections = assigns.connections
+
+        state =
+          cond do
+            assigns.coin_daemon_starting -> :disabled
+            assigns.coin_daemon_started -> if connections > 0, do: :rotating
+            assigns.coin_daemon_stopped -> :disabled
+            true -> :disabled
+          end
+
         %{
           name: "hero-arrow-path",
           hint: "Syncing",
           color: "text-red-400",
-          state: :disabled
+          state: state
         }
 
       :encryption ->
@@ -417,7 +427,7 @@ defmodule BoxwalletWeb.DiviLive do
             </div>
           </div>
         </div>
-
+        
     <!-- Description section -->
         <div class="text-center border-t border-gray-100 pt-6">
           <p class="text-gray-400 text-lg leading-relaxed max-w-2xl mx-auto">
@@ -444,7 +454,7 @@ defmodule BoxwalletWeb.DiviLive do
             </div>
           </div>
         </div>
-
+        
     <!-- Action buttons -->
         <div class="card-actions justify-center mt-8">
           <button
