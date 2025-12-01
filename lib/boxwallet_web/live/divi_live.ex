@@ -27,7 +27,8 @@ defmodule BoxwalletWeb.DiviLive do
         difficulty: 0,
         headers: 0,
         version: "...",
-        coin_auth: Divi.get_auth_values()
+        coin_auth: Divi.get_auth_values(),
+        wallet_encryption_status: :wes_unencrypted
       )
 
     {:ok, socket}
@@ -92,6 +93,7 @@ defmodule BoxwalletWeb.DiviLive do
 
           Process.send_after(self(), :check_get_info_status, 2000)
           Process.send_after(self(), :check_get_blockchain_info_status, 2000)
+          Process.send_after(self(), :check_get_wallet_info_status, 2000)
           {:noreply, socket}
 
         {:error, _reason} ->
@@ -100,6 +102,49 @@ defmodule BoxwalletWeb.DiviLive do
           # 4. Failed (daemon still booting).
           # Schedule ANOTHER check for 2 seconds later.
           Process.send_after(self(), :check_get_info_status, 2000)
+
+          {:noreply, socket}
+      end
+    else
+      # If the user clicked "Stop" while it was booting, we stop polling.
+      {:noreply, socket}
+    end
+  end
+
+  def handle_info(:check_get_wallet_info_status, socket) do
+    # Only keep checking if we think we are supposed to be starting/running
+    if socket.assigns.coin_daemon_starting or socket.assigns.coin_daemon_started do
+      {:ok, coin_auth} = socket.assigns.coin_auth
+
+      case Divi.get_wallet_info(coin_auth) do
+        {:ok, response} ->
+          case response.result do
+            ""
+          end
+
+          socket =
+            socket
+            |> assign(:get_wallet_info_response, response)
+            |> assign(
+              :blocks,
+              Number.Delimit.number_to_delimited(response.result.blocks, precision: 0) || 0
+            )
+            |> assign(
+              :difficulty,
+              Number.Delimit.number_to_delimited(response.result.difficulty, precision: 0) || 0
+            )
+            |> assign(
+              :headers,
+              Number.Delimit.number_to_delimited(response.result.headers, precision: 0) || 0
+            )
+
+          # Process.send_after(self(), :check_get_blockchain_info_status, 2000)
+          {:noreply, socket}
+
+        {:error, _reason} ->
+          IO.puts("⏳ Daemon not ready yet... retrying in 2s")
+
+          Process.send_after(self(), :check_get_blockchain_info_status, 2000)
 
           {:noreply, socket}
       end
@@ -295,7 +340,22 @@ defmodule BoxwalletWeb.DiviLive do
               # _ -> "Connecting..."
           end
 
-        state = if connections > 0, do: :enabled, else: :disabled
+        # state = if connections > 0, do: :enabled, else: :disabled
+        state =
+          case connections do
+            0 ->
+              if assigns.coin_daemon_started do
+                :flashing
+              else
+                :disabled
+              end
+
+            _ when connections > 0 ->
+              :enabled
+
+            _ ->
+              :disabled
+          end
 
         %{
           name: "hero-signal",
