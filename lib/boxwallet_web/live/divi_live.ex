@@ -118,33 +118,31 @@ defmodule BoxwalletWeb.DiviLive do
 
       case Divi.get_wallet_info(coin_auth) do
         {:ok, response} ->
-          case response.result do
-            ""
-          end
+          wallet_encryption_status =
+            case response.result do
+              "unencrypted" ->
+                :wes_unencrypted
+
+              "unlocked" ->
+                :wes_unlocked
+
+              "locked" ->
+                :wes_locked
+
+              "unlocked-for-staking" ->
+                :wes_unlocked_for_staking
+            end
 
           socket =
             socket
-            |> assign(:get_wallet_info_response, response)
-            |> assign(
-              :blocks,
-              Number.Delimit.number_to_delimited(response.result.blocks, precision: 0) || 0
-            )
-            |> assign(
-              :difficulty,
-              Number.Delimit.number_to_delimited(response.result.difficulty, precision: 0) || 0
-            )
-            |> assign(
-              :headers,
-              Number.Delimit.number_to_delimited(response.result.headers, precision: 0) || 0
-            )
+            |> assign(:wallet_encryption_status, wallet_encryption_status)
 
-          # Process.send_after(self(), :check_get_blockchain_info_status, 2000)
           {:noreply, socket}
 
         {:error, _reason} ->
-          IO.puts("⏳ Daemon not ready yet... retrying in 2s")
+          IO.puts("⏳ Unable to get_wallet_info... retrying in 2s")
 
-          Process.send_after(self(), :check_get_blockchain_info_status, 2000)
+          Process.send_after(self(), :check_get_wallet_info_status, 2000)
 
           {:noreply, socket}
       end
