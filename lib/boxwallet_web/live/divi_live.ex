@@ -28,7 +28,7 @@ defmodule BoxwalletWeb.DiviLive do
         headers: 0,
         version: "...",
         coin_auth: Divi.get_auth_values(),
-        wallet_encryption_status: :wes_unencrypted
+        wallet_encryption_status: :wes_unknown
       )
 
     {:ok, socket}
@@ -112,6 +112,7 @@ defmodule BoxwalletWeb.DiviLive do
   end
 
   def handle_info(:check_get_wallet_info_status, socket) do
+    IO.puts("handle_info(:check_get_wallet_info_status, socket) has been triggered")
     # Only keep checking if we think we are supposed to be starting/running
     if socket.assigns.coin_daemon_starting or socket.assigns.coin_daemon_started do
       {:ok, coin_auth} = socket.assigns.coin_auth
@@ -119,7 +120,7 @@ defmodule BoxwalletWeb.DiviLive do
       case Divi.get_wallet_info(coin_auth) do
         {:ok, response} ->
           wallet_encryption_status =
-            case response.result do
+            case response.result.encryption_status do
               "unencrypted" ->
                 :wes_unencrypted
 
@@ -181,7 +182,7 @@ defmodule BoxwalletWeb.DiviLive do
             |> assign(:coin_daemon_stopped, false)
 
           IO.puts("Calling getinfo...")
-          # Send a message to 'self' to check status in 2000ms (2 seconds)
+          # Send a message to 'self' to check status in 2000ms
           Process.send_after(self(), :check_get_info_status, 2000)
 
           {:noreply, socket}
@@ -213,7 +214,8 @@ defmodule BoxwalletWeb.DiviLive do
     {:noreply,
      socket
      |> put_flash(:info, "Stopping daemon...")
-     |> assign(:coin_daemon_stopping, true)}
+     |> assign(:coin_daemon_stopping, true)
+     |> assign(wallet_encryption_status: :wes_unknown)}
   end
 
   def handle_info(:perform_download, socket) do
@@ -398,7 +400,55 @@ defmodule BoxwalletWeb.DiviLive do
         }
 
       :encryption ->
-        %{name: "hero-lock-open", hint: "Settings", color: "text-red-400", state: :disabled}
+        hint =
+          cond do
+            assigns.wallet_encryption_status == :wes_unencrypted ->
+              "Wallet unencrypted! Please encrypt NOW!"
+
+            assigns.wallet_encryption_status == :wes_unlocked ->
+              "Wallet unlocked!"
+
+            assigns.wallet_encryption_status == :wes_locked ->
+              "Wallet locked"
+
+            assigns.wallet_encryption_status == :wes_unlocked_for_staking ->
+              "Wallet unlocked for staking :)"
+
+            assigns.wallet_encryption_status == :wes_unknown ->
+              "Wallet encryption unknown."
+          end
+
+        state =
+          cond do
+            assigns.wallet_encryption_status == :wes_unencrypted ->
+              :pulsing
+
+            assigns.wallet_encryption_status == :wes_unlocked ->
+              :enabled
+
+            assigns.wallet_encryption_status == :wes_locked ->
+              :enabled
+
+            assigns.wallet_encryption_status == :wes_unlocked_for_staking ->
+              :enabled
+
+            assigns.wallet_encryption_status == :wes_unknown ->
+              :disabled
+          end
+
+        name =
+          if assigns.wallet_encryption_status == :wes_locked do
+            "hero-lock-closed"
+          else
+            "hero-lock-open"
+          end
+
+        %{
+          name: name,
+          hint: hint,
+          color: "text-red-400",
+          state: state
+        }
 
       :staking ->
         %{name: "hero-bolt", hint: "Stats", color: "text-red-400", state: :disabled}
