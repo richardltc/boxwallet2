@@ -43,11 +43,24 @@ defmodule BoxwalletWeb.CoreWalletToolbar do
         from { transform: rotate(0deg); }
         to { transform: rotate(360deg); }
       }
+      @keyframes pulse {
+        0%, 100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 0.6;
+          transform: scale(1.2);
+        }
+      }
       .flashing {
         animation: flash 2s ease-in-out infinite;
       }
       .rotating {
         animation: rotate 5s linear infinite;
+      }
+      .pulsing {
+        animation: pulse 2s ease-in-out infinite;
       }
     </style>
     <div class={@class}>
@@ -75,6 +88,7 @@ defmodule BoxwalletWeb.CoreWalletToolbar do
   defp state_class(:disabled), do: "opacity-30"
   defp state_class(:flashing), do: "flashing cursor-pointer"
   defp state_class(:rotating), do: "rotating cursor-pointer"
+  defp state_class(:pulsing), do: "pulsing cursor-pointer"
   defp state_class(:enabled), do: "cursor-pointer"
   defp state_class(_), do: "cursor-pointer"
 end
