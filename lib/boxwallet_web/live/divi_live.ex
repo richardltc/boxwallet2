@@ -9,6 +9,7 @@ defmodule BoxwalletWeb.DiviLive do
   def mount(_params, _session, socket) do
     socket =
       assign(socket,
+        blockchain_is_synced: false,
         coin_name: "Divi",
         coin_title: "The foundation for a truly decentralized future.",
         coin_description:
@@ -94,6 +95,7 @@ defmodule BoxwalletWeb.DiviLive do
           Process.send_after(self(), :check_get_info_status, 2000)
           Process.send_after(self(), :check_get_blockchain_info_status, 2000)
           Process.send_after(self(), :check_get_wallet_info_status, 2000)
+          Process.send_after(self(), :check_get_mn_sync_status, 2000)
           {:noreply, socket}
 
         {:error, _reason} ->
@@ -111,8 +113,35 @@ defmodule BoxwalletWeb.DiviLive do
     end
   end
 
+  def handle_info(:check_get_mn_sync_status, socket) do
+    # Only keep checking if we think we are supposed to be starting/running
+    if socket.assigns.coin_daemon_starting or socket.assigns.coin_daemon_started do
+      {:ok, coin_auth} = socket.assigns.coin_auth
+
+      case Divi.get_mn_sync_status(coin_auth) do
+        {:ok, response} ->
+          blockchain_is_synced = response.result.is_blockchain_synced
+
+          socket =
+            socket
+            |> assign(:blockchain_is_synced, blockchain_is_synced)
+
+          {:noreply, socket}
+
+        {:error, _reason} ->
+          IO.puts("⏳ Unable to get_mn_sync_status... retrying in 2s")
+
+          Process.send_after(self(), :check_get_mn_sync_status, 2000)
+
+          {:noreply, socket}
+      end
+    else
+      # If the user clicked "Stop" while it was booting, we stop polling.
+      {:noreply, socket}
+    end
+  end
+
   def handle_info(:check_get_wallet_info_status, socket) do
-    IO.puts("handle_info(:check_get_wallet_info_status, socket) has been triggered")
     # Only keep checking if we think we are supposed to be starting/running
     if socket.assigns.coin_daemon_starting or socket.assigns.coin_daemon_started do
       {:ok, coin_auth} = socket.assigns.coin_auth
@@ -386,10 +415,18 @@ defmodule BoxwalletWeb.DiviLive do
 
         state =
           cond do
-            assigns.coin_daemon_starting -> :disabled
-            assigns.coin_daemon_started -> if connections > 0, do: :rotating
-            assigns.coin_daemon_stopped -> :disabled
-            true -> :disabled
+            assigns.coin_daemon_starting ->
+              :disabled
+
+            assigns.coin_daemon_started ->
+              if connections > 0 and !assigns.blockchain_is_synced, do: :rotating, else: :enabled
+
+            # assigns.coin_daemon_started -> if connections > 0, do: :rotating
+            assigns.coin_daemon_stopped ->
+              :disabled
+
+            true ->
+              :disabled
           end
 
         %{
