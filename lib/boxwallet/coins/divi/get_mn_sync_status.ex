@@ -5,45 +5,45 @@ defmodule BoxWallet.Coins.Divi.GetMNSyncStatus do
 
   defmodule Result do
     @enforce_keys [
-      :IsBlockchainSynced,
-      :timestampOfLastMasternodeListUpdate,
-      :timestampOfLastMasternodeWinnerUpdate,
-      :timestampOfLastFailedSync,
-      :countOfFailedSyncAttempts,
-      :nominalNumberOfMasternodeBroadcastsReceived,
-      :nominalNumberOfMasternodeWinnersReceived,
-      :fulfilledMasternodeListSyncRequests,
-      :fulfilledMasternodeWinnerSyncRequests,
-      :currentMasternodeSyncStatus,
-      :totalSuccessivePeerSyncRequests
+      :is_blockchain_synced,
+      :timestamp_of_last_masternode_list_update,
+      :timestamp_of_last_masternode_winner_update,
+      :timestamp_of_last_failed_sync,
+      :count_of_failed_sync_attempts,
+      :nominal_number_of_masternode_broadcasts_received,
+      :nominal_number_of_masternode_winners_received,
+      :fulfilled_masternode_list_sync_requests,
+      :fulfilled_masternode_winner_sync_requests,
+      :current_masternode_sync_status,
+      :total_successive_peer_sync_requests
     ]
 
     defstruct [
-      :IsBlockchainSynced,
-      :timestampOfLastMasternodeListUpdate,
-      :timestampOfLastMasternodeWinnerUpdate,
-      :timestampOfLastFailedSync,
-      :countOfFailedSyncAttempts,
-      :nominalNumberOfMasternodeBroadcastsReceived,
-      :nominalNumberOfMasternodeWinnersReceived,
-      :fulfilledMasternodeListSyncRequests,
-      :fulfilledMasternodeWinnerSyncRequests,
-      :currentMasternodeSyncStatus,
-      :totalSuccessivePeerSyncRequests
+      :is_blockchain_synced,
+      :timestamp_of_last_masternode_list_update,
+      :timestamp_of_last_masternode_winner_update,
+      :timestamp_of_last_failed_sync,
+      :count_of_failed_sync_attempts,
+      :nominal_number_of_masternode_broadcasts_received,
+      :nominal_number_of_masternode_winners_received,
+      :fulfilled_masternode_list_sync_requests,
+      :fulfilled_masternode_winner_sync_requests,
+      :current_masternode_sync_status,
+      :total_successive_peer_sync_requests
     ]
 
     @type t :: %__MODULE__{
-            IsBlockchainSynced: boolean(),
-            timestampOfLastMasternodeListUpdate: integer(),
-            timestampOfLastMasternodeWinnerUpdate: integer(),
-            timestampOfLastFailedSync: integer(),
-            countOfFailedSyncAttempts: integer(),
-            nominalNumberOfMasternodeBroadcastsReceived: integer(),
-            nominalNumberOfMasternodeWinnersReceived: integer(),
-            fulfilledMasternodeListSyncRequests: integer(),
-            fulfilledMasternodeWinnerSyncRequests: integer(),
-            currentMasternodeSyncStatus: integer(),
-            totalSuccessivePeerSyncRequests: integer()
+            is_blockchain_synced: boolean(),
+            timestamp_of_last_masternode_list_update: integer(),
+            timestamp_of_last_masternode_winner_update: integer(),
+            timestamp_of_last_failed_sync: integer(),
+            count_of_failed_sync_attempts: integer(),
+            nominal_number_of_masternode_broadcasts_received: integer(),
+            nominal_number_of_masternode_winners_received: integer(),
+            fulfilled_masternode_list_sync_requests: integer(),
+            fulfilled_masternode_winner_sync_requests: integer(),
+            current_masternode_sync_status: integer(),
+            total_successive_peer_sync_requests: integer()
           }
   end
 
@@ -62,7 +62,7 @@ defmodule BoxWallet.Coins.Divi.GetMNSyncStatus do
         }
 
   @doc """
-  Decodes JSON string into a GetMNSyncStatus struct
+  Decodes JSON string into a GetMNSyncStatus struct, and sorts case.
   """
   def from_json(json_string) do
     with {:ok, decoded} <- Jason.decode(json_string),
@@ -82,19 +82,19 @@ defmodule BoxWallet.Coins.Divi.GetMNSyncStatus do
 
   defp parse_result(result) do
     %Result{
-      IsBlockchainSynced: result["IsBlockchainSynced"],
-      timestampOfLastMasternodeListUpdate: result["timestampOfLastMasternodeListUpdate"],
-      timestampOfLastMasternodeWinnerUpdate: result["timestampOfLastMasternodeWinnerUpdate"],
-      timestampOfLastFailedSync: result["timestampOfLastFailedSync"],
-      countOfFailedSyncAttempts: result["countOfFailedSyncAttempts"],
-      nominalNumberOfMasternodeBroadcastsReceived:
+      is_blockchain_synced: result["IsBlockchainSynced"],
+      timestamp_of_last_masternode_list_update: result["timestampOfLastMasternodeListUpdate"],
+      timestamp_of_last_masternode_winner_update: result["timestampOfLastMasternodeWinnerUpdate"],
+      timestamp_of_last_failed_sync: result["timestampOfLastFailedSync"],
+      count_of_failed_sync_attempts: result["countOfFailedSyncAttempts"],
+      nominal_number_of_masternode_broadcasts_received:
         result["nominalNumberOfMasternodeBroadcastsReceived"],
-      nominalNumberOfMasternodeWinnersReceived:
+      nominal_number_of_masternode_winners_received:
         result["nominalNumberOfMasternodeWinnersReceived"],
-      fulfilledMasternodeListSyncRequests: result["fulfilledMasternodeListSyncRequests"],
-      fulfilledMasternodeWinnerSyncRequests: result["fulfilledMasternodeWinnerSyncRequests"],
-      currentMasternodeSyncStatus: result["currentMasternodeSyncStatus"],
-      totalSuccessivePeerSyncRequests: result["totalSuccessivePeerSyncRequests"]
+      fulfilled_masternode_list_sync_requests: result["fulfilledMasternodeListSyncRequests"],
+      fulfilled_masternode_winner_sync_requests: result["fulfilledMasternodeWinnerSyncRequests"],
+      current_masternode_sync_status: result["currentMasternodeSyncStatus"],
+      total_successive_peer_sync_requests: result["totalSuccessivePeerSyncRequests"]
     }
   end
 end
