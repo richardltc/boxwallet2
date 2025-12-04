@@ -620,7 +620,11 @@ defmodule BoxwalletWeb.DiviLive do
     <!-- Action buttons -->
         <div class="card-actions justify-center mt-8">
           <button
-            class="btn btn-primary px-8"
+            class={
+              if @coin_files_exist,
+                do: "btn btn-outline btn-secondary px-8",
+                else: "btn btn-primary px-8"
+            }
             onclick="install_modal.showModal()"
             disabled={@downloading}
           >
