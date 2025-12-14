@@ -2,24 +2,18 @@ defmodule BoxwalletWeb.CoreWalletBalance do
   use Phoenix.Component
 
   @doc """
-  Renders a balance card with coin, amount, and description.
+  Renders a balance card with coin, balance, and description.
 
   ## Examples
 
-      <.wallet_balance_card
-        coin="DIVI"
-        amount="89,400"
-        description="DIVI total"
-      />
-
-      <.wallet_balance_card
-        coin="Active Users"
-        amount={@amount}
-        description="DIVI total"
-      />
+              <.wallet_balance_card
+                coin="DIVI"
+                balance={@balance}
+                description="Total"
+              />
   """
   attr :coin, :string, required: true, doc: "COIN_ABBREV"
-  attr :amount, :string, required: true, doc: "Total coins"
+  attr :balance, :float, required: true, doc: "Total coins"
   attr :description, :string, default: nil, doc: "Optional description text"
   attr :class, :string, default: "", doc: "Additional CSS classes"
 
@@ -28,7 +22,7 @@ defmodule BoxwalletWeb.CoreWalletBalance do
     <div class={"stats shadow #{@class}"}>
       <div class="stat">
         <div class="stat-title">{@coin}</div>
-        <div class="stat-value">{@amount}</div>
+        <div class="stat-value">{Number.Delimit.number_to_delimited(@balance, precision: 8)}</div>
         <div :if={@description} class="stat-desc">{@description}</div>
       </div>
     </div>
