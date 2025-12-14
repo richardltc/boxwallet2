@@ -1,6 +1,7 @@
 defmodule BoxwalletWeb.DiviLive do
   # import BoxWallet.App
   import BoxwalletWeb.CoreWalletToolbar
+  import BoxwalletWeb.CoreWalletBalance
   use Number
   use BoxwalletWeb, :live_view
   require Logger
@@ -23,6 +24,7 @@ defmodule BoxwalletWeb.DiviLive do
         coin_daemon_started: false,
         coin_daemon_stopping: false,
         coin_daemon_stopped: true,
+        balance: 0.0,
         blocks: 0,
         connections: 0,
         difficulty: 0,
@@ -578,18 +580,31 @@ defmodule BoxwalletWeb.DiviLive do
           />
           <div class="flex-1">
             <div class="text-left">
-              <h2 class="card-title text-3xl font-bold items-baseline">
-                {@coin_name}
-                <small class="badge badge-sm ml-1 font-mono border-0">
-                  v{@version}
-                </small>
+              <h2 class="card-title text-3xl font-bold items-baseline flex justify-between">
+                <div class="flex items-baseline">
+                  {@coin_name}
+                  <small class="badge badge-sm ml-1 font-mono border-0">
+                    v{@version}
+                  </small>
+                </div>
+
+                <div class="flex items-baseline">
+                  <span class="text-lg font-normal text-gray-500 mr-1">
+                    Balance:
+                  </span>
+
+                  <small class="badge text-3xl font-mono border-0">
+                    {@balance}
+                  </small>
+                </div>
               </h2>
               <p class="text-lg mt-2 mb-4">{@coin_title}</p>
+
               <.hero_icons_row icons={@icons} />
             </div>
           </div>
         </div>
-        
+
     <!-- Description section -->
         <div class="text-center border-t border-gray-100 pt-6">
           <p class="text-gray-400 text-lg leading-relaxed max-w-2xl mx-auto">
@@ -616,7 +631,7 @@ defmodule BoxwalletWeb.DiviLive do
             </div>
           </div>
         </div>
-        
+
     <!-- Action buttons -->
         <div class="card-actions justify-center mt-8">
           <button
