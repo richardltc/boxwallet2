@@ -57,7 +57,7 @@ defmodule BoxwalletWeb.CoreWalletToolbar do
         animation: flash 2s ease-in-out infinite;
       }
       .rotating {
-        animation: rotate 5s linear infinite;
+        animation: rotate 10s linear infinite;
       }
       .pulsing {
         animation: pulse 2s ease-in-out infinite;
