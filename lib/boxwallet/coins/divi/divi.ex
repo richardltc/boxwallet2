@@ -209,7 +209,7 @@ defmodule Boxwallet.Coins.Divi do
         Path.join(user_home_dir, @home_dir_lin)
 
       {:win32, _} ->
-        Path.join([user_home_dir, "appdata", @home_dir_win])
+        Path.join([user_home_dir, "AppData", "Roaming", @home_dir_win])
 
       _ ->
         Logger.error("get_coin_home_dir: Running on an unknown OS!")
