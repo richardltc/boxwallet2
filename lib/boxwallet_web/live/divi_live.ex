@@ -34,8 +34,30 @@ defmodule BoxwalletWeb.DiviLive do
         wallet_encryption_status: :wes_unknown
       )
 
-    {:ok, socket}
-  end
+      {:ok, coin_auth} = socket.assigns.coin_auth
+
+        socket = case Divi.get_info(coin_auth) do
+          {:ok, response} ->
+            IO.puts("🎉 Daemon is alive!")
+
+            # Set daemon as started and begin polling
+            socket = socket
+              |> assign(:coin_daemon_started, true)
+              |> assign(:coin_daemon_stopped, false)
+
+            Process.send_after(self(), :check_get_info_status, 100)
+            Process.send_after(self(), :check_get_blockchain_info_status, 200)
+            Process.send_after(self(), :check_get_wallet_info_status, 300)
+            Process.send_after(self(), :check_get_mn_sync_status, 400)
+            socket
+
+          {:error, _reason} ->
+            IO.puts("⏳ Daemon not running on mount")
+            # Keep daemon_stopped as true, don't start polling
+            socket
+        end
+
+        {:ok, socket}  end
 
   def handle_info(:check_get_blockchain_info_status, socket) do
     # Only keep checking if we think we are supposed to be starting/running
