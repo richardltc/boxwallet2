@@ -690,6 +690,8 @@ defmodule BoxwalletWeb.DiviLive do
             class="btn btn-outline btn-secondary px-8"
             phx-click="start_coin_daemon"
             disabled={!@coin_files_exist or !@coin_daemon_stopped}
+            title={"Start #{@coin_name} Daemon"}
+
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -712,6 +714,8 @@ defmodule BoxwalletWeb.DiviLive do
             class="btn btn-outline btn-secondary px-8"
             phx-click="stop_coin_daemon"
             disabled={!@coin_daemon_started and !@coin_daemon_starting}
+            title={"Stop #{@coin_name} Daemon"}
+
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
