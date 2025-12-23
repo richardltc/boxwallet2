@@ -605,7 +605,7 @@ defmodule BoxwalletWeb.DiviLive do
             </div>
           </div>
         </div>
-        
+
     <!-- Description section -->
         <div class="text-center border-t border-gray-100 pt-6">
           <p class="text-gray-400 text-lg leading-relaxed max-w-2xl mx-auto">
@@ -632,7 +632,7 @@ defmodule BoxwalletWeb.DiviLive do
             </div>
           </div>
         </div>
-        
+
     <!-- Action buttons -->
         <div class="card-actions justify-center mt-8">
           <button
@@ -643,6 +643,7 @@ defmodule BoxwalletWeb.DiviLive do
             }
             onclick="install_modal.showModal()"
             disabled={@downloading}
+            title={if @coin_files_exist, do: "Update existing #{@coin_name} core files", else: "Install #{@coin_name} core files"}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -658,13 +659,13 @@ defmodule BoxwalletWeb.DiviLive do
                 d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"
               />
             </svg>
-            Install
+            <%= if @coin_files_exist, do: "Update", else: "Install" %>
           </button>
           <!-- DaisyUI Modal Dialog -->
           <dialog id="install_modal" class="modal">
             <div class="modal-box">
               <h3 class="font-bold text-lg">Confirm Installation</h3>
-              <p class="py-4">Are you sure you want to proceed with the installation?</p>
+              <p class="py-4">Are you sure you want to install the <%= @coin_name %> core files?</p>
               <div class="modal-action">
                 <!-- Yes button -->
                 <form method="dialog">
