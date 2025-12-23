@@ -104,6 +104,35 @@ defmodule Boxwallet.Coins.ReddCoin do
     Logger.info("Files copied and permissions set successfully.")
   end
 
+  def daemon_is_running(auth) do
+    body =
+      Jason.encode!(%{
+        jsonrpc: "1.0",
+        id: "curltext",
+        method: "getinfo",
+        params: []
+      })
+
+    url = "http://127.0.0.1:#{auth.rpc_port}"
+
+    headers = [
+      {"Content-Type", "text/plain"},
+      {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
+    ]
+
+    Logger.info("Attempting to call GetInfo to see if Daemon is running")
+
+    case HTTPoison.post(url, body, headers) do
+      {:ok, %{body: response_body}} ->
+        IO.inspect(response_body)
+        IO.puts("We think the Daemon is running...")
+        true
+
+      {:error, %HTTPoison.Error{reason: _reason}} ->
+        false
+    end
+  end
+
   def download_coin() do
     app_home_dir = BoxWallet.App.home_folder()
     # File.mkdir_p!(app_home_dir)
