@@ -655,20 +655,6 @@ defmodule Boxwallet.Coins.Divi do
     end)
   end
 
-  # def daemon_running? do
-  #   if :os.type() in [{:win32, _} | _] do
-  #     {output, 0} =
-  #       System.cmd("tasklist", ["/FI", "IMAGENAME eq bitcoind.exe"], stderr_to_stdout: true)
-
-  #     String.contains?(output, "bitcoind.exe")
-  #   else
-  #     case System.cmd("pgrep", ["-f", @daemon_bin], stderr_to_stdout: true) do
-  #       {_, 0} -> true
-  #       _ -> false
-  #     end
-  #   end
-  # end
-
   def get_sync_info do
     try do
       headers = [
