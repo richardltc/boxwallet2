@@ -34,30 +34,45 @@ defmodule BoxwalletWeb.DiviLive do
         wallet_encryption_status: :wes_unknown
       )
 
-      {:ok, coin_auth} = socket.assigns.coin_auth
+    # 1. Always check connected? so it doesn't run twice (once for static, once for websocket)
+    if connected?(socket) do
+      send(self(), :verify_daemon_status)
+    end
 
-        socket = case Divi.get_info(coin_auth) do
-          {:ok, response} ->
-            IO.puts("🎉 Daemon is alive!")
+    # {:ok, coin_auth} = socket.assigns.coin_auth
 
-            # Set daemon as started and begin polling
-            socket = socket
-              |> assign(:coin_daemon_started, true)
-              |> assign(:coin_daemon_stopped, false)
+    {:ok,
+     socket
+     |> assign(:coin_daemon_started, false)
+     |> assign(:coin_daemon_stopped, true)
+     |> assign(:checking_daemon, true)}
+  end
 
-            Process.send_after(self(), :check_get_info_status, 100)
-            Process.send_after(self(), :check_get_blockchain_info_status, 200)
-            Process.send_after(self(), :check_get_wallet_info_status, 300)
-            Process.send_after(self(), :check_get_mn_sync_status, 400)
-            socket
+  def handle_info(:verify_daemon_status, socket) do
+    # 2. This runs "in the background" immediately after mount
+    {:ok, coin_auth} = socket.assigns.coin_auth
 
-          {:error, _reason} ->
-            IO.puts("⏳ Daemon not running on mount")
-            # Keep daemon_stopped as true, don't start polling
-            socket
-        end
+    case Divi.daemon_is_running(coin_auth) do
+      true ->
+        IO.puts("🎉 Daemon is alive!")
 
-        {:ok, socket}  end
+        # 3. Trigger your specific info checks
+        Process.send_after(self(), :check_get_info_status, 100)
+        Process.send_after(self(), :check_get_blockchain_info_status, 200)
+        Process.send_after(self(), :check_get_wallet_info_status, 300)
+        Process.send_after(self(), :check_get_mn_sync_status, 400)
+
+        {:noreply,
+         socket
+         |> assign(:coin_daemon_started, true)
+         |> assign(:coin_daemon_stopped, false)
+         |> assign(:checking_daemon, false)}
+
+      false ->
+        IO.puts("⏳ Daemon not running")
+        {:noreply, assign(socket, :loading_daemon, false)}
+    end
+  end
 
   def handle_info(:check_get_blockchain_info_status, socket) do
     # Only keep checking if we think we are supposed to be starting/running
@@ -627,7 +642,7 @@ defmodule BoxwalletWeb.DiviLive do
             </div>
           </div>
         </div>
-
+        
     <!-- Description section -->
         <div class="text-center border-t border-gray-100 pt-6">
           <p class="text-gray-400 text-lg leading-relaxed max-w-2xl mx-auto">
@@ -654,7 +669,7 @@ defmodule BoxwalletWeb.DiviLive do
             </div>
           </div>
         </div>
-
+        
     <!-- Action buttons -->
         <div class="card-actions justify-center mt-8">
           <button
@@ -665,7 +680,11 @@ defmodule BoxwalletWeb.DiviLive do
             }
             onclick="install_modal.showModal()"
             disabled={@downloading}
-            title={if @coin_files_exist, do: "Update existing #{@coin_name} core files", else: "Install #{@coin_name} core files"}
+            title={
+              if @coin_files_exist,
+                do: "Update existing #{@coin_name} core files",
+                else: "Install #{@coin_name} core files"
+            }
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -681,13 +700,13 @@ defmodule BoxwalletWeb.DiviLive do
                 d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"
               />
             </svg>
-            <%= if @coin_files_exist, do: "Update", else: "Install" %>
+            {if @coin_files_exist, do: "Update", else: "Install"}
           </button>
           <!-- DaisyUI Modal Dialog -->
           <dialog id="install_modal" class="modal">
             <div class="modal-box">
               <h3 class="font-bold text-lg">Confirm Installation</h3>
-              <p class="py-4">Are you sure you want to install the <%= @coin_name %> core files?</p>
+              <p class="py-4">Are you sure you want to install the {@coin_name} core files?</p>
               <div class="modal-action">
                 <!-- Yes button -->
                 <form method="dialog">
@@ -713,7 +732,6 @@ defmodule BoxwalletWeb.DiviLive do
             phx-click="start_coin_daemon"
             disabled={!@coin_files_exist or !@coin_daemon_stopped}
             title={"Start #{@coin_name} Daemon"}
-
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -735,7 +753,6 @@ defmodule BoxwalletWeb.DiviLive do
           <button
             class="btn btn-outline btn-secondary px-8"
             phx-click="stop_coin_daemon"
-            disabled={!@coin_daemon_started and !@coin_daemon_starting}
             title={"Stop #{@coin_name} Daemon"}
 
           >
