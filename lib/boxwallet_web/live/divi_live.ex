@@ -50,27 +50,39 @@ defmodule BoxwalletWeb.DiviLive do
 
   def handle_info(:verify_daemon_status, socket) do
     # 2. This runs "in the background" immediately after mount
-    {:ok, coin_auth} = socket.assigns.coin_auth
+    case socket.assigns.coin_auth do
+      {:ok, coin_auth} ->
+        case Divi.daemon_is_running(coin_auth) do
+          true ->
+            IO.puts("#{socket.assigns.coin_name} Daemon is alive!")
 
-    case Divi.daemon_is_running(coin_auth) do
-      true ->
-        IO.puts("#{socket.assigns.coin_name} Daemon is alive!")
+            # 3. Trigger your specific info checks
+            Process.send_after(self(), :check_get_info_status, 100)
+            Process.send_after(self(), :check_get_blockchain_info_status, 200)
+            Process.send_after(self(), :check_get_wallet_info_status, 300)
+            Process.send_after(self(), :check_get_mn_sync_status, 400)
 
-        # 3. Trigger your specific info checks
-        Process.send_after(self(), :check_get_info_status, 100)
-        Process.send_after(self(), :check_get_blockchain_info_status, 200)
-        Process.send_after(self(), :check_get_wallet_info_status, 300)
-        Process.send_after(self(), :check_get_mn_sync_status, 400)
+            {:noreply,
+             socket
+             |> assign(:coin_daemon_started, true)
+             |> assign(:coin_daemon_stopped, false)
+             |> assign(:checking_daemon, false)}
 
-        {:noreply,
-         socket
-         |> assign(:coin_daemon_started, true)
-         |> assign(:coin_daemon_stopped, false)
-         |> assign(:checking_daemon, false)}
+          false ->
+            IO.puts("#{socket.assigns.coin_name} Daemon not running")
+            {:noreply, assign(socket, :loading_daemon, false)}
+        end
 
-      false ->
-        IO.puts("#{socket.assigns.coin_name} Daemon not running")
-        {:noreply, assign(socket, :loading_daemon, false)}
+      {:error, :enoent} ->
+        IO.puts(
+          "#{socket.assigns.coin_name} Config file not found. User probably needs to install/download."
+        )
+
+        {:noreply, assign(socket, checking_daemon: false)}
+
+      {:error, reason} ->
+        IO.puts("❌ Error loading auth: #{inspect(reason)}")
+        {:noreply, assign(socket, checking_daemon: false)}
     end
   end
 
