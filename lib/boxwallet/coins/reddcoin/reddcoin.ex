@@ -3,7 +3,7 @@ defmodule Boxwallet.Coins.ReddCoin do
   require Logger
 
   @behaviour BoxWallet.CoinDaemon
-  # import BoxWallet.App
+  import BoxWallet.App
 
   @coin_name "ReddCoin"
   @coin_name_abbrev "RDD"
@@ -390,7 +390,7 @@ defmodule Boxwallet.Coins.ReddCoin do
             {:cont, {:error, :wrong_response}}
           else
             # Now ew need to convert into a GetInfo before returning it to the UI
-            case BoxWallet.Coins.Divi.GetInfo.from_json(response_body) do
+            case BoxWallet.Coins.ReddCoin.GetInfo.from_json(response_body) do
               {:ok, response} ->
                 # Process the successful response - Halt with result
                 {:halt, {:ok, response}}
@@ -442,7 +442,7 @@ defmodule Boxwallet.Coins.ReddCoin do
             {:cont, {:error, :wrong_response}}
           else
             # Now we need to convert into a GetBlockchainInfo before returning it to the UI
-            case BoxWallet.Coins.Divi.GetBlockchainInfo.from_json(response_body) do
+            case BoxWallet.Coins.ReddCoin.GetBlockchainInfo.from_json(response_body) do
               {:ok, response} ->
                 # Process the successful response - Halt with result
                 {:halt, {:ok, response}}
@@ -494,7 +494,7 @@ defmodule Boxwallet.Coins.ReddCoin do
             {:cont, {:error, :wrong_response}}
           else
             # Now we need to convert into a GetBlockchainInfo before returning it to the UI
-            case BoxWallet.Coins.Divi.GetMNSyncStatus.from_json(response_body) do
+            case BoxWallet.Coins.ReddCoin.GetMNSyncStatus.from_json(response_body) do
               {:ok, response} ->
                 # Process the successful response - Halt with result
                 {:halt, {:ok, response}}
@@ -546,7 +546,7 @@ defmodule Boxwallet.Coins.ReddCoin do
             {:cont, {:error, :wrong_response}}
           else
             # Now we need to convert into a GetBlockchainInfo before returning it to the UI
-            case BoxWallet.Coins.Divi.GetWalletInfo.from_json(response_body) do
+            case BoxWallet.Coins.ReddCoin.GetWalletInfo.from_json(response_body) do
               {:ok, response} ->
                 # Process the successful response - Halt with result
                 {:halt, {:ok, response}}
