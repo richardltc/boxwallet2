@@ -57,7 +57,7 @@ defmodule BoxwalletWeb.ReddCoinLive do
       {:ok, coin_auth} ->
         case ReddCoin.daemon_is_running(coin_auth) do
           true ->
-            IO.puts("🎉 Daemon is alive!")
+            IO.puts("#{socket.assigns.coin_name} Daemon is alive!")
 
             # 3. Trigger your specific info checks
             Process.send_after(self(), :check_get_info_status, 100)
@@ -72,12 +72,15 @@ defmodule BoxwalletWeb.ReddCoinLive do
              |> assign(:checking_daemon, false)}
 
           false ->
-            IO.puts("⏳ Daemon not running")
+            IO.puts("#{socket.assigns.coin_name} Daemon not running")
             {:noreply, assign(socket, :loading_daemon, false)}
         end
 
       {:error, :enoent} ->
-        IO.puts("ℹ️ Config file not found. User probably needs to install/download.")
+        IO.puts(
+          "#{socket.assigns.coin_name} Config file not found. User probably needs to install/download."
+        )
+
         {:noreply, assign(socket, checking_daemon: false)}
 
       {:error, reason} ->
@@ -113,7 +116,7 @@ defmodule BoxwalletWeb.ReddCoinLive do
           {:noreply, socket}
 
         {:error, _reason} ->
-          IO.puts("⏳ Daemon not ready yet... retrying in 2s")
+          IO.puts("#{socket.assigns.coin_name} Daemon not ready yet... retrying in 2s")
 
           Process.send_after(self(), :check_get_blockchain_info_status, 2000)
 
@@ -132,7 +135,7 @@ defmodule BoxwalletWeb.ReddCoinLive do
 
       case ReddCoin.get_info(coin_auth) do
         {:ok, response} ->
-          IO.puts("🎉 Daemon is alive!")
+          IO.puts("#{socket.assigns.coin_name} Daemon is alive!")
 
           socket =
             socket
@@ -150,7 +153,7 @@ defmodule BoxwalletWeb.ReddCoinLive do
           {:noreply, socket}
 
         {:error, _reason} ->
-          IO.puts("⏳ Daemon not ready yet... retrying in 2s")
+          IO.puts("#{socket.assigns.coin_name} Daemon not ready yet... retrying in 2s")
 
           # 4. Failed (daemon still booting).
           # Schedule ANOTHER check for 2 seconds later.
@@ -180,7 +183,7 @@ defmodule BoxwalletWeb.ReddCoinLive do
           {:noreply, socket}
 
         {:error, _reason} ->
-          IO.puts("⏳ Unable to get_mn_sync_status... retrying in 2s")
+          IO.puts("#{socket.assigns.coin_name} - Unable to get_mn_sync_status... retrying in 2s")
 
           Process.send_after(self(), :check_get_mn_sync_status, 2000)
 
@@ -222,7 +225,7 @@ defmodule BoxwalletWeb.ReddCoinLive do
           {:noreply, socket}
 
         {:error, _reason} ->
-          IO.puts("⏳ Unable to get_wallet_info... retrying in 2s")
+          IO.puts("#{socket.assigns.coin_name} - Unable to get_wallet_info... retrying in 2s")
 
           Process.send_after(self(), :check_get_wallet_info_status, 2000)
 
@@ -248,13 +251,13 @@ defmodule BoxwalletWeb.ReddCoinLive do
   end
 
   def handle_event("start_coin_daemon", _, socket) do
-    IO.puts("Attempting to start Divi Daemon...")
+    IO.puts("Attempting to start #{socket.assigns.coin_name} Daemon...")
     {:ok, coin_auth} = socket.assigns.coin_auth
 
     socket =
       case ReddCoin.start_daemon() do
         {:ok} ->
-          IO.puts("ReddCoin Starting...")
+          IO.puts("#{socket.assigns.coin_name} Starting...")
           # assign(socket, coin_daemon_started: true, coin_daemon_stopped: false)
           socket =
             socket
@@ -283,7 +286,7 @@ defmodule BoxwalletWeb.ReddCoinLive do
   def handle_event("stop_coin_daemon", _, socket) do
     {:ok, coin_auth} = socket.assigns.coin_auth
 
-    IO.puts("Attempting to stop #{@coin_name} Daemon...")
+    IO.puts("Attempting to stop #{socket.assigns.coin_name} Daemon...")
 
     parent = self()
 
@@ -294,7 +297,7 @@ defmodule BoxwalletWeb.ReddCoinLive do
 
     {:noreply,
      socket
-     |> put_flash(:info, "Stopping daemon...")
+     |> put_flash(:info, "Stopping #{socket.assigns.coin_name} Daemon...")
      |> assign(:coin_daemon_stopping, true)
      |> assign(wallet_encryption_status: :wes_unknown)}
   end
@@ -357,7 +360,7 @@ defmodule BoxwalletWeb.ReddCoinLive do
   def handle_info({:daemon_stop_result, {:error, reason}}, socket) do
     {:noreply,
      socket
-     |> put_flash(:error, "Failed to stop daemon: #{inspect(reason)}")
+     |> put_flash(:error, "Failed to stop #{socket.assigns.coin_name} Daemon: #{inspect(reason)}")
      |> assign(:daemon_stopping, false)}
   end
 
