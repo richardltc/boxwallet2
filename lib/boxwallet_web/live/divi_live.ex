@@ -54,7 +54,7 @@ defmodule BoxwalletWeb.DiviLive do
 
     case Divi.daemon_is_running(coin_auth) do
       true ->
-        IO.puts("🎉 Daemon is alive!")
+        IO.puts("#{socket.assigns.coin_name} Daemon is alive!")
 
         # 3. Trigger your specific info checks
         Process.send_after(self(), :check_get_info_status, 100)
@@ -69,7 +69,7 @@ defmodule BoxwalletWeb.DiviLive do
          |> assign(:checking_daemon, false)}
 
       false ->
-        IO.puts("⏳ Daemon not running")
+        IO.puts("#{socket.assigns.coin_name} Daemon not running")
         {:noreply, assign(socket, :loading_daemon, false)}
     end
   end
@@ -101,7 +101,7 @@ defmodule BoxwalletWeb.DiviLive do
           {:noreply, socket}
 
         {:error, _reason} ->
-          IO.puts("⏳ Daemon not ready yet... retrying in 2s")
+          IO.puts("#{socket.assigns.coin_name} Daemon not ready yet... retrying in 2s")
 
           Process.send_after(self(), :check_get_blockchain_info_status, 2000)
 
@@ -120,7 +120,7 @@ defmodule BoxwalletWeb.DiviLive do
 
       case Divi.get_info(coin_auth) do
         {:ok, response} ->
-          IO.puts("🎉 Daemon is alive!")
+          IO.puts("#{socket.assigns.coin_name} Daemon is alive!")
 
           socket =
             socket
@@ -129,7 +129,7 @@ defmodule BoxwalletWeb.DiviLive do
             |> assign(:getinfo_response, response)
             |> assign(:connections, response.result.connections || 0)
             |> assign(:version, response.result.version || "v...")
-            |> put_flash(:info, "Divi Daemon Started Successfully!")
+            |> put_flash(:info, "#{socket.assigns.coin_name} Daemon Started Successfully!")
 
           Process.send_after(self(), :check_get_info_status, 2000)
           Process.send_after(self(), :check_get_blockchain_info_status, 2000)
@@ -138,7 +138,7 @@ defmodule BoxwalletWeb.DiviLive do
           {:noreply, socket}
 
         {:error, _reason} ->
-          IO.puts("⏳ Daemon not ready yet... retrying in 2s")
+          IO.puts("#{socket.assigns.coin_name} Daemon not ready yet... retrying in 2s")
 
           # 4. Failed (daemon still booting).
           # Schedule ANOTHER check for 2 seconds later.
@@ -236,13 +236,13 @@ defmodule BoxwalletWeb.DiviLive do
   end
 
   def handle_event("start_coin_daemon", _, socket) do
-    IO.puts("Attempting to start Divi Daemon...")
+    IO.puts("Attempting to start #{socket.assigns.coin_name} Daemon...")
     {:ok, coin_auth} = socket.assigns.coin_auth
 
     socket =
       case Divi.start_daemon() do
         {:ok} ->
-          IO.puts("Divi Starting...")
+          IO.puts("#{socket.assigns.coin_name} Starting...")
           # assign(socket, coin_daemon_started: true, coin_daemon_stopped: false)
           socket =
             socket
@@ -271,7 +271,7 @@ defmodule BoxwalletWeb.DiviLive do
   def handle_event("stop_coin_daemon", _, socket) do
     {:ok, coin_auth} = socket.assigns.coin_auth
 
-    IO.puts("Attempting to stop Divi Daemon...")
+    IO.puts("Attempting to stop #{socket.assigns.coin_name} Daemon...")
 
     parent = self()
 
@@ -292,7 +292,7 @@ defmodule BoxwalletWeb.DiviLive do
 
     case Divi.download_coin() do
       {:ok} ->
-        IO.puts("🎉 Download completed successfully")
+        IO.puts("#{socket.assigns.coin_name} Download completed successfully")
 
         socket =
           socket
@@ -308,7 +308,7 @@ defmodule BoxwalletWeb.DiviLive do
         {:noreply, socket}
 
       {:error, reason} ->
-        IO.puts("❌ Download failed")
+        IO.puts("#{socket.assigns.coin_name} Download failed")
         IO.inspect(reason, label: "ERROR - Error reason")
 
         socket =
@@ -330,7 +330,7 @@ defmodule BoxwalletWeb.DiviLive do
   def handle_info({:daemon_stop_result, {:ok, _response}}, socket) do
     {:noreply,
      socket
-     |> put_flash(:info, "Daemon stopped successfully")
+     |> put_flash(:info, "#{socket.assigns.coin_name} Daemon stopped successfully")
      |> assign(:coin_daemon_starting, false)
      |> assign(:coin_daemon_started, false)
      |> assign(:coin_daemon_stopped, true)
@@ -754,7 +754,6 @@ defmodule BoxwalletWeb.DiviLive do
             class="btn btn-outline btn-secondary px-8"
             phx-click="stop_coin_daemon"
             title={"Stop #{@coin_name} Daemon"}
-
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
