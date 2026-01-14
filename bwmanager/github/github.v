@@ -3,6 +3,8 @@ module github
 import net.http
 import json
 
+const github_url = 'https://api.github.com/repos/richardltc/boxwallet2/releases/latest'
+
 // Define the structure based on GitHub's API response
 pub struct GitHubRelease {
 pub:
@@ -13,6 +15,7 @@ pub:
 }
 
 pub fn get_latest_release(owner string, repo string) !GitHubRelease {
+  // https://api.github.com/repos/richardltc/boxwallet2/releases/latest
 	url := 'https://api.github.com/repos/${owner}/${repo}/releases/latest'
 
 	// GitHub API requires a User-Agent header.
