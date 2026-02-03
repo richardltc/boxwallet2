@@ -30,7 +30,8 @@ echo Compressing...
 set RELEASE_DIR=_build\prod\rel\%APP_NAME%
 set OUTPUT_FILE=%APP_NAME%-%VERSION%-windows-x64.zip
 
-powershell -Command "Compress-Archive -Path '_build\prod\rel\%APP_NAME%' -DestinationPath '%OUTPUT_FILE%' -Force"
+7z a -tzip "%OUTPUT_FILE%" ".\_build\prod\rel\%APP_NAME%\*"
+REM powershell -Command "Compress-Archive -Path '_build\prod\rel\%APP_NAME%' -DestinationPath '%OUTPUT_FILE%' -Force"
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
 echo Done! Your file is ready at:
