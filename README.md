@@ -8,6 +8,8 @@ The easiest way of getting started and managing BoxWallet is via the BoxWallet M
 
 https://github.com/richardltc/bw_manager/releases/latest
 
+Just download and run and it will do the rest for you :)
+
 However, if you prefer to do things manaully, you can do so by following the instructions below...
 
 ## Download Pre-built Releases
