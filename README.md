@@ -4,6 +4,12 @@ BoxWallet 2 is a browser based,  multi-coin wallet, that can get your coin-of-ch
 
 # Getting started with BoxWallet 2
 
+The easiest way of getting started and managing BoxWallet is via the BoxWallet Manager app found here:
+
+https://github.com/richardltc/bw_manager/releases/latest
+
+However, if you prefer to do things manaully, you can do so by following the instructions below...
+
 ## Download Pre-built Releases
 
 Pre-built releases are available for all major platforms. Download the latest release from:
