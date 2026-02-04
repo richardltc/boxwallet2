@@ -144,7 +144,7 @@ defmodule BoxwalletWeb.ReddCoinLive do
             |> assign(:getinfo_response, response)
             |> assign(:connections, response.result.connections || 0)
             |> assign(:version, response.result.version || "v...")
-            |> put_flash(:info, "Divi Daemon Started Successfully!")
+            |> put_flash(:info, "#{socket.assigns.coin_name} Daemon Started Successfully!")
 
           Process.send_after(self(), :check_get_info_status, 2000)
           Process.send_after(self(), :check_get_blockchain_info_status, 2000)
@@ -237,7 +237,7 @@ defmodule BoxwalletWeb.ReddCoinLive do
     end
   end
 
-  def handle_event("download_divi", _, socket) do
+  def handle_event("download_coin", _, socket) do
     IO.puts("🚀 Starting download event")
 
     # Set the loading state
@@ -578,7 +578,7 @@ defmodule BoxwalletWeb.ReddCoinLive do
             d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
           />
         </svg>
-        <span>Downloading and installing Divi... Please wait.</span>
+        <span>Downloading and installing ReddCoin... Please wait.</span>
       </div>
     <% end %>
 
@@ -657,7 +657,7 @@ defmodule BoxwalletWeb.ReddCoinLive do
             </div>
           </div>
         </div>
-        
+
     <!-- Description section -->
         <div class="text-center border-t border-gray-100 pt-6">
           <p class="text-gray-400 text-lg leading-relaxed max-w-2xl mx-auto">
@@ -684,7 +684,7 @@ defmodule BoxwalletWeb.ReddCoinLive do
             </div>
           </div>
         </div>
-        
+
     <!-- Action buttons -->
         <div class="card-actions justify-center mt-8">
           <button
@@ -727,7 +727,7 @@ defmodule BoxwalletWeb.ReddCoinLive do
                 <form method="dialog">
                   <button
                     class="btn btn-success mr-2"
-                    phx-click="download_divi"
+                    phx-click="download_coin"
                     onclick="install_modal.close()"
                     disabled={@downloading}
                   >
