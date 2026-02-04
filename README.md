@@ -4,7 +4,78 @@ BoxWallet 2 is a browser based,  multi-coin wallet, that can get your coin-of-ch
 
 # Getting started with BoxWallet 2
 
-As there are no current releases of BoxWallet 2, the best way of getting started is to clone this repository (`git clone`), install Elixir and Erlang (which is the platform that BoxWallet runs on) and then run it. Don't worry if none of that makes sense, we'll go through everything, step-by-step below.
+## Download Pre-built Releases
+
+Pre-built releases are available for all major platforms. Download the latest release from:
+
+https://github.com/richardltc/boxwallet2/releases
+
+### Linux (x64)
+
+```bash
+# Download and extract
+curl -LO https://github.com/richardltc/boxwallet2/releases/latest/download/boxwallet-VERSION-linux-x64.tar.gz
+tar -xzf boxwallet-VERSION-linux-x64.tar.gz
+
+# Run BoxWallet
+./boxwallet/bin/boxwallet start
+```
+
+### Linux (ARM64 / Raspberry Pi)
+
+```bash
+# Download and extract
+curl -LO https://github.com/richardltc/boxwallet2/releases/latest/download/boxwallet-VERSION-linux-arm64.tar.gz
+tar -xzf boxwallet-VERSION-linux-arm64.tar.gz
+
+# Run BoxWallet
+./boxwallet/bin/boxwallet start
+```
+
+### macOS (Apple Silicon)
+
+```bash
+# Download and extract
+curl -LO https://github.com/richardltc/boxwallet2/releases/latest/download/boxwallet-VERSION-macos-arm64.tar.gz
+tar -xzf boxwallet-VERSION-macos-arm64.tar.gz
+
+# Remove the quarantine attribute (required for downloaded apps)
+xattr -rd com.apple.quarantine boxwallet
+
+# Run BoxWallet
+./boxwallet/bin/boxwallet start
+```
+
+### macOS (Intel)
+
+```bash
+# Download and extract
+curl -LO https://github.com/richardltc/boxwallet2/releases/latest/download/boxwallet-VERSION-macos-x64.tar.gz
+tar -xzf boxwallet-VERSION-macos-x64.tar.gz
+
+# Remove the quarantine attribute (required for downloaded apps)
+xattr -rd com.apple.quarantine boxwallet
+
+# Run BoxWallet
+./boxwallet/bin/boxwallet start
+```
+
+### Windows
+
+1. Download `boxwallet-VERSION-windows-x64.zip` from the releases page
+2. Extract the zip file
+3. Open PowerShell or Command Prompt and navigate to the extracted folder
+4. Run: `.\boxwallet\bin\boxwallet.bat start`
+
+### Accessing BoxWallet
+
+Once started, open your browser and navigate to `http://localhost:4000`
+
+---
+
+## Building from Source
+
+If you prefer to build from source, or if a pre-built release isn't available for your platform, follow the instructions below.
 
 ## Installing on Ubuntu 24.04
 
