@@ -104,6 +104,39 @@ defmodule Boxwallet.Coins.ReddCoin do
     Logger.info("Files copied and permissions set successfully.")
   end
 
+  def create_wallet(auth) do
+    body =
+      Jason.encode!(%{
+        jsonrpc: "1.0",
+        id: "curltext",
+        method: "createwallet",
+        params: ["BoxWallet"]
+      })
+
+    url = "http://127.0.0.1:#{auth.rpc_port}"
+
+    headers = [
+      {"Content-Type", "text/plain"},
+      {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
+    ]
+
+    Logger.info("Attempting to CreateWallet...")
+
+    case HTTPoison.post(url, body, headers) do
+      {:ok, %{body: response_body}} ->
+        IO.inspect(response_body)
+
+        if !String.contains?(response_body, ~c"\"error\":null\"") do
+          {:error, :wrong_response}
+        else
+          :ok
+        end
+
+      {:error, %HTTPoison.Error{reason: reason}} ->
+        {:error, reason}
+    end
+  end
+
   def daemon_is_running(auth) do
     body =
       Jason.encode!(%{
