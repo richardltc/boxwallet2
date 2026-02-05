@@ -727,6 +727,12 @@ defmodule Boxwallet.Coins.ReddCoin do
   #   end
   # end
 
+  defp wallet_exists? do
+    wallet_dir = Path.join(get_coin_home_dir(), "BoxWallet")
+
+    File.dir?(wallet_dir)
+  end
+
   def get_sync_info do
     try do
       headers = [
