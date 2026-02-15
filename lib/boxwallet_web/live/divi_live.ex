@@ -2,6 +2,7 @@ defmodule BoxwalletWeb.DiviLive do
   # import BoxWallet.App
   import BoxwalletWeb.CoreWalletToolbar
   import BoxwalletWeb.CoreWalletBalance
+  import BoxwalletWeb.PromptModal
   use Number
   use BoxwalletWeb, :live_view
   require Logger
@@ -28,6 +29,7 @@ defmodule BoxwalletWeb.DiviLive do
         blocks: 0,
         connections: 0,
         difficulty: 0,
+        show_prompt: false,
         headers: 0,
         version: "...",
         coin_auth: Divi.get_auth_values(),
@@ -245,6 +247,10 @@ defmodule BoxwalletWeb.DiviLive do
     send(self(), :perform_download)
 
     {:noreply, socket}
+  end
+
+  def handle_event("show_decrypt", _params, socket) do
+    {:noreply, assign(socket, show_prompt: true)}
   end
 
   def handle_event("start_coin_daemon", _, socket) do
@@ -599,6 +605,17 @@ defmodule BoxwalletWeb.DiviLive do
       </div>
     <% end %>
 
+    <.prompt_modal
+      id="wallet-password"
+      question="Enter your wallet password to decrypt:"
+      icon="lock-closed"
+      show={@show_prompt}
+      on_submit="prompt_submitted"
+      on_cancel="prompt_cancelled"
+      input_type="password"
+      placeholder="Enter password..."
+    />
+
     <!-- Error alert -->
     <%= if @download_error do %>
       <div role="alert" class="alert alert-error mb-4">
@@ -782,6 +799,28 @@ defmodule BoxwalletWeb.DiviLive do
               />
             </svg>
             Stop
+          </button>
+
+          <button
+            class="btn btn-outline btn-secondary px-8"
+            phx-click="show_decrypt"
+            title={"Encrypt #{@coin_name} Wallet"}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="1.5"
+              stroke="currentColor"
+              class="size-6"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M11.412 15.655 9.75 21.75l3.745-4.012M9.257 13.5H3.75l2.659-2.849m2.048-2.194L14.25 2.25 12 10.5h8.25l-4.707 5.043M8.457 8.457 3 3m5.457 5.457 7.086 7.086m0 0L21 21"
+              />
+            </svg>
+            Encrypt
           </button>
         </div>
       </div>
