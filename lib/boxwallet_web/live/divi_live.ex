@@ -360,6 +360,15 @@ defmodule BoxwalletWeb.DiviLive do
      |> assign(:daemon_status, :stopped)}
   end
 
+  def handle_event("prompt_submitted", %{"answer" => password}, socket) do
+    IO.puts("Got password: #{password}")
+    {:noreply, assign(socket, show_prompt: false)}
+  end
+
+  def handle_event("prompt_cancelled", _params, socket) do
+    {:noreply, assign(socket, show_prompt: false)}
+  end
+
   def handle_info({:daemon_stop_result, {:error, reason}}, socket) do
     {:noreply,
      socket
@@ -608,14 +617,13 @@ defmodule BoxwalletWeb.DiviLive do
     <.prompt_modal
       id="wallet-password"
       question="Enter your wallet password to decrypt:"
-      icon="lock-closed"
+      icon="hero-lock-closed"
       show={@show_prompt}
-      on_submit="prompt_submitted"
+      on_confirm="prompt_submitted"
       on_cancel="prompt_cancelled"
       input_type="password"
       placeholder="Enter password..."
     />
-
     <!-- Error alert -->
     <%= if @download_error do %>
       <div role="alert" class="alert alert-error mb-4">
@@ -803,7 +811,7 @@ defmodule BoxwalletWeb.DiviLive do
 
           <button
             class="btn btn-outline btn-secondary px-8"
-            phx-click="show_decrypt"
+            onclick="document.getElementById('wallet-password').showModal()"
             title={"Encrypt #{@coin_name} Wallet"}
           >
             <svg
