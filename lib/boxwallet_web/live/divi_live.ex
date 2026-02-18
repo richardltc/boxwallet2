@@ -26,6 +26,7 @@ defmodule BoxwalletWeb.DiviLive do
         coin_daemon_stopping: false,
         coin_daemon_stopped: true,
         balance: 0.0,
+        block_height: 0,
         blocks_synced: 0,
         headers_synced: 0,
         peer_max_synced_blocks: 0,
@@ -65,7 +66,7 @@ defmodule BoxwalletWeb.DiviLive do
             Process.send_after(self(), :check_get_blockchain_info_status, 200)
             Process.send_after(self(), :check_get_wallet_info_status, 300)
             Process.send_after(self(), :check_get_mn_sync_status, 400)
-            Process.send_after(self(), :check_get_peer_info_status, 400)
+            Process.send_after(self(), :check_get_block_height, 400)
 
             {:noreply,
              socket
@@ -91,6 +92,30 @@ defmodule BoxwalletWeb.DiviLive do
     end
   end
 
+  def handle_info(:check_get_block_height, socket) do
+    # Only keep checking if we think we are supposed to be starting/running
+    if socket.assigns.coin_daemon_starting or socket.assigns.coin_daemon_started do
+      case Divi.get_block_height() do
+        {:ok, count} ->
+          socket =
+            socket
+            |> assign(:block_height, count)
+
+          {:noreply, socket}
+
+        {:error, _reason} ->
+          IO.puts("⏳ Unable to get_block_height... retrying in 65s")
+
+          Process.send_after(self(), :check_get_block_height, 65000)
+
+          {:noreply, socket}
+      end
+    else
+      # If the user clicked "Stop" while it was booting, we stop polling.
+      {:noreply, socket}
+    end
+  end
+
   def handle_info(:check_get_blockchain_info_status, socket) do
     # Only keep checking if we think we are supposed to be starting/running
     if socket.assigns.coin_daemon_starting or socket.assigns.coin_daemon_started do
@@ -102,8 +127,13 @@ defmodule BoxwalletWeb.DiviLive do
             socket
             |> assign(:get_blockchain_info_response, response)
             |> assign(
-              :blocks_synced, response.result.blocks || 0)
-            |> assign(:blocks_synced_display, Number.Delimit.number_to_delimited(response.result.blocks, precision: 0) || 0)
+              :blocks_synced,
+              response.result.blocks || 0
+            )
+            |> assign(
+              :blocks_synced_display,
+              Number.Delimit.number_to_delimited(response.result.blocks, precision: 0) || 0
+            )
             |> assign(
               :difficulty,
               Number.Delimit.number_to_delimited(response.result.difficulty, precision: 0) || 0
@@ -210,7 +240,9 @@ defmodule BoxwalletWeb.DiviLive do
               Number.Delimit.number_to_delimited(max_synced_headers, precision: 0) || 0
             )
             |> assign(:peer_max_synced_blocks, max_synced_blocks || 0)
-            |> assign(:peer_max_synced_blocks_display, Number.Delimit.number_to_delimited(max_synced_blocks, precision: 0) || "0"
+            |> assign(
+              :peer_max_synced_blocks_display,
+              Number.Delimit.number_to_delimited(max_synced_blocks, precision: 0) || "0"
             )
 
           {:noreply, socket}
@@ -710,19 +742,23 @@ defmodule BoxwalletWeb.DiviLive do
             </div>
           </div>
         </div>
-
+        
     <!-- Description section. -->
         <div class="text-center border-t border-gray-100 pt-6">
           <p class="text-gray-400 text-lg leading-relaxed max-w-2xl mx-auto">
             {@coin_description}
           </p>
           <div class="stats shadow mt-3 flex flex-row gap-8 p-6 justify-center items-center">
-
             <div class="flex flex-col items-center">
               <h3 class="text-sm font-semibold uppercase tracking-wider text-gray-500 mb-4">
                 Headers
               </h3>
-              <div class="radial-progress text-primary" style="--value:10;" aria-valuenow="70" role="progressbar">
+              <div
+                class="radial-progress text-primary"
+                style="--value:10;"
+                aria-valuenow="70"
+                role="progressbar"
+              >
                 70%
               </div>
             </div>
@@ -733,19 +769,24 @@ defmodule BoxwalletWeb.DiviLive do
               </h3>
               <div
                 class="radial-progress text-primary"
-                style={"--value:#{if @peer_max_synced_blocks > 0, do: Float.round(@blocks_synced / @peer_max_synced_blocks * 100, 2), else: 0};"}
-                aria-valuenow={if @peer_max_synced_blocks > 0, do: Float.round(@blocks_synced / @peer_max_synced_blocks * 100, 2), else: 0}
+                style={"--value:#{if @block_height > 0, do: Float.round(@blocks_synced / @block_height * 100, 2), else: 0};"}
+                aria-valuenow={
+                  if @peer_max_synced_blocks > 0,
+                    do: Float.round(@blocks_synced / @block_height * 100, 2),
+                    else: 0
+                }
                 role="progressbar"
               >
-                <%= if @peer_max_synced_blocks > 0 do %>
-                  <%= :io_lib.format("~.2f", [@blocks_synced / @peer_max_synced_blocks * 100]) |> to_string() %>%
+                <%= if @block_height > 0 do %>
+                  {:io_lib.format("~.2f", [@blocks_synced / @block_height * 100])
+                  |> to_string()}%
                 <% else %>
                   ---
                 <% end %>
               </div>
             </div>
-
-          </div>            <%!-- <div class="stats shadow mt-3"> --%>
+          </div>
+          <%!-- <div class="stats shadow mt-3"> --%>
           <%!-- <div class="stat place-items-center">
               <div class="stat-title">Headers</div>
               <div class="stat-value text-2xl">{@headers}</div>
@@ -761,7 +802,7 @@ defmodule BoxwalletWeb.DiviLive do
               <div class="stat-value text-2xl">{@difficulty}</div>
             </div> --%>
         </div>
-
+        
     <!-- Action buttons -->
         <div class="card-actions justify-center mt-8">
           <button
