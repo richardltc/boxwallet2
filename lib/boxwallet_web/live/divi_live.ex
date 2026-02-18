@@ -26,11 +26,13 @@ defmodule BoxwalletWeb.DiviLive do
         coin_daemon_stopping: false,
         coin_daemon_stopped: true,
         balance: 0.0,
-        blocks: 0,
+        blocks_synced: 0,
+        headers_synced: 0,
+        peer_max_synced_blocks: 0,
+        peer_max_synced_headers: 0,
         connections: 0,
         difficulty: 0,
         show_prompt: false,
-        headers: 0,
         version: "...",
         coin_auth: Divi.get_auth_values(),
         wallet_encryption_status: :wes_unknown
@@ -63,6 +65,7 @@ defmodule BoxwalletWeb.DiviLive do
             Process.send_after(self(), :check_get_blockchain_info_status, 200)
             Process.send_after(self(), :check_get_wallet_info_status, 300)
             Process.send_after(self(), :check_get_mn_sync_status, 400)
+            Process.send_after(self(), :check_get_peer_info_status, 400)
 
             {:noreply,
              socket
@@ -99,15 +102,14 @@ defmodule BoxwalletWeb.DiviLive do
             socket
             |> assign(:get_blockchain_info_response, response)
             |> assign(
-              :blocks,
-              Number.Delimit.number_to_delimited(response.result.blocks, precision: 0) || 0
-            )
+              :blocks_synced, response.result.blocks || 0)
+            |> assign(:blocks_synced_display, Number.Delimit.number_to_delimited(response.result.blocks, precision: 0) || 0)
             |> assign(
               :difficulty,
               Number.Delimit.number_to_delimited(response.result.difficulty, precision: 0) || 0
             )
             |> assign(
-              :headers,
+              :headers_synced,
               Number.Delimit.number_to_delimited(response.result.headers, precision: 0) || 0
             )
 
@@ -149,6 +151,7 @@ defmodule BoxwalletWeb.DiviLive do
           Process.send_after(self(), :check_get_blockchain_info_status, 2000)
           Process.send_after(self(), :check_get_wallet_info_status, 2000)
           Process.send_after(self(), :check_get_mn_sync_status, 2000)
+          Process.send_after(self(), :check_get_peer_info_status, 2000)
           {:noreply, socket}
 
         {:error, _reason} ->
@@ -190,6 +193,34 @@ defmodule BoxwalletWeb.DiviLive do
       end
     else
       # If the user clicked "Stop" while it was booting, we stop polling.
+      {:noreply, socket}
+    end
+  end
+
+  def handle_info(:check_get_peer_info_status, socket) do
+    if socket.assigns.coin_daemon_starting or socket.assigns.coin_daemon_started do
+      {:ok, coin_auth} = socket.assigns.coin_auth
+
+      case Divi.get_peer_info(coin_auth) do
+        {:ok, %{max_synced_headers: max_synced_headers, max_synced_blocks: max_synced_blocks}} ->
+          socket =
+            socket
+            |> assign(
+              :peer_max_synced_headers,
+              Number.Delimit.number_to_delimited(max_synced_headers, precision: 0) || 0
+            )
+            |> assign(:peer_max_synced_blocks, max_synced_blocks || 0)
+            |> assign(:peer_max_synced_blocks_display, Number.Delimit.number_to_delimited(max_synced_blocks, precision: 0) || "0"
+            )
+
+          {:noreply, socket}
+
+        {:error, _reason} ->
+          IO.puts("#{socket.assigns.coin_name} Peer info not ready yet... retrying in 2s")
+          Process.send_after(self(), :check_get_peer_info_status, 2000)
+          {:noreply, socket}
+      end
+    else
       {:noreply, socket}
     end
   end
@@ -353,8 +384,8 @@ defmodule BoxwalletWeb.DiviLive do
      |> assign(:coin_daemon_started, false)
      |> assign(:coin_daemon_stopped, true)
      |> assign(:connections, 0)
-     |> assign(:blocks, 0)
-     |> assign(:headers, 0)
+     |> assign(:blocks_synced, 0)
+     |> assign(:headers_synced, 0)
      |> assign(:difficulty, 0)
      |> assign(:coin_daemon_stopping, true)
      |> assign(:daemon_status, :stopped)}
@@ -679,41 +710,58 @@ defmodule BoxwalletWeb.DiviLive do
             </div>
           </div>
         </div>
-        
-    <!-- Description section -->
+
+    <!-- Description section. -->
         <div class="text-center border-t border-gray-100 pt-6">
           <p class="text-gray-400 text-lg leading-relaxed max-w-2xl mx-auto">
             {@coin_description}
           </p>
-          <h3 class="text-sm font-semibold uppercase tracking-wider text-gray-500 mb-4 mt-6">
-            Headers
-          </h3>
-          <div
-            class="radial-progress text-primary"
-            style="--value:70;"
-            aria-valuenow="70"
-            role="progressbar"
-          >
-            70%
-          </div>
-          <div class="stats shadow mt-3">
-            <%!-- <div class="stat place-items-center">
+          <div class="stats shadow mt-3 flex flex-row gap-8 p-6 justify-center items-center">
+
+            <div class="flex flex-col items-center">
+              <h3 class="text-sm font-semibold uppercase tracking-wider text-gray-500 mb-4">
+                Headers
+              </h3>
+              <div class="radial-progress text-primary" style="--value:10;" aria-valuenow="70" role="progressbar">
+                70%
+              </div>
+            </div>
+
+            <div class="flex flex-col items-center">
+              <h3 class="text-sm font-semibold uppercase tracking-wider text-gray-500 mb-4">
+                Blocks
+              </h3>
+              <div
+                class="radial-progress text-primary"
+                style={"--value:#{if @peer_max_synced_blocks > 0, do: Float.round(@blocks_synced / @peer_max_synced_blocks * 100, 2), else: 0};"}
+                aria-valuenow={if @peer_max_synced_blocks > 0, do: Float.round(@blocks_synced / @peer_max_synced_blocks * 100, 2), else: 0}
+                role="progressbar"
+              >
+                <%= if @peer_max_synced_blocks > 0 do %>
+                  <%= :io_lib.format("~.2f", [@blocks_synced / @peer_max_synced_blocks * 100]) |> to_string() %>%
+                <% else %>
+                  ---
+                <% end %>
+              </div>
+            </div>
+
+          </div>            <%!-- <div class="stats shadow mt-3"> --%>
+          <%!-- <div class="stat place-items-center">
               <div class="stat-title">Headers</div>
               <div class="stat-value text-2xl">{@headers}</div>
             </div> --%>
 
-            <%!-- <div class="stat place-items-center">
+          <%!-- <div class="stat place-items-center">
               <div class="stat-title">Blocks</div>
               <div class="stat-value text-2xl">{@blocks}</div>
             </div> --%>
 
-            <%!-- <div class="stat place-items-center">
+          <%!-- <div class="stat place-items-center">
               <div class="stat-title">Difficulty</div>
               <div class="stat-value text-2xl">{@difficulty}</div>
             </div> --%>
-          </div>
         </div>
-        
+
     <!-- Action buttons -->
         <div class="card-actions justify-center mt-8">
           <button
