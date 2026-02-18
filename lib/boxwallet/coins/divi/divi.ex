@@ -127,8 +127,8 @@ defmodule Boxwallet.Coins.Divi do
     Logger.info("Attempting to call GetInfo to see if Daemon is running")
 
     case HTTPoison.post(url, body, headers) do
-      {:ok, %{body: response_body}} ->
-        IO.inspect(response_body)
+      {:ok, %{body: _}} ->
+        # IO.inspect(response_body).
         IO.puts("We think the Daemon is running...")
         true
 
@@ -382,7 +382,7 @@ defmodule Boxwallet.Coins.Divi do
 
       case HTTPoison.post(url, body, headers) do
         {:ok, %{body: response_body}} ->
-          IO.inspect(response_body)
+          # IO.inspect(response_body)
 
           if String.contains?(response_body, "Loading") ||
                String.contains?(response_body, "Preparing databases") ||
@@ -434,7 +434,7 @@ defmodule Boxwallet.Coins.Divi do
 
       case HTTPoison.post(url, body, headers) do
         {:ok, %{body: response_body}} ->
-          IO.inspect(response_body)
+          # IO.inspect(response_body)
 
           if String.contains?(response_body, "Loading") ||
                String.contains?(response_body, "Preparing databases") ||
@@ -486,7 +486,7 @@ defmodule Boxwallet.Coins.Divi do
 
       case HTTPoison.post(url, body, headers) do
         {:ok, %{body: response_body}} ->
-          IO.inspect(response_body)
+          # IO.inspect(response_body)
 
           if String.contains?(response_body, "Loading") ||
                String.contains?(response_body, "Preparing databases") ||
@@ -505,6 +505,62 @@ defmodule Boxwallet.Coins.Divi do
 
               {:error, reason} ->
                 # Handle the error
+                Logger.error("Failed to parse: #{inspect(reason)}")
+                {:halt, {:error, reason}}
+            end
+          end
+
+        {:error, %HTTPoison.Error{reason: reason}} ->
+          Process.sleep(3000)
+          {:cont, {:error, reason}}
+      end
+    end)
+  end
+
+  def get_peer_info(auth) do
+    body =
+      Jason.encode!(%{
+        jsonrpc: "1.0",
+        id: "curltest",
+        method: "getpeerinfo",
+        params: []
+      })
+
+    url = "http://127.0.0.1:#{auth.rpc_port}"
+
+    headers = [
+      {"Content-Type", "text/plain"},
+      {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
+    ]
+
+    Enum.reduce_while(1..@daemon_rpc_attempts, {:error, :no_attempts}, fn attempt, _acc ->
+      Logger.info("Attempting to GetPeerInfo (attempt #{attempt}/#{@daemon_rpc_attempts})")
+
+      case HTTPoison.post(url, body, headers) do
+        {:ok, %{body: response_body}} ->
+          if String.contains?(response_body, "Loading") ||
+               String.contains?(response_body, "Preparing databases") ||
+               String.contains?(response_body, "Rewinding") ||
+               String.contains?(response_body, "RPC server started") ||
+               String.contains?(response_body, "Verifying") do
+            Logger.info("Waiting for Daemon to be ready, attempt #{attempt}")
+            Process.sleep(1000)
+            {:cont, {:error, :wrong_response}}
+          else
+            case BoxWallet.Coins.Divi.GetPeerInfo.from_json(response_body) do
+              {:ok, %{result: peers}} ->
+                max_synced_headers =
+                  peers |> Enum.map(& &1.synced_headers) |> Enum.max(fn -> 0 end)
+
+                max_synced_blocks = peers |> Enum.map(& &1.synced_blocks) |> Enum.max(fn -> 0 end)
+                Logger.info("max_synced_blocks = #{max_synced_blocks}")
+                Logger.info("max_synced_headers = #{max_synced_headers}")
+
+                {:halt,
+                 {:ok,
+                  %{max_synced_headers: max_synced_headers, max_synced_blocks: max_synced_blocks}}}
+
+              {:error, reason} ->
                 Logger.error("Failed to parse: #{inspect(reason)}")
                 {:halt, {:error, reason}}
             end
@@ -538,7 +594,7 @@ defmodule Boxwallet.Coins.Divi do
 
       case HTTPoison.post(url, body, headers) do
         {:ok, %{body: response_body}} ->
-          IO.inspect(response_body)
+          # IO.inspect(response_body)
 
           if String.contains?(response_body, "Loading") ||
                String.contains?(response_body, "Preparing databases") ||
