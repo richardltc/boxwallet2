@@ -685,25 +685,32 @@ defmodule BoxwalletWeb.DiviLive do
           <p class="text-gray-400 text-lg leading-relaxed max-w-2xl mx-auto">
             {@coin_description}
           </p>
+          <h3 class="text-sm font-semibold uppercase tracking-wider text-gray-500 mb-4 mt-6">
+            Headers
+          </h3>
+          <div
+            class="radial-progress text-primary"
+            style="--value:70;"
+            aria-valuenow="70"
+            role="progressbar"
+          >
+            70%
+          </div>
           <div class="stats shadow mt-3">
-            <div class="stat place-items-center">
+            <%!-- <div class="stat place-items-center">
               <div class="stat-title">Headers</div>
               <div class="stat-value text-2xl">{@headers}</div>
-              <%!-- <div class="stat-desc">Headers</div> --%>
-            </div>
+            </div> --%>
 
-            <div class="stat place-items-center">
+            <%!-- <div class="stat place-items-center">
               <div class="stat-title">Blocks</div>
               <div class="stat-value text-2xl">{@blocks}</div>
-              <%!-- <div class="stat-value text-secondary">{@blocks}</div> --%>
-              <%!-- <div class="stat-desc text-secondary">↗︎ 40 (2%)</div> --%>
-            </div>
+            </div> --%>
 
-            <div class="stat place-items-center">
+            <%!-- <div class="stat place-items-center">
               <div class="stat-title">Difficulty</div>
               <div class="stat-value text-2xl">{@difficulty}</div>
-              <%!-- <div class="stat-desc">↘︎ 90 (14%)</div> --%>
-            </div>
+            </div> --%>
           </div>
         </div>
         
