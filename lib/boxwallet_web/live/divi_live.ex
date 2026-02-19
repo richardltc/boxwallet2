@@ -771,7 +771,7 @@ defmodule BoxwalletWeb.DiviLive do
                 class="radial-progress text-primary"
                 style={"--value:#{if @block_height > 0, do: Float.round(@blocks_synced / @block_height * 100, 2), else: 0};"}
                 aria-valuenow={
-                  if @peer_max_synced_blocks > 0,
+                  if @block_height > 0,
                     do: Float.round(@blocks_synced / @block_height * 100, 2),
                     else: 0
                 }
