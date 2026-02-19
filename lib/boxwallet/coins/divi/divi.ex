@@ -5,7 +5,7 @@ defmodule Boxwallet.Coins.Divi do
   import BoxWallet.App
 
   @coin_name "DIVI"
-  @coin_name_abbrev "DIVI"
+  # @coin_name_abbrev "DIVI"
 
   @home_dir_lin ".divi"
   @home_dir_mac "DIVI"
@@ -21,7 +21,7 @@ defmodule Boxwallet.Coins.Divi do
   # <> "/"
   @extracted_dir_linux "divi-" <> @core_version
   # <> "\\"
-  @extracted_dir_windows "divi-" <> @core_version
+  # @extracted_dir_windows "divi-" <> @core_version
 
   @download_url "https://github.com/DiviProject/Divi/releases/download/v" <> @core_version <> "/"
   # @download_url_bs "https://divi-primer-snapshot.s3.us-east-2.amazonaws.com/snapshot/"
