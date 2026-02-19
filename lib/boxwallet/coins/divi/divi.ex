@@ -223,13 +223,14 @@ defmodule Boxwallet.Coins.Divi do
     end
   end
 
-  def get_block_height do
+  def get_block_height() do
     url = "https://chainz.cryptoid.info/divi/api.dws?q=getblockcount"
 
     case Req.get(url) do
       {:ok, %{status: 200, body: body}} ->
         # The body is a string (e.g., "3908174"), so we convert it to an integer
         {count, _} = Integer.parse(body)
+        Logger.info("Blockheight found: #{count}")
         {:ok, count}
 
       {:ok, %{status: status}} ->

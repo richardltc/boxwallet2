@@ -41,6 +41,8 @@ defmodule BoxwalletWeb.DiviLive do
 
     # 1. Always check connected? so it doesn't run twice (once for static, once for websocket)
     if connected?(socket) do
+      Process.send_after(self(), :check_get_block_height, 400)
+
       send(self(), :verify_daemon_status)
     end
 
@@ -59,14 +61,13 @@ defmodule BoxwalletWeb.DiviLive do
       {:ok, coin_auth} ->
         case Divi.daemon_is_running(coin_auth) do
           true ->
-            IO.puts("#{socket.assigns.coin_name} Daemon is alive!")
+            IO.puts("#{socket.assigns.coin_name} Verify daemon status - Daemon is alive!")
 
             # 3. Trigger your specific info checks
             Process.send_after(self(), :check_get_info_status, 100)
             Process.send_after(self(), :check_get_blockchain_info_status, 200)
             Process.send_after(self(), :check_get_wallet_info_status, 300)
             Process.send_after(self(), :check_get_mn_sync_status, 400)
-            Process.send_after(self(), :check_get_block_height, 400)
 
             {:noreply,
              socket
@@ -93,26 +94,15 @@ defmodule BoxwalletWeb.DiviLive do
   end
 
   def handle_info(:check_get_block_height, socket) do
-    # Only keep checking if we think we are supposed to be starting/running
-    if socket.assigns.coin_daemon_starting or socket.assigns.coin_daemon_started do
-      case Divi.get_block_height() do
-        {:ok, count} ->
-          socket =
-            socket
-            |> assign(:block_height, count)
+    case Divi.get_block_height() do
+      {:ok, count} ->
+        Process.send_after(self(), :check_get_block_height, 60_000)
+        {:noreply, assign(socket, :block_height, count)}
 
-          {:noreply, socket}
-
-        {:error, _reason} ->
-          IO.puts("⏳ Unable to get_block_height... retrying in 65s")
-
-          Process.send_after(self(), :check_get_block_height, 65000)
-
-          {:noreply, socket}
-      end
-    else
-      # If the user clicked "Stop" while it was booting, we stop polling.
-      {:noreply, socket}
+      {:error, reason} ->
+        Logger.warning("Unable to get block height: #{inspect(reason)}, retrying in 65s")
+        Process.send_after(self(), :check_get_block_height, 65_000)
+        {:noreply, socket}
     end
   end
 
@@ -140,7 +130,7 @@ defmodule BoxwalletWeb.DiviLive do
             )
             |> assign(
               :headers_synced,
-              Number.Delimit.number_to_delimited(response.result.headers, precision: 0) || 0
+              response.result.headers || 0
             )
 
           # Process.send_after(self(), :check_get_blockchain_info_status, 2000)
@@ -755,11 +745,25 @@ defmodule BoxwalletWeb.DiviLive do
               </h3>
               <div
                 class="radial-progress text-primary"
-                style="--value:10;"
-                aria-valuenow="70"
+                style={"--value:#{if @block_height > 0, do: Float.round(@headers_synced / @block_height * 100, 2), else: 0};"}
+                aria-valuenow={
+                  if @block_height > 0,
+                    do: Float.round(@headers_synced / @block_height * 100, 2),
+                    else: 0
+                }
                 role="progressbar"
               >
-                70%
+                <%= if @block_height > 0 do %>
+                  <% pct = @headers_synced / @block_height * 100
+
+                  formatted =
+                    if pct == 0 or pct == 100,
+                      do: "#{trunc(pct)}",
+                      else: :io_lib.format("~.2f", [pct]) |> to_string() %>
+                  {formatted}%
+                <% else %>
+                  ---
+                <% end %>
               </div>
             </div>
 
@@ -778,8 +782,13 @@ defmodule BoxwalletWeb.DiviLive do
                 role="progressbar"
               >
                 <%= if @block_height > 0 do %>
-                  {:io_lib.format("~.2f", [@blocks_synced / @block_height * 100])
-                  |> to_string()}%
+                  <% pct = @blocks_synced / @block_height * 100
+
+                  formatted =
+                    if pct == 0 or pct == 100,
+                      do: "#{trunc(pct)}",
+                      else: :io_lib.format("~.2f", [pct]) |> to_string() %>
+                  {formatted}%
                 <% else %>
                   ---
                 <% end %>
@@ -790,11 +799,6 @@ defmodule BoxwalletWeb.DiviLive do
           <%!-- <div class="stat place-items-center">
               <div class="stat-title">Headers</div>
               <div class="stat-value text-2xl">{@headers}</div>
-            </div> --%>
-
-          <%!-- <div class="stat place-items-center">
-              <div class="stat-title">Blocks</div>
-              <div class="stat-value text-2xl">{@blocks}</div>
             </div> --%>
 
           <%!-- <div class="stat place-items-center">
