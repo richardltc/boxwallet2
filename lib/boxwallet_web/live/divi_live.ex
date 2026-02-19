@@ -29,8 +29,8 @@ defmodule BoxwalletWeb.DiviLive do
         block_height: 0,
         blocks_synced: 0,
         headers_synced: 0,
-        peer_max_synced_blocks: 0,
-        peer_max_synced_headers: 0,
+        # peer_max_synced_blocks: 0,
+        # peer_max_synced_headers: 0,
         connections: 0,
         difficulty: 0,
         show_prompt: false,
@@ -181,7 +181,7 @@ defmodule BoxwalletWeb.DiviLive do
           Process.send_after(self(), :check_get_blockchain_info_status, 2000)
           Process.send_after(self(), :check_get_wallet_info_status, 2000)
           Process.send_after(self(), :check_get_mn_sync_status, 2000)
-          Process.send_after(self(), :check_get_peer_info_status, 2000)
+          # Process.send_after(self(), :check_get_peer_info_status, 2000)
           {:noreply, socket}
 
         {:error, _reason} ->
@@ -299,6 +299,68 @@ defmodule BoxwalletWeb.DiviLive do
     end
   end
 
+  def handle_info({:daemon_stop_result, {:ok, _response}}, socket) do
+    {:noreply,
+     socket
+     |> put_flash(:info, "#{socket.assigns.coin_name} Daemon stopped successfully")
+     |> assign(:coin_daemon_starting, false)
+     |> assign(:coin_daemon_started, false)
+     |> assign(:coin_daemon_stopped, true)
+     |> assign(:connections, 0)
+     |> assign(:blocks_synced, 0)
+     |> assign(:headers_synced, 0)
+     |> assign(:difficulty, 0)
+     |> assign(:coin_daemon_stopping, true)
+     |> assign(:daemon_status, :stopped)}
+  end
+
+  def handle_info({:daemon_stop_result, {:error, reason}}, socket) do
+    {:noreply,
+     socket
+     |> put_flash(:error, "Failed to stop daemon: #{inspect(reason)}")
+     |> assign(:daemon_stopping, false)}
+  end
+
+  def handle_info(:hide_success_message, socket) do
+    socket = assign(socket, download_complete: false)
+    {:noreply, socket}
+  end
+
+  def handle_info(:perform_download, socket) do
+    IO.puts("🔄 Performing download")
+
+    case Divi.download_coin() do
+      {:ok} ->
+        IO.puts("#{socket.assigns.coin_name} Download completed successfully")
+
+        socket =
+          socket
+          |> assign(downloading: false)
+          |> assign(show_install_alert: false)
+          |> assign(download_complete: true)
+          |> assign(coin_files_exist: true)
+          |> assign(download_error: nil)
+
+        # Auto-hide success message after 5 seconds..
+        Process.send_after(self(), :hide_success_message, 5000)
+
+        {:noreply, socket}
+
+      {:error, reason} ->
+        IO.puts("#{socket.assigns.coin_name} Download failed")
+        IO.inspect(reason, label: "ERROR - Error reason")
+
+        socket =
+          socket
+          |> assign(downloading: false)
+          |> assign(show_install_alert: false)
+          |> assign(download_complete: false)
+          |> assign(download_error: "Download failed: #{inspect(reason)}")
+
+        {:noreply, socket}
+    end
+  end
+
   def handle_event("download_divi", _, socket) do
     IO.puts("🚀 Starting download event")
 
@@ -318,7 +380,7 @@ defmodule BoxwalletWeb.DiviLive do
 
   def handle_event("start_coin_daemon", _, socket) do
     IO.puts("Attempting to start #{socket.assigns.coin_name} Daemon...")
-    {:ok, coin_auth} = socket.assigns.coin_auth
+    # {:ok, coin_auth} = socket.assigns.coin_auth
 
     socket =
       case Divi.start_daemon() do
@@ -368,61 +430,6 @@ defmodule BoxwalletWeb.DiviLive do
      |> assign(wallet_encryption_status: :wes_unknown)}
   end
 
-  def handle_info(:perform_download, socket) do
-    IO.puts("🔄 Performing download")
-
-    case Divi.download_coin() do
-      {:ok} ->
-        IO.puts("#{socket.assigns.coin_name} Download completed successfully")
-
-        socket =
-          socket
-          |> assign(downloading: false)
-          |> assign(show_install_alert: false)
-          |> assign(download_complete: true)
-          |> assign(coin_files_exist: true)
-          |> assign(download_error: nil)
-
-        # Auto-hide success message after 5 seconds..
-        Process.send_after(self(), :hide_success_message, 5000)
-
-        {:noreply, socket}
-
-      {:error, reason} ->
-        IO.puts("#{socket.assigns.coin_name} Download failed")
-        IO.inspect(reason, label: "ERROR - Error reason")
-
-        socket =
-          socket
-          |> assign(downloading: false)
-          |> assign(show_install_alert: false)
-          |> assign(download_complete: false)
-          |> assign(download_error: "Download failed: #{inspect(reason)}")
-
-        {:noreply, socket}
-    end
-  end
-
-  def handle_info(:hide_success_message, socket) do
-    socket = assign(socket, download_complete: false)
-    {:noreply, socket}
-  end
-
-  def handle_info({:daemon_stop_result, {:ok, _response}}, socket) do
-    {:noreply,
-     socket
-     |> put_flash(:info, "#{socket.assigns.coin_name} Daemon stopped successfully")
-     |> assign(:coin_daemon_starting, false)
-     |> assign(:coin_daemon_started, false)
-     |> assign(:coin_daemon_stopped, true)
-     |> assign(:connections, 0)
-     |> assign(:blocks_synced, 0)
-     |> assign(:headers_synced, 0)
-     |> assign(:difficulty, 0)
-     |> assign(:coin_daemon_stopping, true)
-     |> assign(:daemon_status, :stopped)}
-  end
-
   def handle_event("prompt_submitted", %{"answer" => password}, socket) do
     IO.puts("Got password: #{password}")
     {:noreply, assign(socket, show_prompt: false)}
@@ -430,13 +437,6 @@ defmodule BoxwalletWeb.DiviLive do
 
   def handle_event("prompt_cancelled", _params, socket) do
     {:noreply, assign(socket, show_prompt: false)}
-  end
-
-  def handle_info({:daemon_stop_result, {:error, reason}}, socket) do
-    {:noreply,
-     socket
-     |> put_flash(:error, "Failed to stop daemon: #{inspect(reason)}")
-     |> assign(:daemon_stopping, false)}
   end
 
   defp get_icon_state(name, assigns) do
