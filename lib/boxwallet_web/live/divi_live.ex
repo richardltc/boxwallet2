@@ -440,7 +440,7 @@ defmodule BoxwalletWeb.DiviLive do
               do: "Core files exist",
               else: "Core files not downloaded"
             ),
-          color: "text-red-400",
+          color: "text-divired",
           state: if(assigns.coin_files_exist, do: :enabled, else: :disabled)
         }
 
@@ -461,7 +461,7 @@ defmodule BoxwalletWeb.DiviLive do
             true -> "Idle"
           end
 
-        %{name: "hero-face-smile", hint: hint, color: "text-red-400", state: state}
+        %{name: "hero-face-smile", hint: hint, color: "text-divired", state: state}
 
       :connections ->
         connections = assigns.connections
@@ -509,7 +509,7 @@ defmodule BoxwalletWeb.DiviLive do
         %{
           name: "hero-signal",
           hint: hint,
-          color: "text-red-400",
+          color: "text-divired",
           state: state
         }
 
@@ -552,7 +552,7 @@ defmodule BoxwalletWeb.DiviLive do
         %{
           name: "hero-arrow-path",
           hint: hint,
-          color: "text-red-400",
+          color: "text-divired",
           state: state
         }
 
@@ -603,12 +603,12 @@ defmodule BoxwalletWeb.DiviLive do
         %{
           name: name,
           hint: hint,
-          color: "text-red-400",
+          color: "text-divired",
           state: state
         }
 
       :staking ->
-        %{name: "hero-bolt", hint: "Stats", color: "text-red-400", state: :disabled}
+        %{name: "hero-bolt", hint: "Stats", color: "text-divired", state: :disabled}
 
         # ... add other icons here
     end
@@ -744,7 +744,7 @@ defmodule BoxwalletWeb.DiviLive do
                 Headers
               </h3>
               <div
-                class="radial-progress text-primary"
+                class="radial-progress text-divired"
                 style={"--value:#{if @block_height > 0, do: Float.round(@headers_synced / @block_height * 100, 2), else: 0};"}
                 aria-valuenow={
                   if @block_height > 0,
@@ -772,7 +772,7 @@ defmodule BoxwalletWeb.DiviLive do
                 Blocks
               </h3>
               <div
-                class="radial-progress text-primary"
+                class="radial-progress text-divired"
                 style={"--value:#{if @block_height > 0, do: Float.round(@blocks_synced / @block_height * 100, 2), else: 0};"}
                 aria-valuenow={
                   if @block_height > 0,
@@ -812,8 +812,8 @@ defmodule BoxwalletWeb.DiviLive do
           <button
             class={
               if @coin_files_exist,
-                do: "btn btn-outline btn-secondary px-8",
-                else: "btn btn-primary px-8"
+                do: "btn btn-outline btn-boxwalletgreen px-8",
+                else: "btn btn-boxwalletgreen px-8"
             }
             onclick="install_modal.showModal()"
             disabled={@downloading}
@@ -865,7 +865,7 @@ defmodule BoxwalletWeb.DiviLive do
           </dialog>
 
           <button
-            class="btn btn-outline btn-secondary px-8"
+            class="btn btn-outline btn-boxwalletgreen px-8"
             phx-click="start_coin_daemon"
             disabled={!@coin_files_exist or !@coin_daemon_stopped}
             title={"Start #{@coin_name} Daemon"}
@@ -874,7 +874,7 @@ defmodule BoxwalletWeb.DiviLive do
           </button>
 
           <button
-            class="btn btn-outline btn-secondary px-8"
+            class="btn btn-outline btn-boxwalletgreen px-8"
             phx-click="stop_coin_daemon"
             disabled={!@coin_daemon_started}
             title={"Stop #{@coin_name} Daemon"}
@@ -883,7 +883,7 @@ defmodule BoxwalletWeb.DiviLive do
           </button>
 
           <button
-            class="btn btn-outline btn-secondary px-8"
+            class="btn btn-outline btn-boxwalletgreen px-8"
             disabled={!@coin_daemon_started}
             onclick="document.getElementById('wallet-password').showModal()"
             title={"Encrypt #{@coin_name} Wallet"}
