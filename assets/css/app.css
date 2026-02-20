@@ -102,4 +102,16 @@
 /* Make LiveView wrapper divs transparent for layout */
 [data-phx-session], [data-phx-teleported-src] { display: contents }
 
+/* Custom colours */
+@theme {
+  --color-divired: #ed2c57;
+  --color-boxwalletgreen: #7ca071;
+}
+
+/* Custom button variants */
+.btn-boxwalletgreen {
+  --btn-color: var(--color-boxwalletgreen);
+  --btn-fg: oklch(98% 0 0);
+}
+
 /* This file is for your main application CSS */
