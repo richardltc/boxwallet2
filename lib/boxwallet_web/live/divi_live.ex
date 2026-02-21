@@ -887,7 +887,12 @@ defmodule BoxwalletWeb.DiviLive do
             <button
               class="btn btn-outline btn-boxwalletgreen px-8 disabled:opacity-40"
               disabled={!@coin_daemon_started}
-            ><span class="hero-lock-closed h-6 w-6" /> Unlock</button>
+            ><span class="hero-lock-closed h-6 w-6" /> {case @wallet_encryption_status do
+                :wes_unencrypted -> "Encrypt"
+                :wes_unlocked -> "Lock"
+                :wes_unlocked_for_staking -> "Lock"
+                _ -> "Unlock"
+              end}</button>
             <%= if @wallet_encryption_status == :wes_locked do %>
               <ul
                 tabindex="-1"
