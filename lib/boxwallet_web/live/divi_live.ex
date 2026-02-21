@@ -812,8 +812,8 @@ defmodule BoxwalletWeb.DiviLive do
           <button
             class={
               if @coin_files_exist,
-                do: "btn btn-outline btn-boxwalletgreen px-8",
-                else: "btn btn-boxwalletgreen px-8"
+                do: "btn btn-outline btn-boxwalletgreen px-8 disabled:opacity-40",
+                else: "btn btn-boxwalletgreen px-8 disabled:opacity-40"
             }
             onclick="install_modal.showModal()"
             disabled={@downloading}
@@ -865,7 +865,7 @@ defmodule BoxwalletWeb.DiviLive do
           </dialog>
 
           <button
-            class="btn btn-outline btn-boxwalletgreen px-8"
+            class="btn btn-outline btn-boxwalletgreen px-8 disabled:opacity-40"
             phx-click="start_coin_daemon"
             disabled={!@coin_files_exist or !@coin_daemon_stopped}
             title={"Start #{@coin_name} Daemon"}
@@ -874,7 +874,7 @@ defmodule BoxwalletWeb.DiviLive do
           </button>
 
           <button
-            class="btn btn-outline btn-boxwalletgreen px-8"
+            class="btn btn-outline btn-boxwalletgreen px-8 disabled:opacity-40"
             phx-click="stop_coin_daemon"
             disabled={!@coin_daemon_started}
             title={"Stop #{@coin_name} Daemon"}
@@ -883,7 +883,7 @@ defmodule BoxwalletWeb.DiviLive do
           </button>
 
           <button
-            class="btn btn-outline btn-boxwalletgreen px-8"
+            class="btn btn-outline btn-boxwalletgreen px-8 disabled:opacity-40"
             disabled={!@coin_daemon_started}
             onclick="document.getElementById('wallet-password').showModal()"
             title={"Encrypt #{@coin_name} Wallet"}
