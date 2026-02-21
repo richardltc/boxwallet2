@@ -1,6 +1,7 @@
+# import BoxWallet.App
+import BoxwalletWeb.CoreWalletToolbar
+
 defmodule BoxwalletWeb.DiviLive do
-  # import BoxWallet.App
-  import BoxwalletWeb.CoreWalletToolbar
   import BoxwalletWeb.CoreWalletBalance
   import BoxwalletWeb.PromptModal
   use Number
@@ -722,7 +723,7 @@ defmodule BoxwalletWeb.DiviLive do
                   </span>
 
                   <small class="badge text-3xl font-mono border-0">
-                    {@balance}
+                    {Number.Delimit.number_to_delimited(@balance, precision: 2)}
                   </small>
                 </div>
               </h2>
@@ -732,7 +733,7 @@ defmodule BoxwalletWeb.DiviLive do
             </div>
           </div>
         </div>
-        
+
     <!-- Description section. -->
         <div class="text-center border-t border-gray-100 pt-6">
           <p class="text-gray-400 text-lg leading-relaxed max-w-2xl mx-auto">
@@ -806,7 +807,7 @@ defmodule BoxwalletWeb.DiviLive do
               <div class="stat-value text-2xl">{@difficulty}</div>
             </div> --%>
         </div>
-        
+
     <!-- Action buttons -->
         <div class="card-actions justify-center mt-8">
           <button
@@ -882,14 +883,30 @@ defmodule BoxwalletWeb.DiviLive do
             <span class="hero-stop h-6 w-6" /> Stop
           </button>
 
-          <button
+          <div class="dropdown dropdown-bottom">
+            <button
+              class="btn btn-outline btn-boxwalletgreen px-8 disabled:opacity-40"
+              disabled={!@coin_daemon_started}
+            ><span class="hero-lock-closed h-6 w-6" /> Unlock</button>
+            <%= if @wallet_encryption_status == :wes_locked do %>
+              <ul
+                tabindex="-1"
+                class="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm"
+              >
+                <li><a>Unlock</a></li>
+                <li><a>Unlock for staking</a></li>
+              </ul>
+            <% end %>
+          </div>
+
+          <%!-- <button
             class="btn btn-outline btn-boxwalletgreen px-8 disabled:opacity-40"
             disabled={!@coin_daemon_started}
             onclick="document.getElementById('wallet-password').showModal()"
             title={"Encrypt #{@coin_name} Wallet"}
           >
             <span class="hero-lock-closed h-6 w-6" /> Encrypt
-          </button>
+          </button> --%>
         </div>
       </div>
     </div>
