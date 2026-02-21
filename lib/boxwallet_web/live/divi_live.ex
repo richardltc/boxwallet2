@@ -381,8 +381,7 @@ defmodule BoxwalletWeb.DiviLive do
   end
 
   def handle_event("show_unlock_prompt", _params, socket) do
-    {:noreply,
-     assign(socket, show_prompt: true, prompt_action: :unlock, prompt_answer: "")}
+    {:noreply, assign(socket, show_prompt: true, prompt_action: :unlock, prompt_answer: "")}
   end
 
   def handle_event("show_unlock_staking_prompt", _params, socket) do
@@ -460,19 +459,29 @@ defmodule BoxwalletWeb.DiviLive do
   def handle_event("prompt_submitted", %{"answer" => password}, socket) do
     {:ok, coin_auth} = socket.assigns.coin_auth
 
-    case socket.assigns.prompt_action do
-      :encrypt ->
-        # TODO: Divi.encrypt_wallet(coin_auth, password)
-        IO.puts("Encrypting wallet...")
+    socket =
+      case socket.assigns.prompt_action do
+        :encrypt ->
+          case Divi.wallet_encrypt(coin_auth, password) do
+            :ok ->
+              socket
+              |> put_flash(:info, "Wallet encrypted successfully.")
+              |> assign(wallet_encryption_status: :wes_locked)
 
-      :unlock ->
-        # TODO: Divi.unlock_wallet(coin_auth, password)
-        IO.puts("Unlocking wallet...")
+            {:error, reason} ->
+              put_flash(socket, :error, "Encryption failed: #{reason}")
+          end
 
-      :unlock_for_staking ->
-        # TODO: Divi.unlock_wallet_for_staking(coin_auth, password)
-        IO.puts("Unlocking wallet for staking...")
-    end
+        :unlock ->
+          # TODO: Divi.unlock_wallet(coin_auth, password)
+          IO.puts("Unlocking wallet...")
+          socket
+
+        :unlock_for_staking ->
+          # TODO: Divi.unlock_wallet_for_staking(coin_auth, password)
+          IO.puts("Unlocking wallet for staking...")
+          socket
+      end
 
     {:noreply, assign(socket, show_prompt: false, prompt_action: nil)}
   end
@@ -728,12 +737,14 @@ defmodule BoxwalletWeb.DiviLive do
 
     <.prompt_modal
       id="wallet-password"
-      question={case @prompt_action do
-        :encrypt -> "Enter a new password to encrypt your wallet:"
-        :unlock -> "Enter your wallet password to unlock:"
-        :unlock_for_staking -> "Enter your wallet password to unlock for staking:"
-        _ -> "Enter your wallet password:"
-      end}
+      question={
+        case @prompt_action do
+          :encrypt -> "Enter a new password to encrypt your wallet:"
+          :unlock -> "Enter your wallet password to unlock:"
+          :unlock_for_staking -> "Enter your wallet password to unlock for staking:"
+          _ -> "Enter your wallet password:"
+        end
+      }
       show_confirm={@prompt_action == :encrypt}
       on_change={if @prompt_action == :encrypt, do: "validate_passwords"}
       passwords_match={@passwords_match}
@@ -801,7 +812,7 @@ defmodule BoxwalletWeb.DiviLive do
             </div>
           </div>
         </div>
-
+        
     <!-- Description section. -->
         <div class="text-center border-t border-gray-100 pt-6">
           <p class="text-gray-400 text-lg leading-relaxed max-w-2xl mx-auto">
@@ -814,7 +825,7 @@ defmodule BoxwalletWeb.DiviLive do
               </h3>
               <div
                 class="radial-progress text-divired"
-                style={"--value:#{if @block_height > 0, do: Float.round(@headers_synced / @block_height * 100, 2), else: 0};"}
+                style={"--value:#{if @block_height > 0, do: Float.round(@headers_synced / @block_height * 100, 2), else: 0}; --size:6rem;"}
                 aria-valuenow={
                   if @block_height > 0,
                     do: Float.round(@headers_synced / @block_height * 100, 2),
@@ -842,7 +853,7 @@ defmodule BoxwalletWeb.DiviLive do
               </h3>
               <div
                 class="radial-progress text-divired"
-                style={"--value:#{if @block_height > 0, do: Float.round(@blocks_synced / @block_height * 100, 2), else: 0};"}
+                style={"--value:#{if @block_height > 0, do: Float.round(@blocks_synced / @block_height * 100, 2), else: 0}; --size:6rem;"}
                 aria-valuenow={
                   if @block_height > 0,
                     do: Float.round(@blocks_synced / @block_height * 100, 2),
@@ -875,7 +886,7 @@ defmodule BoxwalletWeb.DiviLive do
               <div class="stat-value text-2xl">{@difficulty}</div>
             </div> --%>
         </div>
-
+        
     <!-- Action buttons -->
         <div class="card-actions justify-center mt-8">
           <button
@@ -955,18 +966,22 @@ defmodule BoxwalletWeb.DiviLive do
             <button
               class="btn btn-outline btn-boxwalletgreen px-8 disabled:opacity-40"
               disabled={!@coin_daemon_started}
-              phx-click={case @wallet_encryption_status do
-                :wes_unencrypted -> "show_encrypt_prompt"
-                :wes_unlocked -> "lock_wallet"
-                :wes_unlocked_for_staking -> "lock_wallet"
-                _ -> nil
-              end}
-            ><span class="hero-lock-closed h-6 w-6" /> {case @wallet_encryption_status do
+              phx-click={
+                case @wallet_encryption_status do
+                  :wes_unencrypted -> "show_encrypt_prompt"
+                  :wes_unlocked -> "lock_wallet"
+                  :wes_unlocked_for_staking -> "lock_wallet"
+                  _ -> nil
+                end
+              }
+            >
+              <span class="hero-lock-closed h-6 w-6" /> {case @wallet_encryption_status do
                 :wes_unencrypted -> "Encrypt"
                 :wes_unlocked -> "Lock"
                 :wes_unlocked_for_staking -> "Lock"
                 _ -> "Unlock"
-              end}</button>
+              end}
+            </button>
             <%= if @wallet_encryption_status == :wes_locked do %>
               <ul
                 tabindex="-1"
