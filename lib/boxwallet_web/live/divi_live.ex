@@ -37,7 +37,11 @@ defmodule BoxwalletWeb.DiviLive do
         show_prompt: false,
         version: "...",
         coin_auth: Divi.get_auth_values(),
-        wallet_encryption_status: :wes_unknown
+        wallet_encryption_status: :wes_unknown,
+        prompt_action: nil,
+        prompt_answer: "",
+        prompt_confirm: "",
+        passwords_match: false
       )
 
     # 1. Always check connected? so it doesn't run twice (once for static, once for websocket)
@@ -365,8 +369,40 @@ defmodule BoxwalletWeb.DiviLive do
     {:noreply, socket}
   end
 
-  def handle_event("show_decrypt", _params, socket) do
-    {:noreply, assign(socket, show_prompt: true)}
+  def handle_event("show_encrypt_prompt", _params, socket) do
+    {:noreply,
+     assign(socket,
+       show_prompt: true,
+       prompt_action: :encrypt,
+       prompt_answer: "",
+       prompt_confirm: "",
+       passwords_match: false
+     )}
+  end
+
+  def handle_event("show_unlock_prompt", _params, socket) do
+    {:noreply,
+     assign(socket, show_prompt: true, prompt_action: :unlock, prompt_answer: "")}
+  end
+
+  def handle_event("show_unlock_staking_prompt", _params, socket) do
+    {:noreply,
+     assign(socket, show_prompt: true, prompt_action: :unlock_for_staking, prompt_answer: "")}
+  end
+
+  def handle_event("validate_passwords", %{"answer" => p1, "answer_confirm" => p2}, socket) do
+    {:noreply,
+     assign(socket,
+       prompt_answer: p1,
+       prompt_confirm: p2,
+       passwords_match: p1 != "" and p2 != "" and p1 == p2
+     )}
+  end
+
+  def handle_event("lock_wallet", _params, socket) do
+    {:ok, coin_auth} = socket.assigns.coin_auth
+    # TODO: Divi.lock_wallet(coin_auth)
+    {:noreply, socket}
   end
 
   def handle_event("start_coin_daemon", _, socket) do
@@ -422,12 +458,34 @@ defmodule BoxwalletWeb.DiviLive do
   end
 
   def handle_event("prompt_submitted", %{"answer" => password}, socket) do
-    IO.puts("Got password: #{password}")
-    {:noreply, assign(socket, show_prompt: false)}
+    {:ok, coin_auth} = socket.assigns.coin_auth
+
+    case socket.assigns.prompt_action do
+      :encrypt ->
+        # TODO: Divi.encrypt_wallet(coin_auth, password)
+        IO.puts("Encrypting wallet...")
+
+      :unlock ->
+        # TODO: Divi.unlock_wallet(coin_auth, password)
+        IO.puts("Unlocking wallet...")
+
+      :unlock_for_staking ->
+        # TODO: Divi.unlock_wallet_for_staking(coin_auth, password)
+        IO.puts("Unlocking wallet for staking...")
+    end
+
+    {:noreply, assign(socket, show_prompt: false, prompt_action: nil)}
   end
 
   def handle_event("prompt_cancelled", _params, socket) do
-    {:noreply, assign(socket, show_prompt: false)}
+    {:noreply,
+     assign(socket,
+       show_prompt: false,
+       prompt_action: nil,
+       prompt_answer: "",
+       prompt_confirm: "",
+       passwords_match: true
+     )}
   end
 
   defp get_icon_state(name, assigns) do
@@ -670,7 +728,17 @@ defmodule BoxwalletWeb.DiviLive do
 
     <.prompt_modal
       id="wallet-password"
-      question="Enter your wallet password to decrypt:"
+      question={case @prompt_action do
+        :encrypt -> "Enter a new password to encrypt your wallet:"
+        :unlock -> "Enter your wallet password to unlock:"
+        :unlock_for_staking -> "Enter your wallet password to unlock for staking:"
+        _ -> "Enter your wallet password:"
+      end}
+      show_confirm={@prompt_action == :encrypt}
+      on_change={if @prompt_action == :encrypt, do: "validate_passwords"}
+      passwords_match={@passwords_match}
+      answer_value={@prompt_answer}
+      confirm_value={@prompt_confirm}
       icon="hero-lock-closed"
       show={@show_prompt}
       on_confirm="prompt_submitted"
@@ -887,6 +955,12 @@ defmodule BoxwalletWeb.DiviLive do
             <button
               class="btn btn-outline btn-boxwalletgreen px-8 disabled:opacity-40"
               disabled={!@coin_daemon_started}
+              phx-click={case @wallet_encryption_status do
+                :wes_unencrypted -> "show_encrypt_prompt"
+                :wes_unlocked -> "lock_wallet"
+                :wes_unlocked_for_staking -> "lock_wallet"
+                _ -> nil
+              end}
             ><span class="hero-lock-closed h-6 w-6" /> {case @wallet_encryption_status do
                 :wes_unencrypted -> "Encrypt"
                 :wes_unlocked -> "Lock"
@@ -898,8 +972,8 @@ defmodule BoxwalletWeb.DiviLive do
                 tabindex="-1"
                 class="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm"
               >
-                <li><a>Unlock</a></li>
-                <li><a>Unlock for staking</a></li>
+                <li><a phx-click="show_unlock_prompt">Unlock</a></li>
+                <li><a phx-click="show_unlock_staking_prompt">Unlock for staking</a></li>
               </ul>
             <% end %>
           </div>

@@ -1,121 +1,90 @@
 defmodule BoxwalletWeb.PromptModal do
   @moduledoc """
-  A reusable prompt modal component using DaisyUI's `<dialog>` element.
+  A reusable prompt modal component using a LiveView-idiomatic conditional render.
 
-  Uses the same pattern as the existing install confirmation dialog —
-  open with `onclick="element.showModal()"`, close with `method="dialog"`.
+  Show/hide is controlled by the `show` assign. When `show` is true the modal
+  is mounted into the DOM — which means `phx-mounted` focus works naturally.
 
-  No hooks, no extra JS setup needed.
-
-  ## Example — Wallet Decrypt
-
-      # In template — the button to open:
-      <button
-        class="btn btn-primary"
-        onclick="document.getElementById('wallet-password').showModal()"
-      >
-        Decrypt Wallet
-      </button>
-
-      # The modal itself:
-      <.prompt_modal
-        id="wallet-password"
-        icon="hero-lock-closed"
-        question="Enter your wallet password to decrypt:"
-        input_type="password"
-        placeholder="Enter password..."
-        confirm_label="Decrypt"
-        on_confirm="prompt_submitted"
-        on_cancel="prompt_cancelled"
-      />
-
-      # Handle the answer:
-      def handle_event("prompt_submitted", %{"answer" => password}, socket) do
-        IO.puts("Got password: " <> password)
-        {:noreply, socket}
-      end
-
-      def handle_event("prompt_cancelled", _params, socket) do
-        {:noreply, socket}
-      end
+  Pass `show_confirm={true}` with `on_change`, `passwords_match`,
+  `answer_value`, and `confirm_value` to enable a confirmation input
+  with server-side validation on every keystroke.
   """
 
   use Phoenix.Component
   alias Phoenix.LiveView.JS
 
-  attr :id, :string, required: true, doc: "Unique DOM id for the modal dialog"
-  attr :question, :string, required: true, doc: "The prompt text shown to the user"
-
-  attr :icon, :string,
-    default: nil,
-    doc: "HeroIcon class, e.g. \"hero-lock-closed\", \"hero-shield-check\""
-
-  attr :on_confirm, :string,
-    required: true,
-    doc: "Event name on submit (payload: %{\"answer\" => value})"
-
-  attr :on_cancel, :string, required: true, doc: "Event name on cancel"
-
-  attr :input_type, :string,
-    default: "text",
-    doc: "HTML input type (\"text\", \"password\", etc.)"
-
-  attr :placeholder, :string, default: "", doc: "Input placeholder text"
-  attr :confirm_label, :string, default: "Confirm", doc: "Submit button label"
-  attr :cancel_label, :string, default: "Cancel", doc: "Cancel button label"
+  attr :id, :string, required: true
+  attr :show, :boolean, default: false
+  attr :show_confirm, :boolean, default: false
+  attr :passwords_match, :boolean, default: true
+  attr :answer_value, :string, default: ""
+  attr :confirm_value, :string, default: ""
+  attr :question, :string, required: true
+  attr :icon, :string, default: nil
+  attr :on_confirm, :string, required: true
+  attr :on_cancel, :string, required: true
+  attr :on_change, :string, default: nil
+  attr :input_type, :string, default: "text"
+  attr :placeholder, :string, default: ""
+  attr :confirm_label, :string, default: "Confirm"
+  attr :cancel_label, :string, default: "Cancel"
 
   def prompt_modal(assigns) do
     ~H"""
-    <dialog id={@id} class="modal">
-      <div class="modal-box">
-        <%!-- Icon + Question --%>
-        <div class="flex items-center gap-3 mb-4">
-          <span
-            :if={@icon}
-            class={[@icon, "h-7 w-7 text-base-content/60 shrink-0"]}
-          />
-          <h3 class="font-bold text-lg">{@question}</h3>
-        </div>
+    <%= if @show do %>
+      <div id={@id} class="modal modal-open">
+        <div class="modal-box">
+          <div class="flex items-center gap-3 mb-4">
+            <span :if={@icon} class={[@icon, "h-7 w-7 text-base-content/60 shrink-0"]} />
+            <h3 class="font-bold text-lg">{@question}</h3>
+          </div>
 
-        <%!-- Input (hidden form just to hold the phx-submit) --%>
-        <form phx-submit={@on_confirm} id={"#{@id}-form"}>
-          <input
-            type={@input_type}
-            name="answer"
-            value=""
-            placeholder={@placeholder}
-            autocomplete="off"
-            required
-            class="input input-bordered w-full"
-          />
+          <form phx-submit={@on_confirm} phx-change={@on_change} id={"#{@id}-form"}>
+            <input
+              type={@input_type}
+              name="answer"
+              value={@answer_value}
+              placeholder={@placeholder}
+              autocomplete="off"
+              required
+              phx-mounted={JS.focus()}
+              class="input input-bordered w-full"
+            />
 
-          <%!-- Hidden submit button — the visible one below triggers this form --%>
-          <button type="submit" id={"#{@id}-hidden-submit"} class="hidden" />
-        </form>
+            <%= if @show_confirm do %>
+              <input
+                type={@input_type}
+                name="answer_confirm"
+                value={@confirm_value}
+                placeholder="Confirm password..."
+                autocomplete="off"
+                required
+                class="input input-bordered w-full mt-3"
+              />
+              <p :if={not @passwords_match and (@answer_value != "" or @confirm_value != "")} class="text-error text-sm mt-2">
+                Passwords do not match.
+              </p>
+            <% end %>
+          </form>
 
-        <%!-- Buttons row — outside the phx-submit form so Cancel won't trigger validation --%>
-        <div class="modal-action">
-          <form method="dialog">
-            <button type="submit" class="btn" phx-click={JS.push(@on_cancel)}>
+          <div class="modal-action">
+            <button type="button" class="btn" phx-click={JS.push(@on_cancel)}>
               {@cancel_label}
             </button>
-          </form>
-          <button
-            type="button"
-            class="btn btn-primary"
-            onclick={"document.getElementById('#{@id}-hidden-submit').click()"}
-            phx-disable-with="..."
-          >
-            {@confirm_label}
-          </button>
+            <button
+              type="submit"
+              form={"#{@id}-form"}
+              class="btn btn-primary"
+              disabled={@show_confirm and (not @passwords_match or (@answer_value == "" and @confirm_value == ""))}
+            >
+              {@confirm_label}
+            </button>
+          </div>
         </div>
-      </div>
 
-      <%!-- Click backdrop to close --%>
-      <form method="dialog" class="modal-backdrop">
-        <button>close</button>
-      </form>
-    </dialog>
+        <div class="modal-backdrop" phx-click={JS.push(@on_cancel)}></div>
+      </div>
+    <% end %>
     """
   end
 end
