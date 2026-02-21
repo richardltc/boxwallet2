@@ -38,7 +38,10 @@ defmodule BoxwalletWeb.DiviLive do
         version: "...",
         coin_auth: Divi.get_auth_values(),
         wallet_encryption_status: :wes_unknown,
-        prompt_action: nil
+        prompt_action: nil,
+        prompt_answer: "",
+        prompt_confirm: "",
+        passwords_match: false
       )
 
     # 1. Always check connected? so it doesn't run twice (once for static, once for websocket)
@@ -367,15 +370,33 @@ defmodule BoxwalletWeb.DiviLive do
   end
 
   def handle_event("show_encrypt_prompt", _params, socket) do
-    {:noreply, assign(socket, show_prompt: true, prompt_action: :encrypt)}
+    {:noreply,
+     assign(socket,
+       show_prompt: true,
+       prompt_action: :encrypt,
+       prompt_answer: "",
+       prompt_confirm: "",
+       passwords_match: false
+     )}
   end
 
   def handle_event("show_unlock_prompt", _params, socket) do
-    {:noreply, assign(socket, show_prompt: true, prompt_action: :unlock)}
+    {:noreply,
+     assign(socket, show_prompt: true, prompt_action: :unlock, prompt_answer: "")}
   end
 
   def handle_event("show_unlock_staking_prompt", _params, socket) do
-    {:noreply, assign(socket, show_prompt: true, prompt_action: :unlock_for_staking)}
+    {:noreply,
+     assign(socket, show_prompt: true, prompt_action: :unlock_for_staking, prompt_answer: "")}
+  end
+
+  def handle_event("validate_passwords", %{"answer" => p1, "answer_confirm" => p2}, socket) do
+    {:noreply,
+     assign(socket,
+       prompt_answer: p1,
+       prompt_confirm: p2,
+       passwords_match: p1 != "" and p2 != "" and p1 == p2
+     )}
   end
 
   def handle_event("lock_wallet", _params, socket) do
@@ -457,7 +478,14 @@ defmodule BoxwalletWeb.DiviLive do
   end
 
   def handle_event("prompt_cancelled", _params, socket) do
-    {:noreply, assign(socket, show_prompt: false)}
+    {:noreply,
+     assign(socket,
+       show_prompt: false,
+       prompt_action: nil,
+       prompt_answer: "",
+       prompt_confirm: "",
+       passwords_match: true
+     )}
   end
 
   defp get_icon_state(name, assigns) do
@@ -700,7 +728,17 @@ defmodule BoxwalletWeb.DiviLive do
 
     <.prompt_modal
       id="wallet-password"
-      question="Enter your wallet password to decrypt:"
+      question={case @prompt_action do
+        :encrypt -> "Enter a new password to encrypt your wallet:"
+        :unlock -> "Enter your wallet password to unlock:"
+        :unlock_for_staking -> "Enter your wallet password to unlock for staking:"
+        _ -> "Enter your wallet password:"
+      end}
+      show_confirm={@prompt_action == :encrypt}
+      on_change={if @prompt_action == :encrypt, do: "validate_passwords"}
+      passwords_match={@passwords_match}
+      answer_value={@prompt_answer}
+      confirm_value={@prompt_confirm}
       icon="hero-lock-closed"
       show={@show_prompt}
       on_confirm="prompt_submitted"
