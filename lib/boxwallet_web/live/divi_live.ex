@@ -975,7 +975,7 @@ defmodule BoxwalletWeb.DiviLive do
                 end
               }
             >
-              <span class="hero-lock-closed h-6 w-6" /> {case @wallet_encryption_status do
+              <span class="hero-lock-open h-6 w-6" /> {case @wallet_encryption_status do
                 :wes_unencrypted -> "Encrypt"
                 :wes_unlocked -> "Lock"
                 :wes_unlocked_for_staking -> "Lock"
@@ -987,8 +987,16 @@ defmodule BoxwalletWeb.DiviLive do
                 tabindex="-1"
                 class="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm"
               >
-                <li><a phx-click="show_unlock_prompt">Unlock</a></li>
-                <li><a phx-click="show_unlock_staking_prompt">Unlock for staking</a></li>
+                <li>
+                  <a phx-click="show_unlock_prompt">
+                    <span class="hero-lock-open h-5 w-5 inline-block" /> Unlock
+                  </a>
+                </li>
+                <li>
+                  <a phx-click="show_unlock_staking_prompt">
+                    <span class="hero-bolt h-5 w-5 inline-block" />Unlock for staking
+                  </a>
+                </li>
               </ul>
             <% end %>
           </div>
