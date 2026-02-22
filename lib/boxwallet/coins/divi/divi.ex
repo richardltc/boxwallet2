@@ -797,6 +797,45 @@ defmodule Boxwallet.Coins.Divi do
     end
   end
 
+  def wallet_unlock(auth, password) do
+    body =
+      Jason.encode!(%{
+        jsonrpc: "1.0",
+        id: "curltext",
+        method: "walletpassphrase",
+        params: ["#{password}", 0]
+      })
+
+    url = "http://127.0.0.1:#{auth.rpc_port}"
+
+    headers = [
+      {"Content-Type", "text/plain"},
+      {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
+    ]
+
+    Logger.info("Attempting to Unlock wallet")
+
+    case HTTPoison.post(url, body, headers) do
+      {:ok, %{body: response_body}} ->
+        case Jason.decode(response_body) do
+          {:ok, %{"error" => nil}} ->
+            :ok
+
+          {:ok, %{"error" => %{"message" => message}}} ->
+            {:error, message}
+
+          {:ok, %{"error" => error}} ->
+            {:error, inspect(error)}
+
+          {:error, _} ->
+            {:error, "Failed to parse response"}
+        end
+
+      {:error, %HTTPoison.Error{reason: reason}} ->
+        {:error, %HTTPoison.Error{reason: reason}}
+    end
+  end
+
   def get_sync_info do
     try do
       headers = [
