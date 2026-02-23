@@ -695,6 +695,7 @@ defmodule BoxwalletWeb.DiviLive do
     assigns = assign(assigns, :icons, icon_list)
 
     ~H"""
+    <Layouts.app flash={@flash}>
     <!-- Download in progress alert -->
     <%= if @downloading do %>
       <div role="alert" class="alert alert-info mb-4">
@@ -1012,6 +1013,7 @@ defmodule BoxwalletWeb.DiviLive do
         </div>
       </div>
     </div>
+    </Layouts.app>
     """
   end
 end
