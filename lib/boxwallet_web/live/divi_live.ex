@@ -486,7 +486,16 @@ defmodule BoxwalletWeb.DiviLive do
         :unlock_for_staking ->
           # TODO: Divi.unlock_wallet_for_staking(coin_auth, password)
           IO.puts("Unlocking wallet for staking...")
-          socket
+
+          case Divi.wallet_unlock_fs(coin_auth, password) do
+            :ok ->
+              socket
+              |> put_flash(:info, "Wallet unlocked for staking successfully.")
+              |> assign(wallet_encryption_status: :wes_unlocked_for_staking)
+
+            {:error, reason} ->
+              put_flash(socket, :error, "Unable to unlock wallet: #{reason}")
+          end
       end
 
     {:noreply, assign(socket, show_prompt: false, prompt_action: nil)}
