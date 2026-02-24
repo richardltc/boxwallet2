@@ -78,8 +78,7 @@ defmodule BoxwalletWeb.DiviLive do
              socket
              |> assign(:coin_daemon_started, true)
              |> assign(:coin_daemon_stopped, false)
-             |> assign(:checking_daemon, false)
-             |> put_flash(:info, "#{socket.assigns.coin_name} Daemon Started Successfully!")}
+             |> assign(:checking_daemon, false)}
 
           false ->
             IO.puts("#{socket.assigns.coin_name} Daemon not running")
