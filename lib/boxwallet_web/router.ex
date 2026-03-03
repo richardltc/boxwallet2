@@ -20,6 +20,7 @@ defmodule BoxwalletWeb.Router do
     get "/", PageController, :home
     live "/divi", DiviLive
     live "/reddcoin", ReddCoinLive
+    live "/privatedivi", PrivateDiviLive
   end
 
   # Other scopes may use custom stacks.
