@@ -35,14 +35,15 @@ defmodule BoxwalletWeb.DiviLive do
         connections: 0,
         difficulty: 0,
         show_prompt: false,
-        stakng_staus: "Staking Not Active",
+        staking_status: "Staking Not Active",
         version: "...",
         coin_auth: Divi.get_auth_values(),
         wallet_encryption_status: :wes_unknown,
         prompt_action: nil,
         prompt_answer: "",
         prompt_confirm: "",
-        passwords_match: false
+        passwords_match: false,
+        hide_balance: BoxWallet.Settings.get(:hide_balance)
       )
 
     # 1. Always check connected? so it doesn't run twice (once for static, once for websocket)
@@ -509,6 +510,12 @@ defmodule BoxwalletWeb.DiviLive do
     {:noreply, assign(socket, show_prompt: false, prompt_action: nil)}
   end
 
+  def handle_event("toggle_hide_balance", _params, socket) do
+    new_value = !socket.assigns.hide_balance
+    BoxWallet.Settings.set(:hide_balance, new_value)
+    {:noreply, assign(socket, :hide_balance, new_value)}
+  end
+
   def handle_event("prompt_cancelled", _params, socket) do
     {:noreply,
      assign(socket,
@@ -699,7 +706,24 @@ defmodule BoxwalletWeb.DiviLive do
         }
 
       :staking ->
-        %{name: "hero-bolt", hint: "Stats", color: "text-divired", state: :disabled}
+        hint =          cond do
+          assigns.staking_status == "Staking Not Active" ->
+            "Staking not active"
+
+          assigns.staking_status == "Staking Active" ->
+            "Staking Active :)"
+        end
+
+        state =
+          cond do
+            assigns.staking_status == "Staking Active" ->
+              :pulsing
+
+            assigns.staking_status == "Staking Not Active" ->
+              :disabled
+          end
+
+        %{name: "hero-bolt", hint: hint, color: "text-divired", state: state}
 
         # ... add other icons here
     end
@@ -802,7 +826,7 @@ defmodule BoxwalletWeb.DiviLive do
       <% end %>
 
       <div class="flex justify-center items-center">
-        <div class="card bg-base-100 w-full max-w-2xl shadow-xl p-8">
+        <div class="card bg-base-100 w-full max-w-6xl shadow-xl p-8">
           <!-- Logo and title section -->
           <div class="flex flex-col md:flex-row items-start gap-6 mb-6">
             <img
@@ -820,14 +844,17 @@ defmodule BoxwalletWeb.DiviLive do
                     </small>
                   </div>
 
-                  <div class="flex items-baseline">
+                  <div class="flex items-center">
                     <span class="text-lg font-normal text-gray-500 mr-1">
                       Balance:
                     </span>
 
                     <small class="badge text-3xl font-mono border-0">
-                      {Number.Delimit.number_to_delimited(@balance, precision: 2)}
+                      {if @hide_balance, do: "*****", else: Number.Delimit.number_to_delimited(@balance, precision: 2)}
                     </small>
+                    <button phx-click="toggle_hide_balance" class="ml-1 cursor-pointer text-gray-400 hover:text-gray-600 relative -top-2" title={if @hide_balance, do: "Show balance", else: "Hide balance"}>
+                      <.icon name={if @hide_balance, do: "hero-eye-slash", else: "hero-eye"} class="h-5 w-5" />
+                    </button>
                   </div>
                 </h2>
                 <p class="text-lg mt-2 mb-4">{@coin_title}</p>
