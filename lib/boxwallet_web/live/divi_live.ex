@@ -836,27 +836,29 @@ defmodule BoxwalletWeb.DiviLive do
             />
             <div class="flex-1">
               <div class="text-left">
-                <h2 class="card-title text-3xl font-bold items-baseline flex justify-between">
-                  <div class="flex items-baseline">
-                    {@coin_name}
-                    <small class="badge badge-sm ml-1 font-mono border-0">
-                      v{@version}
-                    </small>
-                  </div>
+                <div class="relative">
+                  <h2 class="card-title text-3xl font-bold items-baseline flex justify-between pr-8">
+                    <div class="flex items-baseline">
+                      {@coin_name}
+                      <small class="badge badge-sm ml-1 font-mono border-0">
+                        v{@version}
+                      </small>
+                    </div>
 
-                  <div class="flex items-center">
-                    <span class="text-lg font-normal text-gray-500 mr-1">
-                      Balance:
-                    </span>
+                    <div class="flex items-baseline gap-1">
+                      <span class="text-lg font-normal text-gray-500">
+                        Balance:
+                      </span>
 
-                    <small class="badge text-3xl font-mono border-0">
-                      {if @hide_balance, do: "*****", else: Number.Delimit.number_to_delimited(@balance, precision: 2)}
-                    </small>
-                    <button phx-click="toggle_hide_balance" class="ml-1 cursor-pointer text-gray-400 hover:text-gray-600 relative -top-2" title={if @hide_balance, do: "Show balance", else: "Hide balance"}>
-                      <.icon name={if @hide_balance, do: "hero-eye-slash", else: "hero-eye"} class="h-5 w-5" />
-                    </button>
-                  </div>
-                </h2>
+                      <small class="badge text-3xl font-mono border-0">
+                        {if @hide_balance, do: "●●●●●●", else: Number.Delimit.number_to_delimited(@balance, precision: 2)}
+                      </small>
+                    </div>
+                  </h2>
+                  <button phx-click="toggle_hide_balance" class="absolute right-0 top-1/2 -translate-y-1/2 cursor-pointer text-gray-400 hover:text-gray-600" title={if @hide_balance, do: "Show balance", else: "Hide balance"}>
+                    <.icon name={if @hide_balance, do: "hero-eye-slash", else: "hero-eye"} class="h-5 w-5" />
+                  </button>
+                </div>
                 <p class="text-lg mt-2 mb-4">{@coin_title}</p>
 
                 <.hero_icons_row icons={@icons} />
@@ -1030,7 +1032,13 @@ defmodule BoxwalletWeb.DiviLive do
                   end
                 }
               >
-                <span class="hero-lock-open h-6 w-6" /> {case @wallet_encryption_status do
+                <span class={
+                  case @wallet_encryption_status do
+                    :wes_unlocked -> "hero-lock-closed h-6 w-6"
+                    :wes_unlocked_for_staking -> "hero-lock-closed h-6 w-6"
+                    _ -> "hero-lock-open h-6 w-6"
+                  end
+                } /> {case @wallet_encryption_status do
                   :wes_unencrypted -> "Encrypt"
                   :wes_unlocked -> "Lock"
                   :wes_unlocked_for_staking -> "Lock"
