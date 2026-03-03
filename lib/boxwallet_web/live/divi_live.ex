@@ -35,6 +35,7 @@ defmodule BoxwalletWeb.DiviLive do
         connections: 0,
         difficulty: 0,
         show_prompt: false,
+        stakng_staus: "Staking Not Active",
         version: "...",
         coin_auth: Divi.get_auth_values(),
         wallet_encryption_status: :wes_unknown,
@@ -174,6 +175,7 @@ defmodule BoxwalletWeb.DiviLive do
             |> assign(:coin_daemon_started, true)
             |> assign(:getinfo_response, response)
             |> assign(:connections, response.result.connections || 0)
+            |> assign(:staking_status, response.result.staking_status || "Staking Not Active")
             |> assign(:version, response.result.version || "v...")
 
           Process.send_after(self(), :check_get_info_status, 2000)
@@ -861,10 +863,10 @@ defmodule BoxwalletWeb.DiviLive do
                     formatted =
                       cond do
                         pct == 0 -> "0"
-                        pct >= 100 -> "100"
-                        true -> :io_lib.format("~.2f", [pct]) |> to_string()
+                        pct >= 100 -> "Synced"
+                        true -> (:io_lib.format("~.2f", [pct]) |> to_string()) <> "%"
                       end %>
-                    {formatted}%
+                    {formatted}
                   <% else %>
                     ---
                   <% end %>
@@ -891,10 +893,10 @@ defmodule BoxwalletWeb.DiviLive do
                     formatted =
                       cond do
                         pct == 0 -> "0"
-                        pct >= 100 -> "100"
-                        true -> :io_lib.format("~.2f", [pct]) |> to_string()
+                        pct >= 100 -> "Synced"
+                        true -> (:io_lib.format("~.2f", [pct]) |> to_string()) <> "%"
                       end %>
-                    {formatted}%
+                    {formatted}
                   <% else %>
                     ---
                   <% end %>
