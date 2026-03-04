@@ -4,6 +4,7 @@ defmodule BoxwalletWeb.ReddCoinLive do
   import BoxwalletWeb.CoreWalletBalance
   import BoxwalletWeb.WalletBalanceDisplay
   import BoxwalletWeb.PromptModal
+  import BoxwalletWeb.SyncProgress
   use Number
   use BoxwalletWeb, :live_view
   require Logger
@@ -27,6 +28,9 @@ defmodule BoxwalletWeb.ReddCoinLive do
         coin_daemon_stopping: false,
         coin_daemon_stopped: true,
         balance: 0.0,
+        block_height: 0,
+        blocks_synced: 0,
+        headers_synced: 0,
         blocks: 0,
         connections: 0,
         difficulty: 0,
@@ -45,6 +49,7 @@ defmodule BoxwalletWeb.ReddCoinLive do
     # 1. Always check connected? so it doesn't run twice (once for static, once for websocket)
     if connected?(socket) do
       send(self(), :verify_daemon_status)
+      Process.send_after(self(), :check_get_block_height, 400)
     end
 
     # {:ok, coin_auth} = socket.assigns.coin_auth
@@ -72,10 +77,8 @@ defmodule BoxwalletWeb.ReddCoinLive do
             IO.puts("#{socket.assigns.coin_name} Daemon is alive!")
 
             # 3. Trigger your specific info checks
-            Process.send_after(self(), :check_get_info_status, 100)
             Process.send_after(self(), :check_get_blockchain_info_status, 200)
             Process.send_after(self(), :check_get_wallet_info_status, 300)
-            Process.send_after(self(), :check_get_mn_sync_status, 400)
 
             {:noreply,
              socket
@@ -101,6 +104,24 @@ defmodule BoxwalletWeb.ReddCoinLive do
     end
   end
 
+  def handle_info(:check_get_block_height, socket) do
+    if socket.assigns.coin_daemon_started do
+      case ReddCoin.get_block_height() do
+        {:ok, count} ->
+          Process.send_after(self(), :check_get_block_height, 60_000)
+          {:noreply, assign(socket, :block_height, count)}
+
+        {:error, reason} ->
+          Logger.warning("Unable to get block height: #{inspect(reason)}, retrying in 65s")
+          Process.send_after(self(), :check_get_block_height, 65_000)
+          {:noreply, socket}
+      end
+    else
+      Process.send_after(self(), :check_get_block_height, 60_000)
+      {:noreply, socket}
+    end
+  end
+
   def handle_info(:check_get_blockchain_info_status, socket) do
     # Only keep checking if we think we are supposed to be starting/running
     if socket.assigns.coin_daemon_starting or socket.assigns.coin_daemon_started do
@@ -111,6 +132,7 @@ defmodule BoxwalletWeb.ReddCoinLive do
           socket =
             socket
             |> assign(:get_blockchain_info_response, response)
+            |> assign(:blocks_synced, response.result.blocks || 0)
             |> assign(
               :blocks,
               Number.Delimit.number_to_delimited(response.result.blocks, precision: 0) || 0
@@ -119,6 +141,7 @@ defmodule BoxwalletWeb.ReddCoinLive do
               :difficulty,
               Number.Delimit.number_to_delimited(response.result.difficulty, precision: 0) || 0
             )
+            |> assign(:headers_synced, response.result.headers || 0)
             |> assign(
               :headers,
               Number.Delimit.number_to_delimited(response.result.headers, precision: 0) || 0
@@ -140,70 +163,34 @@ defmodule BoxwalletWeb.ReddCoinLive do
     end
   end
 
-  def handle_info(:check_get_info_status, socket) do
-    # Only keep checking if we think we are supposed to be starting/running
-    if socket.assigns.coin_daemon_starting or socket.assigns.coin_daemon_started do
-      {:ok, coin_auth} = socket.assigns.coin_auth
+  def handle_info(:load_wallet, socket) do
+    {:ok, coin_auth} = socket.assigns.coin_auth
 
-      case ReddCoin.get_info(coin_auth) do
-        {:ok, response} ->
-          IO.puts("#{socket.assigns.coin_name} Daemon is alive!")
+    case ReddCoin.load_wallet(coin_auth) do
+      :ok ->
+        Logger.info("Wallet loaded successfully")
+        Process.send_after(self(), :check_get_wallet_info_status, 1000)
+        {:noreply, socket}
 
-          socket =
-            socket
-            |> assign(:coin_daemon_starting, false)
-            |> assign(:coin_daemon_started, true)
-            |> assign(:getinfo_response, response)
-            |> assign(:connections, response.result.connections || 0)
-            |> assign(:version, response.result.version || "v...")
-            |> put_flash(:info, "#{socket.assigns.coin_name} Daemon Started Successfully!")
-
-          Process.send_after(self(), :check_get_info_status, 2000)
-          Process.send_after(self(), :check_get_blockchain_info_status, 2000)
-          Process.send_after(self(), :check_get_wallet_info_status, 2000)
-          Process.send_after(self(), :check_get_mn_sync_status, 2000)
+      {:error, message} ->
+        if String.contains?(to_string(message), "already loaded") do
+          Logger.info("Wallet already loaded")
+          Process.send_after(self(), :check_get_wallet_info_status, 1000)
           {:noreply, socket}
+        else
+          Logger.warning("Failed to load wallet: #{inspect(message)}, attempting to create...")
 
-        {:error, _reason} ->
-          IO.puts("#{socket.assigns.coin_name} Daemon not ready yet... retrying in 2s")
+          case ReddCoin.create_wallet(coin_auth) do
+            :ok ->
+              Logger.info("Wallet created successfully")
+              Process.send_after(self(), :check_get_wallet_info_status, 1000)
+              {:noreply, socket}
 
-          # 4. Failed (daemon still booting).
-          # Schedule ANOTHER check for 2 seconds later.
-          Process.send_after(self(), :check_get_info_status, 2000)
-
-          {:noreply, socket}
-      end
-    else
-      # If the user clicked "Stop" while it was booting, we stop polling.
-      {:noreply, socket}
-    end
-  end
-
-  def handle_info(:check_get_mn_sync_status, socket) do
-    # Only keep checking if we think we are supposed to be starting/running
-    if socket.assigns.coin_daemon_starting or socket.assigns.coin_daemon_started do
-      {:ok, coin_auth} = socket.assigns.coin_auth
-
-      case ReddCoin.get_mn_sync_status(coin_auth) do
-        {:ok, response} ->
-          blockchain_is_synced = response.result.is_blockchain_synced
-
-          socket =
-            socket
-            |> assign(:blockchain_is_synced, blockchain_is_synced)
-
-          {:noreply, socket}
-
-        {:error, _reason} ->
-          IO.puts("#{socket.assigns.coin_name} - Unable to get_mn_sync_status... retrying in 2s")
-
-          Process.send_after(self(), :check_get_mn_sync_status, 2000)
-
-          {:noreply, socket}
-      end
-    else
-      # If the user clicked "Stop" while it was booting, we stop polling.
-      {:noreply, socket}
+            {:error, create_reason} ->
+              Logger.error("Failed to create wallet: #{inspect(create_reason)}")
+              {:noreply, put_flash(socket, :error, "Failed to load or create wallet")}
+          end
+        end
     end
   end
 
@@ -215,18 +202,10 @@ defmodule BoxwalletWeb.ReddCoinLive do
       case ReddCoin.get_wallet_info(coin_auth) do
         {:ok, response} ->
           wallet_encryption_status =
-            case response.result.encryption_status do
-              "unencrypted" ->
-                :wes_unencrypted
-
-              "unlocked" ->
-                :wes_unlocked
-
-              "locked" ->
-                :wes_locked
-
-              "unlocked-for-staking" ->
-                :wes_unlocked_for_staking
+            case response.result.unlocked_until do
+              nil -> :wes_unencrypted
+              0 -> :wes_locked
+              _ -> :wes_unlocked
             end
 
           socket =
@@ -357,7 +336,7 @@ defmodule BoxwalletWeb.ReddCoinLive do
 
           IO.puts("Calling getinfo...")
           # Send a message to 'self' to check status in 2000ms
-          Process.send_after(self(), :check_get_info_status, 2000)
+          Process.send_after(self(), :check_get_blockchain_info_status, 2000)
 
           {:noreply, socket}
 
@@ -441,7 +420,9 @@ defmodule BoxwalletWeb.ReddCoinLive do
      |> assign(:coin_daemon_stopped, true)
      |> assign(:connections, 0)
      |> assign(:blocks, 0)
+     |> assign(:blocks_synced, 0)
      |> assign(:headers, 0)
+     |> assign(:headers_synced, 0)
      |> assign(:difficulty, 0)
      |> assign(:coin_daemon_stopping, true)
      |> assign(:daemon_status, :stopped)}
@@ -768,26 +749,12 @@ defmodule BoxwalletWeb.ReddCoinLive do
           <p class="text-gray-400 text-lg leading-relaxed max-w-2xl mx-auto">
             {@coin_description}
           </p>
-          <div class="stats shadow mt-3">
-            <div class="stat place-items-center">
-              <div class="stat-title">Headers</div>
-              <div class="stat-value text-2xl">{@headers}</div>
-              <%!-- <div class="stat-desc">Headers</div> --%>
-            </div>
-
-            <div class="stat place-items-center">
-              <div class="stat-title">Blocks</div>
-              <div class="stat-value text-2xl">{@blocks}</div>
-              <%!-- <div class="stat-value text-secondary">{@blocks}</div> --%>
-              <%!-- <div class="stat-desc text-secondary">↗︎ 40 (2%)</div> --%>
-            </div>
-
-            <div class="stat place-items-center">
-              <div class="stat-title">Difficulty</div>
-              <div class="stat-value text-2xl">{@difficulty}</div>
-              <%!-- <div class="stat-desc">↘︎ 90 (14%)</div> --%>
-            </div>
-          </div>
+          <.sync_stats
+            headers_synced={@headers_synced}
+            blocks_synced={@blocks_synced}
+            block_height={@block_height}
+            color="text-rddred"
+          />
         </div>
 
     <!-- Action buttons -->
