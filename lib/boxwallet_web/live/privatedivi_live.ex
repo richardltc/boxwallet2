@@ -313,6 +313,7 @@ defmodule BoxwalletWeb.PrivateDiviLive do
           |> assign(download_complete: true)
           |> assign(coin_files_exist: true)
           |> assign(download_error: nil)
+          |> assign(coin_auth: PrivateDivi.get_auth_values())
 
         # Auto-hide success message after 5 seconds..
         Process.send_after(self(), :hide_success_message, 5000)
@@ -623,11 +624,11 @@ defmodule BoxwalletWeb.PrivateDiviLive do
       <div class="card bg-base-100 w-full max-w-2xl shadow-xl p-8">
         <!-- Logo and title section -->
         <div class="flex flex-col md:flex-row items-start gap-6 mb-6">
-          <img
-            src={~p"/images/privatedivi_logo.png"}
-            alt="PrivateDivi logo"
-            class="h-30 w-30 rounded-xl object-contain p-2"
-          />
+          <div style="width: 7.5rem; height: 7.5rem; background: linear-gradient(135deg, #E94560, #D03A52); border-radius: 1rem; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 20px rgba(233, 69, 96, 0.3);">
+            <svg viewBox="0 0 24 24" fill="white" class="h-16 w-16">
+              <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5zm0 18.5c-3.86-.95-6.5-4.95-6.5-8.5V8.3l6.5-3.25 6.5 3.25V12c0 3.55-2.64 7.55-6.5 8.5z" />
+            </svg>
+          </div>
           <div class="flex-1">
             <div class="text-left">
               <h2 class="card-title text-3xl font-bold items-baseline flex justify-between">
