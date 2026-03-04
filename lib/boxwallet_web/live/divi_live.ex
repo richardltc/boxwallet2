@@ -1,7 +1,9 @@
+# import BoxWallet.App
+import BoxwalletWeb.CoreWalletToolbar
+
 defmodule BoxwalletWeb.DiviLive do
-  # import BoxWallet.App
-  import BoxwalletWeb.CoreWalletToolbar
   import BoxwalletWeb.CoreWalletBalance
+  import BoxwalletWeb.PromptModal
   use Number
   use BoxwalletWeb, :live_view
   require Logger
@@ -25,17 +27,29 @@ defmodule BoxwalletWeb.DiviLive do
         coin_daemon_stopping: false,
         coin_daemon_stopped: true,
         balance: 0.0,
-        blocks: 0,
+        block_height: 0,
+        blocks_synced: 0,
+        headers_synced: 0,
+        # peer_max_synced_blocks: 0,
+        # peer_max_synced_headers: 0,
         connections: 0,
         difficulty: 0,
-        headers: 0,
+        show_prompt: false,
+        staking_status: "Staking Not Active",
         version: "...",
         coin_auth: Divi.get_auth_values(),
-        wallet_encryption_status: :wes_unknown
+        wallet_encryption_status: :wes_unknown,
+        prompt_action: nil,
+        prompt_answer: "",
+        prompt_confirm: "",
+        passwords_match: false,
+        hide_balance: BoxWallet.Settings.get(:hide_balance)
       )
 
     # 1. Always check connected? so it doesn't run twice (once for static, once for websocket)
     if connected?(socket) do
+      Process.send_after(self(), :check_get_block_height, 400)
+
       send(self(), :verify_daemon_status)
     end
 
@@ -54,7 +68,7 @@ defmodule BoxwalletWeb.DiviLive do
       {:ok, coin_auth} ->
         case Divi.daemon_is_running(coin_auth) do
           true ->
-            IO.puts("#{socket.assigns.coin_name} Daemon is alive!")
+            IO.puts("#{socket.assigns.coin_name} Verify daemon status - Daemon is alive!")
 
             # 3. Trigger your specific info checks
             Process.send_after(self(), :check_get_info_status, 100)
@@ -86,6 +100,24 @@ defmodule BoxwalletWeb.DiviLive do
     end
   end
 
+  def handle_info(:check_get_block_height, socket) do
+    if socket.assigns.coin_daemon_started do
+    case Divi.get_block_height() do
+      {:ok, count} ->
+        Process.send_after(self(), :check_get_block_height, 60_000)
+        {:noreply, assign(socket, :block_height, count)}
+
+      {:error, reason} ->
+        Logger.warning("Unable to get block height: #{inspect(reason)}, retrying in 65s")
+        Process.send_after(self(), :check_get_block_height, 65_000)
+        {:noreply, socket}
+    end
+    else
+      Process.send_after(self(), :check_get_block_height, 60_000)
+      {:noreply, socket}
+    end
+  end
+
   def handle_info(:check_get_blockchain_info_status, socket) do
     # Only keep checking if we think we are supposed to be starting/running
     if socket.assigns.coin_daemon_starting or socket.assigns.coin_daemon_started do
@@ -97,7 +129,11 @@ defmodule BoxwalletWeb.DiviLive do
             socket
             |> assign(:get_blockchain_info_response, response)
             |> assign(
-              :blocks,
+              :blocks_synced,
+              response.result.blocks || 0
+            )
+            |> assign(
+              :blocks_synced_display,
               Number.Delimit.number_to_delimited(response.result.blocks, precision: 0) || 0
             )
             |> assign(
@@ -105,8 +141,8 @@ defmodule BoxwalletWeb.DiviLive do
               Number.Delimit.number_to_delimited(response.result.difficulty, precision: 0) || 0
             )
             |> assign(
-              :headers,
-              Number.Delimit.number_to_delimited(response.result.headers, precision: 0) || 0
+              :headers_synced,
+              response.result.headers || 0
             )
 
           # Process.send_after(self(), :check_get_blockchain_info_status, 2000)
@@ -140,13 +176,14 @@ defmodule BoxwalletWeb.DiviLive do
             |> assign(:coin_daemon_started, true)
             |> assign(:getinfo_response, response)
             |> assign(:connections, response.result.connections || 0)
+            |> assign(:staking_status, response.result.staking_status || "Staking Not Active")
             |> assign(:version, response.result.version || "v...")
-            |> put_flash(:info, "#{socket.assigns.coin_name} Daemon Started Successfully!")
 
           Process.send_after(self(), :check_get_info_status, 2000)
           Process.send_after(self(), :check_get_blockchain_info_status, 2000)
           Process.send_after(self(), :check_get_wallet_info_status, 2000)
           Process.send_after(self(), :check_get_mn_sync_status, 2000)
+          # Process.send_after(self(), :check_get_peer_info_status, 2000)
           {:noreply, socket}
 
         {:error, _reason} ->
@@ -188,6 +225,36 @@ defmodule BoxwalletWeb.DiviLive do
       end
     else
       # If the user clicked "Stop" while it was booting, we stop polling.
+      {:noreply, socket}
+    end
+  end
+
+  def handle_info(:check_get_peer_info_status, socket) do
+    if socket.assigns.coin_daemon_starting or socket.assigns.coin_daemon_started do
+      {:ok, coin_auth} = socket.assigns.coin_auth
+
+      case Divi.get_peer_info(coin_auth) do
+        {:ok, %{max_synced_headers: max_synced_headers, max_synced_blocks: max_synced_blocks}} ->
+          socket =
+            socket
+            |> assign(
+              :peer_max_synced_headers,
+              Number.Delimit.number_to_delimited(max_synced_headers, precision: 0) || 0
+            )
+            |> assign(:peer_max_synced_blocks, max_synced_blocks || 0)
+            |> assign(
+              :peer_max_synced_blocks_display,
+              Number.Delimit.number_to_delimited(max_synced_blocks, precision: 0) || "0"
+            )
+
+          {:noreply, socket}
+
+        {:error, _reason} ->
+          IO.puts("#{socket.assigns.coin_name} Peer info not ready yet... retrying in 2s")
+          Process.send_after(self(), :check_get_peer_info_status, 2000)
+          {:noreply, socket}
+      end
+    else
       {:noreply, socket}
     end
   end
@@ -234,6 +301,74 @@ defmodule BoxwalletWeb.DiviLive do
     end
   end
 
+  def handle_info({:daemon_stop_result, {:ok, _response}}, socket) do
+    Process.send_after(self(), :clear_flash, 4000)
+
+    {:noreply,
+     socket
+     |> put_flash(:info, "#{socket.assigns.coin_name} Daemon stopped successfully")
+     |> assign(:coin_daemon_starting, false)
+     |> assign(:coin_daemon_started, false)
+     |> assign(:coin_daemon_stopped, true)
+     |> assign(:connections, 0)
+     |> assign(:blocks_synced, 0)
+     |> assign(:headers_synced, 0)
+     |> assign(:difficulty, 0)
+     |> assign(:coin_daemon_stopping, true)
+     |> assign(:daemon_status, :stopped)}
+  end
+
+  def handle_info({:daemon_stop_result, {:error, reason}}, socket) do
+    {:noreply,
+     socket
+     |> put_flash(:error, "Failed to stop daemon: #{inspect(reason)}")
+     |> assign(:daemon_stopping, false)}
+  end
+
+  def handle_info(:hide_success_message, socket) do
+    socket = assign(socket, download_complete: false)
+    {:noreply, socket}
+  end
+
+  def handle_info(:clear_flash, socket) do
+    {:noreply, clear_flash(socket)}
+  end
+
+  def handle_info(:perform_download, socket) do
+    IO.puts("🔄 Performing download")
+
+    case Divi.download_coin() do
+      {:ok} ->
+        IO.puts("#{socket.assigns.coin_name} Download completed successfully")
+
+        socket =
+          socket
+          |> assign(downloading: false)
+          |> assign(show_install_alert: false)
+          |> assign(download_complete: true)
+          |> assign(coin_files_exist: true)
+          |> assign(download_error: nil)
+
+        # Auto-hide success message after 5 seconds..
+        Process.send_after(self(), :hide_success_message, 5000)
+
+        {:noreply, socket}
+
+      {:error, reason} ->
+        IO.puts("#{socket.assigns.coin_name} Download failed")
+        IO.inspect(reason, label: "ERROR - Error reason")
+
+        socket =
+          socket
+          |> assign(downloading: false)
+          |> assign(show_install_alert: false)
+          |> assign(download_complete: false)
+          |> assign(download_error: "Download failed: #{inspect(reason)}")
+
+        {:noreply, socket}
+    end
+  end
+
   def handle_event("download_divi", _, socket) do
     IO.puts("🚀 Starting download event")
 
@@ -247,9 +382,44 @@ defmodule BoxwalletWeb.DiviLive do
     {:noreply, socket}
   end
 
+  def handle_event("show_encrypt_prompt", _params, socket) do
+    {:noreply,
+     assign(socket,
+       show_prompt: true,
+       prompt_action: :encrypt,
+       prompt_answer: "",
+       prompt_confirm: "",
+       passwords_match: false
+     )}
+  end
+
+  def handle_event("show_unlock_prompt", _params, socket) do
+    {:noreply, assign(socket, show_prompt: true, prompt_action: :unlock, prompt_answer: "")}
+  end
+
+  def handle_event("show_unlock_staking_prompt", _params, socket) do
+    {:noreply,
+     assign(socket, show_prompt: true, prompt_action: :unlock_for_staking, prompt_answer: "")}
+  end
+
+  def handle_event("validate_passwords", %{"answer" => p1, "answer_confirm" => p2}, socket) do
+    {:noreply,
+     assign(socket,
+       prompt_answer: p1,
+       prompt_confirm: p2,
+       passwords_match: p1 != "" and p2 != "" and p1 == p2
+     )}
+  end
+
+  def handle_event("lock_wallet", _params, socket) do
+    {:ok, coin_auth} = socket.assigns.coin_auth
+    # TODO: Divi.lock_wallet(coin_auth)
+    {:noreply, socket}
+  end
+
   def handle_event("start_coin_daemon", _, socket) do
     IO.puts("Attempting to start #{socket.assigns.coin_name} Daemon...")
-    {:ok, coin_auth} = socket.assigns.coin_auth
+    # {:ok, coin_auth} = socket.assigns.coin_auth
 
     socket =
       case Divi.start_daemon() do
@@ -299,66 +469,62 @@ defmodule BoxwalletWeb.DiviLive do
      |> assign(wallet_encryption_status: :wes_unknown)}
   end
 
-  def handle_info(:perform_download, socket) do
-    IO.puts("🔄 Performing download")
+  def handle_event("prompt_submitted", %{"answer" => password}, socket) do
+    Process.send_after(self(), :clear_flash, 4000)
 
-    case Divi.download_coin() do
-      {:ok} ->
-        IO.puts("#{socket.assigns.coin_name} Download completed successfully")
+    {:ok, coin_auth} = socket.assigns.coin_auth
 
-        socket =
+    socket =
+      case socket.assigns.prompt_action do
+        :encrypt ->
+          case Divi.wallet_encrypt(coin_auth, password) do
+            :ok ->
+              socket
+              |> put_flash(:info, "Wallet encrypted successfully.")
+              |> assign(wallet_encryption_status: :wes_locked)
+
+            {:error, reason} ->
+              put_flash(socket, :error, "Encryption failed: #{reason}")
+          end
+
+        :unlock ->
+          # TODO: Divi.unlock_wallet(coin_auth, password)
+          IO.puts("Unlocking wallet...")
           socket
-          |> assign(downloading: false)
-          |> assign(show_install_alert: false)
-          |> assign(download_complete: true)
-          |> assign(coin_files_exist: true)
-          |> assign(download_error: nil)
 
-        # Auto-hide success message after 5 seconds..
-        Process.send_after(self(), :hide_success_message, 5000)
+        :unlock_for_staking ->
+          # TODO: Divi.unlock_wallet_for_staking(coin_auth, password)
+          IO.puts("Unlocking wallet for staking...")
 
-        {:noreply, socket}
+          case Divi.wallet_unlock_fs(coin_auth, password) do
+            :ok ->
+              socket
+              |> put_flash(:info, "Wallet unlocked for staking successfully.")
+              |> assign(wallet_encryption_status: :wes_unlocked_for_staking)
 
-      {:error, reason} ->
-        IO.puts("#{socket.assigns.coin_name} Download failed")
-        IO.inspect(reason, label: "ERROR - Error reason")
+            {:error, reason} ->
+              put_flash(socket, :error, "Unable to unlock wallet: #{reason}")
+          end
+      end
 
-        socket =
-          socket
-          |> assign(downloading: false)
-          |> assign(show_install_alert: false)
-          |> assign(download_complete: false)
-          |> assign(download_error: "Download failed: #{inspect(reason)}")
-
-        {:noreply, socket}
-    end
+    {:noreply, assign(socket, show_prompt: false, prompt_action: nil)}
   end
 
-  def handle_info(:hide_success_message, socket) do
-    socket = assign(socket, download_complete: false)
-    {:noreply, socket}
+  def handle_event("toggle_hide_balance", _params, socket) do
+    new_value = !socket.assigns.hide_balance
+    BoxWallet.Settings.set(:hide_balance, new_value)
+    {:noreply, assign(socket, :hide_balance, new_value)}
   end
 
-  def handle_info({:daemon_stop_result, {:ok, _response}}, socket) do
+  def handle_event("prompt_cancelled", _params, socket) do
     {:noreply,
-     socket
-     |> put_flash(:info, "#{socket.assigns.coin_name} Daemon stopped successfully")
-     |> assign(:coin_daemon_starting, false)
-     |> assign(:coin_daemon_started, false)
-     |> assign(:coin_daemon_stopped, true)
-     |> assign(:connections, 0)
-     |> assign(:blocks, 0)
-     |> assign(:headers, 0)
-     |> assign(:difficulty, 0)
-     |> assign(:coin_daemon_stopping, true)
-     |> assign(:daemon_status, :stopped)}
-  end
-
-  def handle_info({:daemon_stop_result, {:error, reason}}, socket) do
-    {:noreply,
-     socket
-     |> put_flash(:error, "Failed to stop daemon: #{inspect(reason)}")
-     |> assign(:daemon_stopping, false)}
+     assign(socket,
+       show_prompt: false,
+       prompt_action: nil,
+       prompt_answer: "",
+       prompt_confirm: "",
+       passwords_match: true
+     )}
   end
 
   defp get_icon_state(name, assigns) do
@@ -372,7 +538,7 @@ defmodule BoxwalletWeb.DiviLive do
               do: "Core files exist",
               else: "Core files not downloaded"
             ),
-          color: "text-red-400",
+          color: "text-divired",
           state: if(assigns.coin_files_exist, do: :enabled, else: :disabled)
         }
 
@@ -393,7 +559,7 @@ defmodule BoxwalletWeb.DiviLive do
             true -> "Idle"
           end
 
-        %{name: "hero-face-smile", hint: hint, color: "text-red-400", state: state}
+        %{name: "hero-face-smile", hint: hint, color: "text-divired", state: state}
 
       :connections ->
         connections = assigns.connections
@@ -441,7 +607,7 @@ defmodule BoxwalletWeb.DiviLive do
         %{
           name: "hero-signal",
           hint: hint,
-          color: "text-red-400",
+          color: "text-divired",
           state: state
         }
 
@@ -484,7 +650,7 @@ defmodule BoxwalletWeb.DiviLive do
         %{
           name: "hero-arrow-path",
           hint: hint,
-          color: "text-red-400",
+          color: "text-divired",
           state: state
         }
 
@@ -535,12 +701,29 @@ defmodule BoxwalletWeb.DiviLive do
         %{
           name: name,
           hint: hint,
-          color: "text-red-400",
+          color: "text-divired",
           state: state
         }
 
       :staking ->
-        %{name: "hero-bolt", hint: "Stats", color: "text-red-400", state: :disabled}
+        hint =          cond do
+          assigns.staking_status == "Staking Not Active" ->
+            "Staking not active"
+
+          assigns.staking_status == "Staking Active" ->
+            "Staking Active :)"
+        end
+
+        state =
+          cond do
+            assigns.staking_status == "Staking Active" ->
+              :pulsing
+
+            assigns.staking_status == "Staking Not Active" ->
+              :disabled
+          end
+
+        %{name: "hero-bolt", hint: hint, color: "text-divired", state: state}
 
         # ... add other icons here
     end
@@ -559,233 +742,340 @@ defmodule BoxwalletWeb.DiviLive do
     assigns = assign(assigns, :icons, icon_list)
 
     ~H"""
-    <!-- Download in progress alert -->
-    <%= if @downloading do %>
-      <div role="alert" class="alert alert-info mb-4">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          class="h-6 w-6 shrink-0 stroke-current animate-spin"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-          />
-        </svg>
-        <span>Downloading and installing Divi... Please wait.</span>
-      </div>
-    <% end %>
+    <Layouts.app flash={@flash}>
+      <!-- Download in progress alert -->
+      <%= if @downloading do %>
+        <div role="alert" class="alert alert-info mb-4">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            class="h-6 w-6 shrink-0 stroke-current animate-spin"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+            />
+          </svg>
+          <span>Downloading and installing Divi... Please wait.</span>
+        </div>
+      <% end %>
 
     <!-- Success alert -->
-    <%= if @download_complete do %>
-      <div role="alert" class="alert alert-success mb-4">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          class="h-6 w-6 shrink-0 stroke-current"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-          />
-        </svg>
-        <span>Download and installation completed successfully!</span>
-      </div>
-    <% end %>
-
-    <!-- Error alert -->
-    <%= if @download_error do %>
-      <div role="alert" class="alert alert-error mb-4">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          class="h-6 w-6 shrink-0 stroke-current"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-          />
-        </svg>
-        <span>{@download_error}</span>
-      </div>
-    <% end %>
-
-    <div class="flex justify-center items-center">
-      <div class="card bg-base-100 w-full max-w-2xl shadow-xl p-8">
-        <!-- Logo and title section -->
-        <div class="flex flex-col md:flex-row items-start gap-6 mb-6">
-          <img
-            src={~p"/images/divi_logo.png"}
-            alt="Divi logo"
-            class="h-30 w-30 rounded-xl object-contain p-2"
-          />
-          <div class="flex-1">
-            <div class="text-left">
-              <h2 class="card-title text-3xl font-bold items-baseline flex justify-between">
-                <div class="flex items-baseline">
-                  {@coin_name}
-                  <small class="badge badge-sm ml-1 font-mono border-0">
-                    v{@version}
-                  </small>
-                </div>
-
-                <div class="flex items-baseline">
-                  <span class="text-lg font-normal text-gray-500 mr-1">
-                    Balance:
-                  </span>
-
-                  <small class="badge text-3xl font-mono border-0">
-                    {@balance}
-                  </small>
-                </div>
-              </h2>
-              <p class="text-lg mt-2 mb-4">{@coin_title}</p>
-
-              <.hero_icons_row icons={@icons} />
-            </div>
-          </div>
-        </div>
-        
-    <!-- Description section -->
-        <div class="text-center border-t border-gray-100 pt-6">
-          <p class="text-gray-400 text-lg leading-relaxed max-w-2xl mx-auto">
-            {@coin_description}
-          </p>
-          <div class="stats shadow mt-3">
-            <div class="stat place-items-center">
-              <div class="stat-title">Headers</div>
-              <div class="stat-value text-2xl">{@headers}</div>
-              <%!-- <div class="stat-desc">Headers</div> --%>
-            </div>
-
-            <div class="stat place-items-center">
-              <div class="stat-title">Blocks</div>
-              <div class="stat-value text-2xl">{@blocks}</div>
-              <%!-- <div class="stat-value text-secondary">{@blocks}</div> --%>
-              <%!-- <div class="stat-desc text-secondary">↗︎ 40 (2%)</div> --%>
-            </div>
-
-            <div class="stat place-items-center">
-              <div class="stat-title">Difficulty</div>
-              <div class="stat-value text-2xl">{@difficulty}</div>
-              <%!-- <div class="stat-desc">↘︎ 90 (14%)</div> --%>
-            </div>
-          </div>
-        </div>
-        
-    <!-- Action buttons -->
-        <div class="card-actions justify-center mt-8">
-          <button
-            class={
-              if @coin_files_exist,
-                do: "btn btn-outline btn-secondary px-8",
-                else: "btn btn-primary px-8"
-            }
-            onclick="install_modal.showModal()"
-            disabled={@downloading}
-            title={
-              if @coin_files_exist,
-                do: "Update existing #{@coin_name} core files",
-                else: "Install #{@coin_name} core files"
-            }
+      <%= if @download_complete do %>
+        <div role="alert" class="alert alert-success mb-4">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            class="h-6 w-6 shrink-0 stroke-current"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke-width="1.5"
-              stroke="currentColor"
-              class="size-6"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"
-              />
-            </svg>
-            {if @coin_files_exist, do: "Update", else: "Install"}
-          </button>
-          <!-- DaisyUI Modal Dialog -->
-          <dialog id="install_modal" class="modal">
-            <div class="modal-box">
-              <h3 class="font-bold text-lg">Confirm Installation</h3>
-              <p class="py-4">Are you sure you want to install the {@coin_name} core files?</p>
-              <div class="modal-action">
-                <!-- Yes button -->
-                <form method="dialog">
-                  <button
-                    class="btn btn-success mr-2"
-                    phx-click="download_divi"
-                    onclick="install_modal.close()"
-                    disabled={@downloading}
-                  >
-                    Yes
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          <span>Download and installation completed successfully!</span>
+        </div>
+      <% end %>
+
+      <.prompt_modal
+        id="wallet-password"
+        question={
+          case @prompt_action do
+            :encrypt -> "Enter a new password to encrypt your wallet:"
+            :unlock -> "Enter your wallet password to unlock:"
+            :unlock_for_staking -> "Enter your wallet password to unlock for staking:"
+            _ -> "Enter your wallet password:"
+          end
+        }
+        show_confirm={@prompt_action == :encrypt}
+        on_change={if @prompt_action == :encrypt, do: "validate_passwords"}
+        passwords_match={@passwords_match}
+        answer_value={@prompt_answer}
+        confirm_value={@prompt_confirm}
+        icon="hero-lock-closed"
+        show={@show_prompt}
+        on_confirm="prompt_submitted"
+        on_cancel="prompt_cancelled"
+        input_type="password"
+        placeholder="Enter password..."
+      />
+      <!-- Error alert -->
+      <%= if @download_error do %>
+        <div role="alert" class="alert alert-error mb-4">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            class="h-6 w-6 shrink-0 stroke-current"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          <span>{@download_error}</span>
+        </div>
+      <% end %>
+
+      <div class="flex justify-center items-center">
+        <div class="card bg-base-100 w-full max-w-6xl shadow-xl p-8">
+          <!-- Logo and title section -->
+          <div class="flex flex-col md:flex-row items-start gap-6 mb-6">
+            <img
+              src={~p"/images/divi_logo.png"}
+              alt="Divi logo"
+              class="h-30 w-30 rounded-xl object-contain p-2"
+            />
+            <div class="flex-1">
+              <div class="text-left">
+                <div class="relative">
+                  <h2 class="card-title text-3xl font-bold items-baseline flex justify-between pr-8">
+                    <div class="flex items-baseline">
+                      {@coin_name}
+                      <small class="badge badge-sm ml-1 font-mono border-0">
+                        v{@version}
+                      </small>
+                    </div>
+
+                    <div class="flex items-baseline gap-1">
+                      <span class="text-lg font-normal text-gray-500">
+                        Balance:
+                      </span>
+
+                      <small class="badge text-3xl font-mono border-0">
+                        {if @hide_balance, do: "●●●●●●", else: Number.Delimit.number_to_delimited(@balance, precision: 2)}
+                      </small>
+                    </div>
+                  </h2>
+                  <button phx-click="toggle_hide_balance" class="absolute right-0 top-1/2 -translate-y-1/2 cursor-pointer text-gray-400 hover:text-gray-600" title={if @hide_balance, do: "Show balance", else: "Hide balance"}>
+                    <.icon name={if @hide_balance, do: "hero-eye-slash", else: "hero-eye"} class="h-5 w-5" />
                   </button>
-                </form>
-                <!-- No button -->
-                <form method="dialog">
-                  <button class="btn btn-error">No</button>
-                </form>
+                </div>
+                <p class="text-lg mt-2 mb-4">{@coin_title}</p>
+
+                <.hero_icons_row icons={@icons} />
               </div>
             </div>
-          </dialog>
+          </div>
 
-          <button
-            class="btn btn-outline btn-secondary px-8"
-            phx-click="start_coin_daemon"
-            disabled={!@coin_files_exist or !@coin_daemon_stopped}
-            title={"Start #{@coin_name} Daemon"}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke-width="1.5"
-              stroke="currentColor"
-              class="size-6"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z"
-              />
-            </svg>
-            Start
-          </button>
+    <!-- Description section. -->
+          <div class="text-center border-t border-gray-100 pt-6">
+            <p class="text-gray-400 text-lg leading-relaxed max-w-2xl mx-auto">
+              {@coin_description}
+            </p>
+            <div class="stats shadow mt-3 flex flex-row gap-8 p-6 justify-center items-center">
+              <div class="flex flex-col items-center">
+                <h3 class="text-sm font-semibold uppercase tracking-wider text-gray-500 mb-4">
+                  Headers
+                </h3>
+                <div
+                  class="radial-progress text-divired"
+                  style={"--value:#{if @block_height > 0, do: Float.round(@headers_synced / @block_height * 100, 2), else: 0}; --size:6rem;"}
+                  aria-valuenow={
+                    if @block_height > 0,
+                      do: Float.round(@headers_synced / @block_height * 100, 2),
+                      else: 0
+                  }
+                  role="progressbar"
+                >
+                  <%= if @block_height > 0 do %>
+                    <% pct = @headers_synced / @block_height * 100
 
-          <button
-            class="btn btn-outline btn-secondary px-8"
-            phx-click="stop_coin_daemon"
-            title={"Stop #{@coin_name} Daemon"}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke-width="1.5"
-              stroke="currentColor"
-              class="size-6"
+                    formatted =
+                      cond do
+                        pct == 0 -> "0"
+                        pct >= 100 -> "Synced"
+                        true -> (:io_lib.format("~.2f", [pct]) |> to_string()) <> "%"
+                      end %>
+                    {formatted}
+                  <% else %>
+                    ---
+                  <% end %>
+                </div>
+              </div>
+
+              <div class="flex flex-col items-center">
+                <h3 class="text-sm font-semibold uppercase tracking-wider text-gray-500 mb-4">
+                  Blocks
+                </h3>
+                <div
+                  class="radial-progress text-divired"
+                  style={"--value:#{if @block_height > 0, do: Float.round(@blocks_synced / @block_height * 100, 2), else: 0}; --size:6rem;"}
+                  aria-valuenow={
+                    if @block_height > 0,
+                      do: Float.round(@blocks_synced / @block_height * 100, 2),
+                      else: 0
+                  }
+                  role="progressbar"
+                >
+                  <%= if @block_height > 0 do %>
+                    <% pct = @blocks_synced / @block_height * 100
+
+                    formatted =
+                      cond do
+                        pct == 0 -> "0"
+                        pct >= 100 -> "Synced"
+                        true -> (:io_lib.format("~.2f", [pct]) |> to_string()) <> "%"
+                      end %>
+                    {formatted}
+                  <% else %>
+                    ---
+                  <% end %>
+                </div>
+              </div>
+            </div>
+            <%!-- <div class="stats shadow mt-3"> --%>
+            <%!-- <div class="stat place-items-center">
+              <div class="stat-title">Headers</div>
+              <div class="stat-value text-2xl">{@headers}</div>
+            </div> --%>
+
+            <%!-- <div class="stat place-items-center">
+              <div class="stat-title">Difficulty</div>
+              <div class="stat-value text-2xl">{@difficulty}</div>
+            </div> --%>
+          </div>
+
+    <!-- Action buttons -->
+          <div class="card-actions justify-center mt-8">
+            <button
+              class={
+                if @coin_files_exist,
+                  do: "btn btn-outline btn-boxwalletgreen px-8 disabled:opacity-40",
+                  else: "btn btn-boxwalletgreen px-8 disabled:opacity-40"
+              }
+              onclick="install_modal.showModal()"
+              disabled={@downloading}
+              title={
+                if @coin_files_exist,
+                  do: "Update existing #{@coin_name} core files",
+                  else: "Install #{@coin_name} core files"
+              }
             >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M11.412 15.655 9.75 21.75l3.745-4.012M9.257 13.5H3.75l2.659-2.849m2.048-2.194L14.25 2.25 12 10.5h8.25l-4.707 5.043M8.457 8.457 3 3m5.457 5.457 7.086 7.086m0 0L21 21"
-              />
-            </svg>
-            Stop
-          </button>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="1.5"
+                stroke="currentColor"
+                class="size-6"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"
+                />
+              </svg>
+              {if @coin_files_exist, do: "Update", else: "Install"}
+            </button>
+            <!-- DaisyUI Modal Dialog -->
+            <dialog id="install_modal" class="modal">
+              <div class="modal-box">
+                <h3 class="font-bold text-lg">Confirm Installation</h3>
+                <p class="py-4">Are you sure you want to install the {@coin_name} core files?</p>
+                <div class="modal-action">
+                  <!-- Yes button -->
+                  <form method="dialog">
+                    <button
+                      class="btn btn-success mr-2"
+                      phx-click="download_divi"
+                      onclick="install_modal.close()"
+                      disabled={@downloading}
+                    >
+                      Yes
+                    </button>
+                  </form>
+                  <!-- No button -->
+                  <form method="dialog">
+                    <button class="btn btn-error">No</button>
+                  </form>
+                </div>
+              </div>
+            </dialog>
+
+            <button
+              class="btn btn-outline btn-boxwalletgreen px-8 disabled:opacity-40"
+              phx-click="start_coin_daemon"
+              disabled={!@coin_files_exist or !@coin_daemon_stopped}
+              title={"Start #{@coin_name} Daemon"}
+            >
+              <span class="hero-play h-6 w-6" /> Start
+            </button>
+
+            <button
+              class="btn btn-outline btn-boxwalletgreen px-8 disabled:opacity-40"
+              phx-click="stop_coin_daemon"
+              disabled={!@coin_daemon_started}
+              title={"Stop #{@coin_name} Daemon"}
+            >
+              <span class="hero-stop h-6 w-6" /> Stop
+            </button>
+
+            <div class="dropdown dropdown-bottom">
+              <button
+                class="btn btn-outline btn-boxwalletgreen px-8 disabled:opacity-40"
+                disabled={!@coin_daemon_started}
+                phx-click={
+                  case @wallet_encryption_status do
+                    :wes_unencrypted -> "show_encrypt_prompt"
+                    :wes_unlocked -> "lock_wallet"
+                    :wes_unlocked_for_staking -> "lock_wallet"
+                    _ -> nil
+                  end
+                }
+              >
+                <span class={
+                  case @wallet_encryption_status do
+                    :wes_unlocked -> "hero-lock-closed h-6 w-6"
+                    :wes_unlocked_for_staking -> "hero-lock-closed h-6 w-6"
+                    _ -> "hero-lock-open h-6 w-6"
+                  end
+                } /> {case @wallet_encryption_status do
+                  :wes_unencrypted -> "Encrypt"
+                  :wes_unlocked -> "Lock"
+                  :wes_unlocked_for_staking -> "Lock"
+                  _ -> "Unlock"
+                end}
+              </button>
+              <%= if @wallet_encryption_status == :wes_locked do %>
+                <ul
+                  tabindex="-1"
+                  class="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm"
+                >
+                  <li>
+                    <a phx-click="show_unlock_prompt">
+                      <span class="hero-lock-open h-5 w-5 inline-block" /> Unlock
+                    </a>
+                  </li>
+                  <li>
+                    <a phx-click="show_unlock_staking_prompt">
+                      <span class="hero-bolt h-5 w-5 inline-block" />Unlock for staking
+                    </a>
+                  </li>
+                </ul>
+              <% end %>
+            </div>
+
+            <%!-- <button
+            class="btn btn-outline btn-boxwalletgreen px-8 disabled:opacity-40"
+            disabled={!@coin_daemon_started}
+            onclick="document.getElementById('wallet-password').showModal()"
+            title={"Encrypt #{@coin_name} Wallet"}
+          >
+            <span class="hero-lock-closed h-6 w-6" /> Encrypt
+          </button> --%>
+          </div>
         </div>
       </div>
-    </div>
+    </Layouts.app>
     """
   end
 end

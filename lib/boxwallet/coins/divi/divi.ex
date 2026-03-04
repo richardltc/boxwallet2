@@ -5,7 +5,7 @@ defmodule Boxwallet.Coins.Divi do
   import BoxWallet.App
 
   @coin_name "DIVI"
-  @coin_name_abbrev "DIVI"
+  # @coin_name_abbrev "DIVI"
 
   @home_dir_lin ".divi"
   @home_dir_mac "DIVI"
@@ -21,7 +21,7 @@ defmodule Boxwallet.Coins.Divi do
   # <> "/"
   @extracted_dir_linux "divi-" <> @core_version
   # <> "\\"
-  @extracted_dir_windows "divi-" <> @core_version
+  # @extracted_dir_windows "divi-" <> @core_version
 
   @download_url "https://github.com/DiviProject/Divi/releases/download/v" <> @core_version <> "/"
   # @download_url_bs "https://divi-primer-snapshot.s3.us-east-2.amazonaws.com/snapshot/"
@@ -127,8 +127,8 @@ defmodule Boxwallet.Coins.Divi do
     Logger.info("Attempting to call GetInfo to see if Daemon is running")
 
     case HTTPoison.post(url, body, headers) do
-      {:ok, %{body: response_body}} ->
-        IO.inspect(response_body)
+      {:ok, %{body: _}} ->
+        # IO.inspect(response_body).
         IO.puts("We think the Daemon is running...")
         true
 
@@ -220,6 +220,24 @@ defmodule Boxwallet.Coins.Divi do
       {:ok, auth}
     else
       {:error, reason} -> {:error, reason}
+    end
+  end
+
+  def get_block_height() do
+    url = "https://chainz.cryptoid.info/divi/api.dws?q=getblockcount"
+
+    case Req.get(url) do
+      {:ok, %{status: 200, body: body}} ->
+        # The body is a string (e.g., "3908174"), so we convert it to an integer
+        {count, _} = Integer.parse(body)
+        Logger.info("Blockheight found: #{count}")
+        {:ok, count}
+
+      {:ok, %{status: status}} ->
+        {:error, "API returned status code: #{status}"}
+
+      {:error, exception} ->
+        {:error, exception}
     end
   end
 
@@ -382,7 +400,7 @@ defmodule Boxwallet.Coins.Divi do
 
       case HTTPoison.post(url, body, headers) do
         {:ok, %{body: response_body}} ->
-          IO.inspect(response_body)
+          # IO.inspect(response_body)
 
           if String.contains?(response_body, "Loading") ||
                String.contains?(response_body, "Preparing databases") ||
@@ -434,7 +452,7 @@ defmodule Boxwallet.Coins.Divi do
 
       case HTTPoison.post(url, body, headers) do
         {:ok, %{body: response_body}} ->
-          IO.inspect(response_body)
+          # IO.inspect(response_body)
 
           if String.contains?(response_body, "Loading") ||
                String.contains?(response_body, "Preparing databases") ||
@@ -486,7 +504,7 @@ defmodule Boxwallet.Coins.Divi do
 
       case HTTPoison.post(url, body, headers) do
         {:ok, %{body: response_body}} ->
-          IO.inspect(response_body)
+          # IO.inspect(response_body)
 
           if String.contains?(response_body, "Loading") ||
                String.contains?(response_body, "Preparing databases") ||
@@ -505,6 +523,62 @@ defmodule Boxwallet.Coins.Divi do
 
               {:error, reason} ->
                 # Handle the error
+                Logger.error("Failed to parse: #{inspect(reason)}")
+                {:halt, {:error, reason}}
+            end
+          end
+
+        {:error, %HTTPoison.Error{reason: reason}} ->
+          Process.sleep(3000)
+          {:cont, {:error, reason}}
+      end
+    end)
+  end
+
+  def get_peer_info(auth) do
+    body =
+      Jason.encode!(%{
+        jsonrpc: "1.0",
+        id: "curltest",
+        method: "getpeerinfo",
+        params: []
+      })
+
+    url = "http://127.0.0.1:#{auth.rpc_port}"
+
+    headers = [
+      {"Content-Type", "text/plain"},
+      {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
+    ]
+
+    Enum.reduce_while(1..@daemon_rpc_attempts, {:error, :no_attempts}, fn attempt, _acc ->
+      Logger.info("Attempting to GetPeerInfo (attempt #{attempt}/#{@daemon_rpc_attempts})")
+
+      case HTTPoison.post(url, body, headers) do
+        {:ok, %{body: response_body}} ->
+          if String.contains?(response_body, "Loading") ||
+               String.contains?(response_body, "Preparing databases") ||
+               String.contains?(response_body, "Rewinding") ||
+               String.contains?(response_body, "RPC server started") ||
+               String.contains?(response_body, "Verifying") do
+            Logger.info("Waiting for Daemon to be ready, attempt #{attempt}")
+            Process.sleep(1000)
+            {:cont, {:error, :wrong_response}}
+          else
+            case BoxWallet.Coins.Divi.GetPeerInfo.from_json(response_body) do
+              {:ok, %{result: peers}} ->
+                max_synced_headers =
+                  peers |> Enum.map(& &1.synced_headers) |> Enum.max(fn -> 0 end)
+
+                max_synced_blocks = peers |> Enum.map(& &1.synced_blocks) |> Enum.max(fn -> 0 end)
+                Logger.info("max_synced_blocks = #{max_synced_blocks}")
+                Logger.info("max_synced_headers = #{max_synced_headers}")
+
+                {:halt,
+                 {:ok,
+                  %{max_synced_headers: max_synced_headers, max_synced_blocks: max_synced_blocks}}}
+
+              {:error, reason} ->
                 Logger.error("Failed to parse: #{inspect(reason)}")
                 {:halt, {:error, reason}}
             end
@@ -538,7 +612,7 @@ defmodule Boxwallet.Coins.Divi do
 
       case HTTPoison.post(url, body, headers) do
         {:ok, %{body: response_body}} ->
-          IO.inspect(response_body)
+          # IO.inspect(response_body)
 
           if String.contains?(response_body, "Loading") ||
                String.contains?(response_body, "Preparing databases") ||
@@ -682,6 +756,123 @@ defmodule Boxwallet.Coins.Divi do
           {:cont, {:error, reason}}
       end
     end)
+  end
+
+  def wallet_encrypt(auth, password) do
+    body =
+      Jason.encode!(%{
+        jsonrpc: "1.0",
+        id: "curltext",
+        method: "encryptwallet",
+        params: ["#{password}"]
+      })
+
+    url = "http://127.0.0.1:#{auth.rpc_port}"
+
+    headers = [
+      {"Content-Type", "text/plain"},
+      {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
+    ]
+
+    Logger.info("Attempting to Encrypt wallet")
+
+    case HTTPoison.post(url, body, headers) do
+      {:ok, %{body: response_body}} ->
+        case Jason.decode(response_body) do
+          {:ok, %{"error" => nil}} ->
+            :ok
+
+          {:ok, %{"error" => %{"message" => message}}} ->
+            {:error, message}
+
+          {:ok, %{"error" => error}} ->
+            {:error, inspect(error)}
+
+          {:error, _} ->
+            {:error, "Failed to parse response"}
+        end
+
+      {:error, %HTTPoison.Error{reason: reason}} ->
+        {:error, %HTTPoison.Error{reason: reason}}
+    end
+  end
+
+  def wallet_unlock(auth, password) do
+    body =
+      Jason.encode!(%{
+        jsonrpc: "1.0",
+        id: "curltext",
+        method: "walletpassphrase",
+        params: ["#{password}", 0]
+      })
+
+    url = "http://127.0.0.1:#{auth.rpc_port}"
+
+    headers = [
+      {"Content-Type", "text/plain"},
+      {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
+    ]
+
+    Logger.info("Attempting to Unlock wallet")
+
+    case HTTPoison.post(url, body, headers) do
+      {:ok, %{body: response_body}} ->
+        case Jason.decode(response_body) do
+          {:ok, %{"error" => nil}} ->
+            :ok
+
+          {:ok, %{"error" => %{"message" => message}}} ->
+            {:error, message}
+
+          {:ok, %{"error" => error}} ->
+            {:error, inspect(error)}
+
+          {:error, _} ->
+            {:error, "Failed to parse response"}
+        end
+
+      {:error, %HTTPoison.Error{reason: reason}} ->
+        {:error, %HTTPoison.Error{reason: reason}}
+    end
+  end
+
+  def wallet_unlock_fs(auth, password) do
+    body =
+      Jason.encode!(%{
+        jsonrpc: "1.0",
+        id: "curltext",
+        method: "walletpassphrase",
+        params: ["#{password}", 9_999_999, true]
+      })
+
+    url = "http://127.0.0.1:#{auth.rpc_port}"
+
+    headers = [
+      {"Content-Type", "text/plain"},
+      {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
+    ]
+
+    Logger.info("Attempting to Unlock wallet for staking")
+
+    case HTTPoison.post(url, body, headers) do
+      {:ok, %{body: response_body}} ->
+        case Jason.decode(response_body) do
+          {:ok, %{"error" => nil}} ->
+            :ok
+
+          {:ok, %{"error" => %{"message" => message}}} ->
+            {:error, message}
+
+          {:ok, %{"error" => error}} ->
+            {:error, inspect(error)}
+
+          {:error, _} ->
+            {:error, "Failed to parse response"}
+        end
+
+      {:error, %HTTPoison.Error{reason: reason}} ->
+        {:error, %HTTPoison.Error{reason: reason}}
+    end
   end
 
   def get_sync_info do

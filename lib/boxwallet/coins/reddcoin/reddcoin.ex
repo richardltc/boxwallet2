@@ -6,7 +6,7 @@ defmodule Boxwallet.Coins.ReddCoin do
   import BoxWallet.App
 
   @coin_name "ReddCoin"
-  @coin_name_abbrev "RDD"
+  # @coin_name_abbrev "RDD"
 
   @home_dir_lin ".reddcoin"
   @home_dir_mac "Reddcoin"
