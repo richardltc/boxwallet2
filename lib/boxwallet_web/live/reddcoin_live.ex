@@ -2,6 +2,8 @@ defmodule BoxwalletWeb.ReddCoinLive do
   # import BoxWallet.App
   import BoxwalletWeb.CoreWalletToolbar
   import BoxwalletWeb.CoreWalletBalance
+  import BoxwalletWeb.WalletBalanceDisplay
+  import BoxwalletWeb.PromptModal
   use Number
   use BoxwalletWeb, :live_view
   require Logger
@@ -31,7 +33,13 @@ defmodule BoxwalletWeb.ReddCoinLive do
         headers: 0,
         version: "...",
         coin_auth: ReddCoin.get_auth_values(),
-        wallet_encryption_status: :wes_unknown
+        wallet_encryption_status: :wes_unknown,
+        hide_balance: BoxWallet.Settings.get(:hide_balance),
+        show_prompt: false,
+        prompt_action: nil,
+        prompt_answer: "",
+        prompt_confirm: "",
+        passwords_match: false
       )
 
     # 1. Always check connected? so it doesn't run twice (once for static, once for websocket)
@@ -48,6 +56,10 @@ defmodule BoxwalletWeb.ReddCoinLive do
      |> assign(:checking_daemon, true)}
 
     {:ok, socket}
+  end
+
+  def handle_info(:clear_flash, socket) do
+    {:noreply, clear_flash(socket)}
   end
 
   def handle_info(:verify_daemon_status, socket) do
@@ -237,6 +249,84 @@ defmodule BoxwalletWeb.ReddCoinLive do
     end
   end
 
+  def handle_event("toggle_hide_balance", _params, socket) do
+    new_value = !socket.assigns.hide_balance
+    BoxWallet.Settings.set(:hide_balance, new_value)
+    {:noreply, assign(socket, :hide_balance, new_value)}
+  end
+
+  def handle_event("show_encrypt_prompt", _params, socket) do
+    {:noreply,
+     assign(socket,
+       show_prompt: true,
+       prompt_action: :encrypt,
+       prompt_answer: "",
+       prompt_confirm: "",
+       passwords_match: false
+     )}
+  end
+
+  def handle_event("show_unlock_prompt", _params, socket) do
+    {:noreply, assign(socket, show_prompt: true, prompt_action: :unlock, prompt_answer: "")}
+  end
+
+  def handle_event("show_unlock_staking_prompt", _params, socket) do
+    {:noreply,
+     assign(socket, show_prompt: true, prompt_action: :unlock_for_staking, prompt_answer: "")}
+  end
+
+  def handle_event("validate_passwords", %{"answer" => p1, "answer_confirm" => p2}, socket) do
+    {:noreply,
+     assign(socket,
+       prompt_answer: p1,
+       prompt_confirm: p2,
+       passwords_match: p1 != "" and p2 != "" and p1 == p2
+     )}
+  end
+
+  def handle_event("lock_wallet", _params, socket) do
+    {:ok, _coin_auth} = socket.assigns.coin_auth
+    # TODO: ReddCoin.lock_wallet(coin_auth)
+    {:noreply, socket}
+  end
+
+  def handle_event("prompt_submitted", %{"answer" => _password}, socket) do
+    Process.send_after(self(), :clear_flash, 4000)
+
+    {:ok, _coin_auth} = socket.assigns.coin_auth
+
+    socket =
+      case socket.assigns.prompt_action do
+        :encrypt ->
+          # TODO: ReddCoin.wallet_encrypt(coin_auth, password)
+          IO.puts("Encrypting wallet...")
+          socket
+
+        :unlock ->
+          # TODO: ReddCoin.wallet_unlock(coin_auth, password)
+          IO.puts("Unlocking wallet...")
+          socket
+
+        :unlock_for_staking ->
+          # TODO: ReddCoin.wallet_unlock_fs(coin_auth, password)
+          IO.puts("Unlocking wallet for staking...")
+          socket
+      end
+
+    {:noreply, assign(socket, show_prompt: false, prompt_action: nil)}
+  end
+
+  def handle_event("prompt_cancelled", _params, socket) do
+    {:noreply,
+     assign(socket,
+       show_prompt: false,
+       prompt_action: nil,
+       prompt_answer: "",
+       prompt_confirm: "",
+       passwords_match: true
+     )}
+  end
+
   def handle_event("download_coin", _, socket) do
     IO.puts("🚀 Starting download event")
 
@@ -375,7 +465,7 @@ defmodule BoxwalletWeb.ReddCoinLive do
               do: "Core files exist",
               else: "Core files not downloaded"
             ),
-          color: "text-red-400",
+          color: "text-rddred",
           state: if(assigns.coin_files_exist, do: :enabled, else: :disabled)
         }
 
@@ -562,6 +652,29 @@ defmodule BoxwalletWeb.ReddCoinLive do
     assigns = assign(assigns, :icons, icon_list)
 
     ~H"""
+    <Layouts.app flash={@flash}>
+    <.prompt_modal
+      id="wallet-password"
+      question={
+        case @prompt_action do
+          :encrypt -> "Enter a new password to encrypt your wallet:"
+          :unlock -> "Enter your wallet password to unlock:"
+          :unlock_for_staking -> "Enter your wallet password to unlock for staking:"
+          _ -> "Enter your wallet password:"
+        end
+      }
+      show_confirm={@prompt_action == :encrypt}
+      on_change={if @prompt_action == :encrypt, do: "validate_passwords"}
+      passwords_match={@passwords_match}
+      answer_value={@prompt_answer}
+      confirm_value={@prompt_confirm}
+      icon="hero-lock-closed"
+      show={@show_prompt}
+      on_confirm="prompt_submitted"
+      on_cancel="prompt_cancelled"
+      input_type="password"
+      placeholder="Enter password..."
+    />
     <!-- Download in progress alert -->
     <%= if @downloading do %>
       <div role="alert" class="alert alert-info mb-4">
@@ -623,7 +736,7 @@ defmodule BoxwalletWeb.ReddCoinLive do
     <% end %>
 
     <div class="flex justify-center items-center">
-      <div class="card bg-base-100 w-full max-w-2xl shadow-xl p-8">
+      <div class="card bg-base-100 w-full max-w-6xl shadow-xl shadow-rddred/30 p-8">
         <!-- Logo and title section -->
         <div class="flex flex-col md:flex-row items-start gap-6 mb-6">
           <img
@@ -641,15 +754,7 @@ defmodule BoxwalletWeb.ReddCoinLive do
                   </small>
                 </div>
 
-                <div class="flex items-baseline">
-                  <span class="text-lg font-normal text-gray-500 mr-1">
-                    Balance:
-                  </span>
-
-                  <small class="badge text-3xl font-mono border-0">
-                    {@balance}
-                  </small>
-                </div>
+                <.balance_display balance={@balance} hide_balance={@hide_balance} color="text-rddred" />
               </h2>
               <p class="text-lg mt-2 mb-4">{@coin_title}</p>
 
@@ -657,7 +762,7 @@ defmodule BoxwalletWeb.ReddCoinLive do
             </div>
           </div>
         </div>
-        
+
     <!-- Description section -->
         <div class="text-center border-t border-gray-100 pt-6">
           <p class="text-gray-400 text-lg leading-relaxed max-w-2xl mx-auto">
@@ -684,14 +789,14 @@ defmodule BoxwalletWeb.ReddCoinLive do
             </div>
           </div>
         </div>
-        
+
     <!-- Action buttons -->
         <div class="card-actions justify-center mt-8">
           <button
             class={
               if @coin_files_exist,
-                do: "btn btn-outline btn-secondary px-8",
-                else: "btn btn-primary px-8"
+                do: "btn btn-outline btn-boxwalletgreen px-8 disabled:opacity-40",
+                else: "btn btn-boxwalletgreen px-8 disabled:opacity-40"
             }
             onclick="install_modal.showModal()"
             disabled={@downloading}
@@ -743,53 +848,71 @@ defmodule BoxwalletWeb.ReddCoinLive do
           </dialog>
 
           <button
-            class="btn btn-outline btn-secondary px-8"
+            class="btn btn-outline btn-boxwalletgreen px-8 disabled:opacity-40"
             phx-click="start_coin_daemon"
             disabled={!@coin_files_exist or !@coin_daemon_stopped}
             title={"Start #{@coin_name} Daemon"}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke-width="1.5"
-              stroke="currentColor"
-              class="size-6"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z"
-              />
-            </svg>
-            Start
+            <span class="hero-play h-6 w-6" /> Start
           </button>
 
           <button
-            class="btn btn-outline btn-secondary px-8"
+            class="btn btn-outline btn-boxwalletgreen px-8 disabled:opacity-40"
             phx-click="stop_coin_daemon"
-            disabled={!@coin_daemon_started and !@coin_daemon_starting}
+            disabled={!@coin_daemon_started}
             title={"Stop #{@coin_name} Daemon"}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke-width="1.5"
-              stroke="currentColor"
-              class="size-6"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M11.412 15.655 9.75 21.75l3.745-4.012M9.257 13.5H3.75l2.659-2.849m2.048-2.194L14.25 2.25 12 10.5h8.25l-4.707 5.043M8.457 8.457 3 3m5.457 5.457 7.086 7.086m0 0L21 21"
-              />
-            </svg>
-            Stop
+            <span class="hero-stop h-6 w-6" /> Stop
           </button>
+
+          <div class="dropdown dropdown-bottom">
+            <button
+              class="btn btn-outline btn-boxwalletgreen px-8 disabled:opacity-40"
+              disabled={!@coin_daemon_started}
+              phx-click={
+                case @wallet_encryption_status do
+                  :wes_unencrypted -> "show_encrypt_prompt"
+                  :wes_unlocked -> "lock_wallet"
+                  :wes_unlocked_for_staking -> "lock_wallet"
+                  _ -> nil
+                end
+              }
+            >
+              <span class={
+                case @wallet_encryption_status do
+                  :wes_unlocked -> "hero-lock-closed h-6 w-6"
+                  :wes_unlocked_for_staking -> "hero-lock-closed h-6 w-6"
+                  _ -> "hero-lock-open h-6 w-6"
+                end
+              } /> {case @wallet_encryption_status do
+                :wes_unencrypted -> "Encrypt"
+                :wes_unlocked -> "Lock"
+                :wes_unlocked_for_staking -> "Lock"
+                _ -> "Unlock"
+              end}
+            </button>
+            <%= if @wallet_encryption_status == :wes_locked do %>
+              <ul
+                tabindex="-1"
+                class="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm"
+              >
+                <li>
+                  <a phx-click="show_unlock_prompt">
+                    <span class="hero-lock-open h-5 w-5 inline-block" /> Unlock
+                  </a>
+                </li>
+                <li>
+                  <a phx-click="show_unlock_staking_prompt">
+                    <span class="hero-bolt h-5 w-5 inline-block" />Unlock for staking
+                  </a>
+                </li>
+              </ul>
+            <% end %>
+          </div>
         </div>
       </div>
     </div>
+    </Layouts.app>
     """
   end
 end
