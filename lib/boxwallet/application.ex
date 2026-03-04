@@ -18,8 +18,7 @@ defmodule Boxwallet.Application do
       BoxwalletWeb.Telemetry,
       {DNSCluster, query: Application.get_env(:boxwallet, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Boxwallet.PubSub},
-      # Start a worker by calling: Boxwallet.Worker.start_link(arg)
-      # {Boxwallet.Worker, arg},
+      Boxwallet.Coins.ReddCoin.Server,
       # Start to serve requests, typically the last entry
       BoxwalletWeb.Endpoint
     ]
