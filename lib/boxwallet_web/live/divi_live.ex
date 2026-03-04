@@ -5,6 +5,7 @@ defmodule BoxwalletWeb.DiviLive do
   import BoxwalletWeb.CoreWalletBalance
   import BoxwalletWeb.PromptModal
   import BoxwalletWeb.WalletBalanceDisplay
+  import BoxwalletWeb.SyncProgress
   use Number
   use BoxwalletWeb, :live_view
   require Logger
@@ -859,67 +860,12 @@ defmodule BoxwalletWeb.DiviLive do
             <p class="text-gray-400 text-lg leading-relaxed max-w-2xl mx-auto">
               {@coin_description}
             </p>
-            <div class="stats shadow mt-3 flex flex-row gap-8 p-6 justify-center items-center">
-              <div class="flex flex-col items-center">
-                <h3 class="text-sm font-semibold uppercase tracking-wider text-gray-500 mb-4">
-                  Headers
-                </h3>
-                <div
-                  class="radial-progress text-divired"
-                  style={"--value:#{if @block_height > 0, do: Float.round(@headers_synced / @block_height * 100, 2), else: 0}; --size:6rem;"}
-                  aria-valuenow={
-                    if @block_height > 0,
-                      do: Float.round(@headers_synced / @block_height * 100, 2),
-                      else: 0
-                  }
-                  role="progressbar"
-                >
-                  <%= if @block_height > 0 do %>
-                    <% pct = @headers_synced / @block_height * 100
-
-                    formatted =
-                      cond do
-                        pct == 0 -> "0"
-                        pct >= 100 -> "Synced"
-                        true -> (:io_lib.format("~.2f", [pct]) |> to_string()) <> "%"
-                      end %>
-                    {formatted}
-                  <% else %>
-                    ---
-                  <% end %>
-                </div>
-              </div>
-
-              <div class="flex flex-col items-center">
-                <h3 class="text-sm font-semibold uppercase tracking-wider text-gray-500 mb-4">
-                  Blocks
-                </h3>
-                <div
-                  class="radial-progress text-divired"
-                  style={"--value:#{if @block_height > 0, do: Float.round(@blocks_synced / @block_height * 100, 2), else: 0}; --size:6rem;"}
-                  aria-valuenow={
-                    if @block_height > 0,
-                      do: Float.round(@blocks_synced / @block_height * 100, 2),
-                      else: 0
-                  }
-                  role="progressbar"
-                >
-                  <%= if @block_height > 0 do %>
-                    <% pct = @blocks_synced / @block_height * 100
-
-                    formatted =
-                      cond do
-                        pct == 0 -> "0"
-                        pct >= 100 -> "Synced"
-                        true -> (:io_lib.format("~.2f", [pct]) |> to_string()) <> "%"
-                      end %>
-                    {formatted}
-                  <% else %>
-                    ---
-                  <% end %>
-                </div>
-              </div>
-            </div>
+            <.sync_stats
+              headers_synced={@headers_synced}
+              blocks_synced={@blocks_synced}
+              block_height={@block_height}
+              color="text-divired"
+            />
             <%!-- <div class="stats shadow mt-3"> --%>
             <%!-- <div class="stat place-items-center">
               <div class="stat-title">Headers</div>
