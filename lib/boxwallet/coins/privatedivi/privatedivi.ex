@@ -12,15 +12,15 @@ defmodule Boxwallet.Coins.PrivateDivi do
   @home_dir_win "PrivateDivi"
 
   @core_version "3.0.0"
-  @download_file_arm32 "privatedivi-v" <> @core_version <> "-aarch64-linux-gnu.tar.gz"
-  @download_file_linux "privatedivi-v" <> @core_version <> "-linux.tar.gz"
-  @download_file_mac64 "privatedivi-v" <> @core_version <> "-osx64.tar.gz"
+  @download_file_arm32 "privatedivi-v" <> @core_version <> "-RPi2.tar.gz"
+  @download_file_linux "privatedivi-v" <> @core_version <> "-x86_64-linux-gnu.tar.gz"
+  @download_file_mac64 "privatedivi-v" <> @core_version <> "-osx-arm64.tar.gz"
   @download_file_windows "privatedivi-v" <> @core_version <> "-win64.zip"
 
-  # <> "/"
-  @extracted_dir_linux "privatedivi-v" <> @core_version
-  # <> "\\"
-  @extracted_dir_windows "privatedivi-v" <> @core_version
+  @extracted_dir_arm32 "privatedivi-v" <> @core_version <> "-RPi2"
+  @extracted_dir_linux "privatedivi-v" <> @core_version <> "-x86_64-linux-gnu"
+  @extracted_dir_mac64 "privatedivi-v" <> @core_version <> "-osx-arm64"
+  @extracted_dir_windows "privatedivi-v" <> @core_version <> "-win64"
 
   @download_url "https://github.com/DiviDomains/PrivateDivi/releases/download/v" <>
                   @core_version <> "/"
@@ -58,6 +58,28 @@ defmodule Boxwallet.Coins.PrivateDivi do
   # // cCommandMNSyncStatus2         string = "status"
   # cCommandDumpHDInfo string = "dumphdinfo" // ./privatedivi-cli dumphdinfo
 
+  defp get_extracted_dir() do
+    case :os.type() do
+      {:unix, :linux} ->
+        sys_info = to_string(:erlang.system_info(:system_architecture))
+
+        if String.contains?(sys_info, "x86_64") do
+          @extracted_dir_linux
+        else
+          @extracted_dir_arm32
+        end
+
+      {:unix, :darwin} ->
+        @extracted_dir_mac64
+
+      {:win32, _} ->
+        @extracted_dir_windows
+
+      _ ->
+        @extracted_dir_linux
+    end
+  end
+
   defp copy_extracted_files() do
     cli_filename =
       case get_cli_filename() do
@@ -79,11 +101,13 @@ defmodule Boxwallet.Coins.PrivateDivi do
           ""
       end
 
+    extracted_dir = get_extracted_dir()
+
     full_path_cli =
-      Path.join([BoxWallet.App.home_folder(), @extracted_dir_linux, "bin", cli_filename])
+      Path.join([BoxWallet.App.home_folder(), extracted_dir, cli_filename])
 
     full_path_daemon =
-      Path.join([BoxWallet.App.home_folder(), @extracted_dir_linux, "bin", daemon_filename])
+      Path.join([BoxWallet.App.home_folder(), extracted_dir, daemon_filename])
 
     dest_path_cli =
       Path.join([BoxWallet.App.home_folder(), cli_filename])
@@ -576,7 +600,7 @@ defmodule Boxwallet.Coins.PrivateDivi do
   end
 
   defp tidy_downloaded_files(downloaded_file) do
-    File.rm_rf!(Path.join(BoxWallet.App.home_folder(), @extracted_dir_linux))
+    File.rm_rf!(Path.join(BoxWallet.App.home_folder(), get_extracted_dir()))
     Logger.info("Removing file: #{downloaded_file}")
     File.rm_rf!(downloaded_file)
   end
