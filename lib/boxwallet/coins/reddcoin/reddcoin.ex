@@ -289,17 +289,15 @@ defmodule Boxwallet.Coins.ReddCoin do
   end
 
   def get_block_height() do
-    url = "https://chainz.cryptoid.info/rdd/api.dws?q=getblockcount"
+    url = "https://blockbook.reddcoin.com/api/v2"
 
     case Req.get(url) do
-      {:ok, %{status: 200, body: body}} when is_binary(body) ->
-        {count, _} = Integer.parse(body)
-        Logger.info("Blockheight found: #{count}")
-        {:ok, count}
+      {:ok, %{status: 200, body: %{"backend" => %{"blocks" => blocks}}}} when is_integer(blocks) ->
+        Logger.info("Blockheight found: #{blocks}")
+        {:ok, blocks}
 
-      {:ok, %{status: 200, body: body}} when is_integer(body) ->
-        Logger.info("Blockheight found: #{body}")
-        {:ok, body}
+      {:ok, %{status: 200, body: _body}} ->
+        {:error, "Unexpected response format"}
 
       {:ok, %{status: status}} ->
         {:error, "API returned status code: #{status}"}
@@ -703,12 +701,14 @@ defmodule Boxwallet.Coins.ReddCoin do
 
       case HTTPoison.post(url, body, headers) do
         {:ok, %{body: response_body}} ->
-          if String.contains?(response_body, "DIVI server stopping") do
-            Logger.info("Successfully stopped daemon on attempt #{attempt}")
-            {:halt, {:ok, response_body}}
-          else
-            Process.sleep(@daemon_rpc_sleep_interval)
-            {:cont, {:error, :wrong_response}}
+          case Jason.decode(response_body) do
+            {:ok, %{"error" => nil}} ->
+              Logger.info("Successfully stopped daemon on attempt #{attempt}")
+              {:halt, {:ok, response_body}}
+
+            _ ->
+              Process.sleep(@daemon_rpc_sleep_interval)
+              {:cont, {:error, :wrong_response}}
           end
 
         {:error, %HTTPoison.Error{reason: reason}} ->
