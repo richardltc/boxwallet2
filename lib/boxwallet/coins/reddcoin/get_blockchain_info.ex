@@ -19,7 +19,15 @@ defmodule BoxWallet.Coins.ReddCoin.GetBlockchainInfo do
       :headers,
       :bestblockhash,
       :difficulty,
-      :chainwork
+      :moneysupply,
+      :mediantime,
+      :verificationprogress,
+      :initialblockdownload,
+      :chainwork,
+      :size_on_disk,
+      :pruned,
+      :softforks,
+      :warnings
     ]
 
     @type t :: %__MODULE__{
@@ -28,7 +36,15 @@ defmodule BoxWallet.Coins.ReddCoin.GetBlockchainInfo do
             headers: integer(),
             bestblockhash: String.t(),
             difficulty: float(),
-            chainwork: String.t()
+            moneysupply: float() | nil,
+            mediantime: integer() | nil,
+            verificationprogress: float() | nil,
+            initialblockdownload: boolean() | nil,
+            chainwork: String.t(),
+            size_on_disk: integer() | nil,
+            pruned: boolean() | nil,
+            softforks: map() | nil,
+            warnings: String.t() | nil
           }
   end
 
@@ -72,7 +88,15 @@ defmodule BoxWallet.Coins.ReddCoin.GetBlockchainInfo do
       headers: result["headers"],
       bestblockhash: result["bestblockhash"],
       difficulty: result["difficulty"],
-      chainwork: result["chainwork"]
+      moneysupply: result["moneysupply"],
+      mediantime: result["mediantime"],
+      verificationprogress: result["verificationprogress"],
+      initialblockdownload: result["initialblockdownload"],
+      chainwork: result["chainwork"],
+      size_on_disk: result["size_on_disk"],
+      pruned: result["pruned"],
+      softforks: result["softforks"],
+      warnings: result["warnings"]
     }
   end
 end

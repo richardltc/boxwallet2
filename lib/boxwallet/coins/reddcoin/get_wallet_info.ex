@@ -5,45 +5,49 @@ defmodule BoxWallet.Coins.ReddCoin.GetWalletInfo do
 
   defmodule Result do
     @enforce_keys [
-      :active_wallet,
+      :walletname,
       :walletversion,
-      :balance,
-      :unconfirmed_balance,
-      :immature_balance,
-      :spendable_balance,
-      :vaulted_balance,
-      :txcount,
-      :keypoolsize,
-      :unlocked_until,
-      :encryption_status
+      :balance
     ]
 
     defstruct [
-      :active_wallet,
+      :walletname,
       :walletversion,
+      :format,
       :balance,
       :unconfirmed_balance,
       :immature_balance,
-      :spendable_balance,
-      :vaulted_balance,
       :txcount,
+      :keypoololdest,
       :keypoolsize,
-      :unlocked_until,
-      :encryption_status
+      :hdseedid,
+      :keypoolsize_hd_internal,
+      :paytxfee,
+      :private_keys_enabled,
+      :avoid_reuse,
+      :scanning,
+      :descriptors,
+      :unlocked_until
     ]
 
     @type t :: %__MODULE__{
-            active_wallet: String.t(),
+            walletname: String.t(),
             walletversion: integer(),
+            format: String.t() | nil,
             balance: float(),
-            unconfirmed_balance: float(),
-            immature_balance: float(),
-            spendable_balance: float(),
-            vaulted_balance: float(),
-            txcount: integer(),
-            keypoolsize: boolean(),
-            unlocked_until: integer(),
-            encryption_status: String.t()
+            unconfirmed_balance: float() | nil,
+            immature_balance: float() | nil,
+            txcount: integer() | nil,
+            keypoololdest: integer() | nil,
+            keypoolsize: integer() | nil,
+            hdseedid: String.t() | nil,
+            keypoolsize_hd_internal: integer() | nil,
+            paytxfee: float() | nil,
+            private_keys_enabled: boolean() | nil,
+            avoid_reuse: boolean() | nil,
+            scanning: boolean() | map() | nil,
+            descriptors: boolean() | nil,
+            unlocked_until: integer() | nil
           }
   end
 
@@ -62,7 +66,7 @@ defmodule BoxWallet.Coins.ReddCoin.GetWalletInfo do
         }
 
   @doc """
-  Decodes JSON string into a GetInfo struct
+  Decodes JSON string into a GetWalletInfo struct
   """
   def from_json(json_string) do
     with {:ok, decoded} <- Jason.decode(json_string),
@@ -82,17 +86,23 @@ defmodule BoxWallet.Coins.ReddCoin.GetWalletInfo do
 
   defp parse_result(result) do
     %Result{
-      active_wallet: result["active_wallet"],
+      walletname: result["walletname"],
       walletversion: result["walletversion"],
+      format: result["format"],
       balance: result["balance"],
       unconfirmed_balance: result["unconfirmed_balance"],
       immature_balance: result["immature_balance"],
-      spendable_balance: result["spendable_balance"],
-      vaulted_balance: result["vaulted_balance"],
       txcount: result["txcount"],
+      keypoololdest: result["keypoololdest"],
       keypoolsize: result["keypoolsize"],
-      unlocked_until: result["unlocked_until"],
-      encryption_status: result["encryption_status"]
+      hdseedid: result["hdseedid"],
+      keypoolsize_hd_internal: result["keypoolsize_hd_internal"],
+      paytxfee: result["paytxfee"],
+      private_keys_enabled: result["private_keys_enabled"],
+      avoid_reuse: result["avoid_reuse"],
+      scanning: result["scanning"],
+      descriptors: result["descriptors"],
+      unlocked_until: result["unlocked_until"]
     }
   end
 end
