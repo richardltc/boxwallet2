@@ -137,6 +137,42 @@ defmodule Boxwallet.Coins.ReddCoin do
     end
   end
 
+  def load_wallet(auth) do
+    body =
+      Jason.encode!(%{
+        jsonrpc: "1.0",
+        id: "curltext",
+        method: "loadwallet",
+        params: ["BoxWallet"]
+      })
+
+    url = "http://127.0.0.1:#{auth.rpc_port}"
+
+    headers = [
+      {"Content-Type", "text/plain"},
+      {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
+    ]
+
+    Logger.info("Attempting to LoadWallet...")
+
+    case HTTPoison.post(url, body, headers) do
+      {:ok, %{body: response_body}} ->
+        case Jason.decode(response_body) do
+          {:ok, %{"error" => nil}} ->
+            :ok
+
+          {:ok, %{"error" => %{"message" => message}}} ->
+            {:error, message}
+
+          _ ->
+            {:error, :unexpected_response}
+        end
+
+      {:error, %HTTPoison.Error{reason: reason}} ->
+        {:error, reason}
+    end
+  end
+
   def daemon_is_running(auth) do
     body =
       Jason.encode!(%{
@@ -249,6 +285,27 @@ defmodule Boxwallet.Coins.ReddCoin do
       {:ok, auth}
     else
       {:error, reason} -> {:error, reason}
+    end
+  end
+
+  def get_block_height() do
+    url = "https://chainz.cryptoid.info/rdd/api.dws?q=getblockcount"
+
+    case Req.get(url) do
+      {:ok, %{status: 200, body: body}} when is_binary(body) ->
+        {count, _} = Integer.parse(body)
+        Logger.info("Blockheight found: #{count}")
+        {:ok, count}
+
+      {:ok, %{status: 200, body: body}} when is_integer(body) ->
+        Logger.info("Blockheight found: #{body}")
+        {:ok, body}
+
+      {:ok, %{status: status}} ->
+        {:error, "API returned status code: #{status}"}
+
+      {:error, exception} ->
+        {:error, exception}
     end
   end
 
