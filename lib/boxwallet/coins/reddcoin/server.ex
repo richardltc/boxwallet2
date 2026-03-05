@@ -7,6 +7,7 @@ defmodule Boxwallet.Coins.ReddCoin.Server do
   @blockchain_info_interval 5_000
   @wallet_info_interval 5_000
   @block_height_interval 60_000
+  @peer_info_interval 15_000
 
   # --- Public API ---
 
@@ -95,6 +96,7 @@ defmodule Boxwallet.Coins.ReddCoin.Server do
         # Start blockchain polling — wallet polling starts after wallet is loaded
         Process.send_after(self(), :poll_blockchain_info, 2_000)
         Process.send_after(self(), :poll_block_height, 5_000)
+        Process.send_after(self(), :poll_peer_info, 10_000)
         {:noreply, state}
 
       {:error, reason} ->
@@ -189,6 +191,26 @@ defmodule Boxwallet.Coins.ReddCoin.Server do
 
   def handle_info(:poll_wallet_info, state), do: {:noreply, state}
 
+  def handle_info(:poll_peer_info, %{daemon_status: status} = state)
+      when status in [:starting, :running] do
+    case state.coin_auth do
+      {:ok, auth} ->
+        server = self()
+
+        spawn(fn ->
+          result = ReddCoin.get_peer_info(auth)
+          send(server, {:peer_info_result, result})
+        end)
+
+        {:noreply, state}
+
+      _ ->
+        {:noreply, state}
+    end
+  end
+
+  def handle_info(:poll_peer_info, state), do: {:noreply, state}
+
   def handle_info(:poll_block_height, %{daemon_status: status} = state)
       when status in [:starting, :running] do
     server = self()
@@ -270,6 +292,20 @@ defmodule Boxwallet.Coins.ReddCoin.Server do
   def handle_info({:block_height_result, {:error, reason}}, state) do
     Logger.warning("Unable to get block height: #{inspect(reason)}, retrying in 65s")
     Process.send_after(self(), :poll_block_height, 65_000)
+    {:noreply, state}
+  end
+
+  def handle_info({:peer_info_result, {:ok, response}}, state) do
+    connections = length(response.result)
+    state = %{state | connections: connections}
+    broadcast(state)
+    Process.send_after(self(), :poll_peer_info, @peer_info_interval)
+    {:noreply, state}
+  end
+
+  def handle_info({:peer_info_result, {:error, reason}}, state) do
+    Logger.warning("ReddCoin peer info poll failed: #{inspect(reason)}, retrying...")
+    Process.send_after(self(), :poll_peer_info, @peer_info_interval)
     {:noreply, state}
   end
 
@@ -409,6 +445,7 @@ defmodule Boxwallet.Coins.ReddCoin.Server do
     Process.send_after(self(), :poll_blockchain_info, 200)
     # Wallet info polling starts after wallet is loaded (triggered by blockchain_info success)
     Process.send_after(self(), :poll_block_height, 400)
+    Process.send_after(self(), :poll_peer_info, 600)
   end
 
   defp broadcast(state) do
