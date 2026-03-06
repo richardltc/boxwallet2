@@ -41,7 +41,7 @@ defmodule BoxwalletWeb.ReddCoinLive do
         connections: server_state.connections,
         difficulty: server_state.difficulty,
         headers: server_state.headers,
-        version: server_state.version,
+        version: Boxwallet.Coins.ReddCoin.core_version(),
         coin_auth: server_state.coin_auth,
         wallet_encryption_status: server_state.wallet_encryption_status,
         hide_balance: BoxWallet.Settings.get(:hide_balance),
