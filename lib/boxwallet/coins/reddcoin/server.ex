@@ -4,7 +4,7 @@ defmodule Boxwallet.Coins.ReddCoin.Server do
 
   alias Boxwallet.Coins.ReddCoin
 
-  @blockchain_info_interval 5_000
+  @blockchain_info_interval 3_000
   @wallet_info_interval 5_000
   @block_height_interval 60_000
   @peer_info_interval 15_000
