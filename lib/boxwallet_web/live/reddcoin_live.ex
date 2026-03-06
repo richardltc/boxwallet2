@@ -20,7 +20,7 @@ defmodule BoxwalletWeb.ReddCoinLive do
 
     socket =
       assign(socket,
-        blockchain_is_synced: false,
+        blockchain_is_synced: server_state.blockchain_is_synced,
         coin_name: "ReddCoin",
         coin_title: "The Original Social Currency.",
         coin_description:
