@@ -197,7 +197,7 @@ defmodule BoxwalletWeb.ReddCoinLive do
       :daemon ->
         state =
           cond do
-            assigns.coin_daemon_starting -> :flashing
+            assigns.coin_daemon_starting -> :pulsing
             assigns.coin_daemon_started -> :enabled
             assigns.coin_daemon_stopped -> :disabled
             true -> :disabled
