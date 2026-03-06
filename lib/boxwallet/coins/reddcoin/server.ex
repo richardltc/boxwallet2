@@ -53,6 +53,7 @@ defmodule Boxwallet.Coins.ReddCoin.Server do
       difficulty: 0,
       connections: 0,
       block_height: 0,
+      blockchain_is_synced: false,
       balance: 0.0,
       wallet_encryption_status: :wes_unknown,
       coin_files_exist: coin_files_exist,
@@ -241,7 +242,9 @@ defmodule Boxwallet.Coins.ReddCoin.Server do
           Number.Delimit.number_to_delimited(response.result.difficulty, precision: 0) || 0,
         headers_synced: response.result.headers || 0,
         headers:
-          Number.Delimit.number_to_delimited(response.result.headers, precision: 0) || 0
+          Number.Delimit.number_to_delimited(response.result.headers, precision: 0) || 0,
+        blockchain_is_synced:
+          (response.result.verificationprogress || 0) >= 0.9999
     }
 
     broadcast(state)
@@ -463,6 +466,7 @@ defmodule Boxwallet.Coins.ReddCoin.Server do
       connections: state.connections,
       block_height: state.block_height,
       balance: state.balance,
+      blockchain_is_synced: state.blockchain_is_synced,
       wallet_encryption_status: state.wallet_encryption_status,
       downloading: state.downloading,
       download_complete: state.download_complete,
