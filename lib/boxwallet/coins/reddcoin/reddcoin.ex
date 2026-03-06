@@ -13,6 +13,7 @@ defmodule Boxwallet.Coins.ReddCoin do
   @home_dir_win "Reddcoin"
 
   @core_version "4.22.9"
+  def core_version, do: @core_version
   @download_file_arm32 "reddcoin-" <> @core_version <> "-arm-linux-gnueabihf.tar.gz"
   @download_file_arm64 "reddcoin-" <> @core_version <> "aarch64-linux-gnu.tar.gz"
   @download_file_linux "reddcoin-" <> @core_version <> "-x86_64-linux-gnu.tar.gz"

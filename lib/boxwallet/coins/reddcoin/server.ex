@@ -55,7 +55,6 @@ defmodule Boxwallet.Coins.ReddCoin.Server do
       block_height: 0,
       balance: 0.0,
       wallet_encryption_status: :wes_unknown,
-      version: "...",
       coin_files_exist: coin_files_exist,
       downloading: false,
       download_complete: false,
@@ -465,7 +464,6 @@ defmodule Boxwallet.Coins.ReddCoin.Server do
       block_height: state.block_height,
       balance: state.balance,
       wallet_encryption_status: state.wallet_encryption_status,
-      version: state.version,
       downloading: state.downloading,
       download_complete: state.download_complete,
       download_error: state.download_error
