@@ -45,12 +45,14 @@ defmodule BoxwalletWeb.CoreWalletToolbar do
       }
       @keyframes pulse {
         0%, 100% {
-          opacity: 1;
+          opacity: 0.7;
           transform: scale(1);
+          filter: brightness(1);
         }
         50% {
-          opacity: 0.6;
+          opacity: 1;
           transform: scale(1.2);
+          filter: brightness(1.8);
         }
       }
       .flashing {
