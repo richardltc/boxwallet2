@@ -236,7 +236,7 @@ defmodule BoxwalletWeb.ReddCoinLive do
           case connections do
             0 ->
               if assigns.coin_daemon_started do
-                :flashing
+                :pulsing
               else
                 :disabled
               end
@@ -407,7 +407,7 @@ defmodule BoxwalletWeb.ReddCoinLive do
           <span>Downloading and installing ReddCoin... Please wait.</span>
         </div>
       <% end %>
-      
+
     <!-- Success alert -->
       <%= if @download_complete do %>
         <div role="alert" class="alert alert-success mb-4">
@@ -427,7 +427,7 @@ defmodule BoxwalletWeb.ReddCoinLive do
           <span>Download and installation completed successfully!</span>
         </div>
       <% end %>
-      
+
     <!-- Error alert -->
       <%= if @download_error do %>
         <div role="alert" class="alert alert-error mb-4">
@@ -479,7 +479,7 @@ defmodule BoxwalletWeb.ReddCoinLive do
               </div>
             </div>
           </div>
-          
+
     <!-- Description section -->
           <div class="text-center border-t border-gray-100 pt-6">
             <p class="text-gray-400 text-lg leading-relaxed max-w-2xl mx-auto">
@@ -492,7 +492,7 @@ defmodule BoxwalletWeb.ReddCoinLive do
               color="text-rddred"
             />
           </div>
-          
+
     <!-- Action buttons -->
           <div class="card-actions justify-center mt-8">
             <button
