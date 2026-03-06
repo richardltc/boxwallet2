@@ -7,6 +7,7 @@ defmodule BoxwalletWeb.ReddCoinLive do
   import BoxwalletWeb.CoinSidebar
   import BoxwalletWeb.CoinHomeSection
   import BoxwalletWeb.CoinTransactions
+  import BoxwalletWeb.ReceiveAddressModal
   use Number
   use BoxwalletWeb, :live_view
   require Logger
@@ -53,7 +54,9 @@ defmodule BoxwalletWeb.ReddCoinLive do
         prompt_answer: "",
         prompt_confirm: "",
         passwords_match: false,
-        active_tab: :home
+        active_tab: :home,
+        show_receive_modal: false,
+        receive_address: ""
       )
 
     {:ok, socket}
@@ -151,6 +154,31 @@ defmodule BoxwalletWeb.ReddCoinLive do
       end
 
     {:noreply, assign(socket, show_prompt: false, prompt_action: nil)}
+  end
+
+  def handle_event("receive_address", _params, socket) do
+    case socket.assigns.coin_auth do
+      {:ok, auth} ->
+        case ReddCoin.get_new_address(auth) do
+          {:ok, %{result: address}} when is_binary(address) ->
+            {:noreply, assign(socket, show_receive_modal: true, receive_address: address)}
+
+          {:error, reason} ->
+            Logger.error("Failed to get new address: #{inspect(reason)}")
+
+            {:noreply,
+             socket
+             |> put_flash(:error, "Failed to get a new receive address.")
+             |> then(fn s -> Process.send_after(self(), :clear_flash, 4_000); s end)}
+        end
+
+      _ ->
+        {:noreply, put_flash(socket, :error, "Daemon not available.")}
+    end
+  end
+
+  def handle_event("close_receive_modal", _params, socket) do
+    {:noreply, assign(socket, show_receive_modal: false)}
   end
 
   def handle_event("prompt_cancelled", _params, socket) do
@@ -374,6 +402,13 @@ defmodule BoxwalletWeb.ReddCoinLive do
 
     ~H"""
     <Layouts.app flash={@flash}>
+      <.receive_address_modal
+        id="receive-address"
+        show={@show_receive_modal}
+        address={@receive_address}
+        on_close="close_receive_modal"
+        color="text-rddred"
+      />
       <.prompt_modal
         id="wallet-password"
         question={
@@ -507,7 +542,7 @@ defmodule BoxwalletWeb.ReddCoinLive do
               on_download="download_coin"
             />
           <% else %>
-            <.coin_transactions color="text-rddred" />
+            <.coin_transactions color="text-rddred" coin_daemon_started={@coin_daemon_started} />
           <% end %>
         </div>
       </div>

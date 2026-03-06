@@ -582,6 +582,38 @@ defmodule Boxwallet.Coins.ReddCoin do
     end
   end
 
+  def get_new_address(auth) do
+    body =
+      Jason.encode!(%{
+        jsonrpc: "1.0",
+        id: "curltest",
+        method: "getnewaddress",
+        params: []
+      })
+
+    url = "http://127.0.0.1:#{auth.rpc_port}"
+
+    headers = [
+      {"Content-Type", "text/plain"},
+      {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
+    ]
+
+    Logger.info("Attempting to GetNewAddress")
+
+    case HTTPoison.post(url, body, headers) do
+      {:ok, %{body: response_body}} ->
+        case BoxWallet.Coins.ReddCoin.GetNewAddress.from_json(response_body) do
+          {:ok, response} -> {:ok, response}
+          {:error, reason} ->
+            Logger.error("Failed to parse GetNewAddress: #{inspect(reason)}")
+            {:error, reason}
+        end
+
+      {:error, %HTTPoison.Error{reason: reason}} ->
+        {:error, reason}
+    end
+  end
+
   def get_wallet_info(auth) do
     body =
       Jason.encode!(%{

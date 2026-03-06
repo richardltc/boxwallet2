@@ -65,6 +65,7 @@ defmodule Boxwallet.MixProject do
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.2.0"},
       {:httpoison, "~> 2.2"},
+      {:eqrcode, "~> 0.2.1"},
       {:bandit, "~> 1.5"}
     ]
   end
