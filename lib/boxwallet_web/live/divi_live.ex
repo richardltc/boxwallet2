@@ -6,6 +6,7 @@ defmodule BoxwalletWeb.DiviLive do
   import BoxwalletWeb.PromptModal
   import BoxwalletWeb.WalletBalanceDisplay
   import BoxwalletWeb.SyncProgress
+  import BoxwalletWeb.CoinSidebar
   use Number
   use BoxwalletWeb, :live_view
   require Logger
@@ -827,8 +828,9 @@ defmodule BoxwalletWeb.DiviLive do
         </div>
       <% end %>
 
-      <div class="flex justify-center items-center">
-        <div class="card bg-base-100 w-full max-w-6xl shadow-xl shadow-divired/30 p-8">
+      <div class="flex justify-center items-start gap-4">
+        <.coin_sidebar color="text-divired" />
+        <div class="card bg-base-200 w-full max-w-6xl shadow-xl shadow-divired/30 p-8">
           <!-- Logo and title section -->
           <div class="flex flex-col md:flex-row items-start gap-6 mb-6">
             <img
