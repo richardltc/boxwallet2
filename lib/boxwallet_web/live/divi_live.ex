@@ -7,6 +7,8 @@ defmodule BoxwalletWeb.DiviLive do
   import BoxwalletWeb.WalletBalanceDisplay
   import BoxwalletWeb.SyncProgress
   import BoxwalletWeb.CoinSidebar
+  import BoxwalletWeb.CoinHomeSection
+  import BoxwalletWeb.CoinTransactions
   use Number
   use BoxwalletWeb, :live_view
   require Logger
@@ -46,7 +48,8 @@ defmodule BoxwalletWeb.DiviLive do
         prompt_answer: "",
         prompt_confirm: "",
         passwords_match: false,
-        hide_balance: BoxWallet.Settings.get(:hide_balance)
+        hide_balance: BoxWallet.Settings.get(:hide_balance),
+        active_tab: :home
       )
 
     # 1. Always check connected? so it doesn't run twice (once for static, once for websocket)
@@ -519,6 +522,10 @@ defmodule BoxwalletWeb.DiviLive do
     {:noreply, assign(socket, :hide_balance, new_value)}
   end
 
+  def handle_event("switch_tab", %{"tab" => tab}, socket) do
+    {:noreply, assign(socket, :active_tab, String.to_existing_atom(tab))}
+  end
+
   def handle_event("prompt_cancelled", _params, socket) do
     {:noreply,
      assign(socket,
@@ -829,7 +836,7 @@ defmodule BoxwalletWeb.DiviLive do
       <% end %>
 
       <div class="flex justify-center items-start gap-4">
-        <.coin_sidebar color="text-divired" />
+        <.coin_sidebar color="text-divired" active_tab={@active_tab} />
         <div class="card bg-base-200 w-full max-w-6xl shadow-xl shadow-divired/30 p-8">
           <!-- Logo and title section -->
           <div class="flex flex-col md:flex-row items-start gap-6 mb-6">
@@ -857,158 +864,26 @@ defmodule BoxwalletWeb.DiviLive do
             </div>
           </div>
 
-    <!-- Description section. -->
-          <div class="text-center border-t border-gray-100 pt-6">
-            <p class="text-gray-400 text-lg leading-relaxed max-w-2xl mx-auto">
-              {@coin_description}
-            </p>
-            <.sync_stats
+    <%= if @active_tab == :home do %>
+            <.coin_home_section
+              coin_name={@coin_name}
+              coin_description={@coin_description}
               headers_synced={@headers_synced}
               blocks_synced={@blocks_synced}
               block_height={@block_height}
               color="text-divired"
+              coin_files_exist={@coin_files_exist}
+              downloading={@downloading}
+              download_complete={@download_complete}
+              download_error={@download_error}
+              coin_daemon_started={@coin_daemon_started}
+              coin_daemon_stopped={@coin_daemon_stopped}
+              wallet_encryption_status={@wallet_encryption_status}
+              on_download="download_divi"
             />
-            <%!-- <div class="stats shadow mt-3"> --%>
-            <%!-- <div class="stat place-items-center">
-              <div class="stat-title">Headers</div>
-              <div class="stat-value text-2xl">{@headers}</div>
-            </div> --%>
-
-            <%!-- <div class="stat place-items-center">
-              <div class="stat-title">Difficulty</div>
-              <div class="stat-value text-2xl">{@difficulty}</div>
-            </div> --%>
-          </div>
-
-    <!-- Action buttons -->
-          <div class="card-actions justify-center mt-8">
-            <button
-              class={
-                if @coin_files_exist,
-                  do: "btn btn-outline btn-boxwalletgreen px-8 disabled:opacity-40",
-                  else: "btn btn-boxwalletgreen px-8 disabled:opacity-40"
-              }
-              onclick="install_modal.showModal()"
-              disabled={@downloading}
-              title={
-                if @coin_files_exist,
-                  do: "Update existing #{@coin_name} core files",
-                  else: "Install #{@coin_name} core files"
-              }
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke-width="1.5"
-                stroke="currentColor"
-                class="size-6"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"
-                />
-              </svg>
-              {if @coin_files_exist, do: "Update", else: "Install"}
-            </button>
-            <!-- DaisyUI Modal Dialog -->
-            <dialog id="install_modal" class="modal">
-              <div class="modal-box">
-                <h3 class="font-bold text-lg">Confirm Installation</h3>
-                <p class="py-4">Are you sure you want to install the {@coin_name} core files?</p>
-                <div class="modal-action">
-                  <!-- Yes button -->
-                  <form method="dialog">
-                    <button
-                      class="btn btn-success mr-2"
-                      phx-click="download_divi"
-                      onclick="install_modal.close()"
-                      disabled={@downloading}
-                    >
-                      Yes
-                    </button>
-                  </form>
-                  <!-- No button -->
-                  <form method="dialog">
-                    <button class="btn btn-error">No</button>
-                  </form>
-                </div>
-              </div>
-            </dialog>
-
-            <button
-              class="btn btn-outline btn-boxwalletgreen px-8 disabled:opacity-40"
-              phx-click="start_coin_daemon"
-              disabled={!@coin_files_exist or !@coin_daemon_stopped}
-              title={"Start #{@coin_name} Daemon"}
-            >
-              <span class="hero-play h-6 w-6" /> Start
-            </button>
-
-            <button
-              class="btn btn-outline btn-boxwalletgreen px-8 disabled:opacity-40"
-              phx-click="stop_coin_daemon"
-              disabled={!@coin_daemon_started}
-              title={"Stop #{@coin_name} Daemon"}
-            >
-              <span class="hero-stop h-6 w-6" /> Stop
-            </button>
-
-            <div class="dropdown dropdown-bottom">
-              <button
-                class="btn btn-outline btn-boxwalletgreen px-8 disabled:opacity-40"
-                disabled={!@coin_daemon_started}
-                phx-click={
-                  case @wallet_encryption_status do
-                    :wes_unencrypted -> "show_encrypt_prompt"
-                    :wes_unlocked -> "lock_wallet"
-                    :wes_unlocked_for_staking -> "lock_wallet"
-                    _ -> nil
-                  end
-                }
-              >
-                <span class={
-                  case @wallet_encryption_status do
-                    :wes_unlocked -> "hero-lock-closed h-6 w-6"
-                    :wes_unlocked_for_staking -> "hero-lock-closed h-6 w-6"
-                    _ -> "hero-lock-open h-6 w-6"
-                  end
-                } /> {case @wallet_encryption_status do
-                  :wes_unencrypted -> "Encrypt"
-                  :wes_unlocked -> "Lock"
-                  :wes_unlocked_for_staking -> "Lock"
-                  _ -> "Unlock"
-                end}
-              </button>
-              <%= if @wallet_encryption_status == :wes_locked do %>
-                <ul
-                  tabindex="-1"
-                  class="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm"
-                >
-                  <li>
-                    <a phx-click="show_unlock_prompt">
-                      <span class="hero-lock-open h-5 w-5 inline-block" /> Unlock
-                    </a>
-                  </li>
-                  <li>
-                    <a phx-click="show_unlock_staking_prompt">
-                      <span class="hero-bolt h-5 w-5 inline-block" />Unlock for staking
-                    </a>
-                  </li>
-                </ul>
-              <% end %>
-            </div>
-
-            <%!-- <button
-            class="btn btn-outline btn-boxwalletgreen px-8 disabled:opacity-40"
-            disabled={!@coin_daemon_started}
-            onclick="document.getElementById('wallet-password').showModal()"
-            title={"Encrypt #{@coin_name} Wallet"}
-          >
-            <span class="hero-lock-closed h-6 w-6" /> Encrypt
-          </button> --%>
-          </div>
+          <% else %>
+            <.coin_transactions color="text-divired" />
+          <% end %>
         </div>
       </div>
     </Layouts.app>
