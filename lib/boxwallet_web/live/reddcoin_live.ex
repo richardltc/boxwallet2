@@ -25,9 +25,10 @@ defmodule BoxwalletWeb.ReddCoinLive do
       assign(socket,
         blockchain_is_synced: server_state.blockchain_is_synced,
         coin_name: "ReddCoin",
-        coin_title: "The Original Social Currency.",
+        coin_title:
+          "ReddCoin (RDD) — blockchain network for social payments, tipping, and micro-transactions.",
         coin_description:
-          "With over 60,000 users in 50+ countries, Redd allows you to share, tip, and donate to anyone, anywhere on all major social media platforms.",
+          "Launched in 2014, ReddCoin is a community-driven blockchain designed for social tipping and micro-transactions. It uses a unique Proof-of-Stake-Velocity (PoSV) mechanism to secure the network while rewarding active participation. Optimized for frequent, low-cost digital payments rather than speculation, it enables seamless value transfers across social platforms.",
         show_install_alert: false,
         coin_files_exist: server_state.coin_files_exist,
         download_complete: server_state.download_complete,
@@ -169,7 +170,10 @@ defmodule BoxwalletWeb.ReddCoinLive do
             {:noreply,
              socket
              |> put_flash(:error, "Failed to get a new receive address.")
-             |> then(fn s -> Process.send_after(self(), :clear_flash, 4_000); s end)}
+             |> then(fn s ->
+               Process.send_after(self(), :clear_flash, 4_000)
+               s
+             end)}
         end
 
       _ ->
@@ -450,7 +454,7 @@ defmodule BoxwalletWeb.ReddCoinLive do
           <span>Downloading and installing ReddCoin... Please wait.</span>
         </div>
       <% end %>
-
+      
     <!-- Success alert -->
       <%= if @download_complete do %>
         <div role="alert" class="alert alert-success mb-4">
@@ -470,7 +474,7 @@ defmodule BoxwalletWeb.ReddCoinLive do
           <span>Download and installation completed successfully!</span>
         </div>
       <% end %>
-
+      
     <!-- Error alert -->
       <%= if @download_error do %>
         <div role="alert" class="alert alert-error mb-4">
@@ -524,7 +528,7 @@ defmodule BoxwalletWeb.ReddCoinLive do
             </div>
           </div>
 
-    <%= if @active_tab == :home do %>
+          <%= if @active_tab == :home do %>
             <.coin_home_section
               coin_name={@coin_name}
               coin_description={@coin_description}
