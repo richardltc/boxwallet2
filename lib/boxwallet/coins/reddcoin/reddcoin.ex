@@ -293,7 +293,8 @@ defmodule Boxwallet.Coins.ReddCoin do
     url = "https://blockbook.reddcoin.com/api/v2"
 
     case Req.get(url) do
-      {:ok, %{status: 200, body: %{"backend" => %{"blocks" => blocks}}}} when is_integer(blocks) ->
+      {:ok, %{status: 200, body: %{"backend" => %{"blocks" => blocks}}}}
+      when is_integer(blocks) ->
         Logger.info("Blockheight found: #{blocks}")
         {:ok, blocks}
 
@@ -446,58 +447,6 @@ defmodule Boxwallet.Coins.ReddCoin do
       end
   end
 
-  def get_info(auth) do
-    body =
-      Jason.encode!(%{
-        jsonrpc: "1.0",
-        id: "curltext",
-        method: "getinfo",
-        params: []
-      })
-
-    url = "http://127.0.0.1:#{auth.rpc_port}"
-
-    headers = [
-      {"Content-Type", "text/plain"},
-      {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
-    ]
-
-    Enum.reduce_while(1..@daemon_rpc_attempts, {:error, :no_attempts}, fn attempt, _acc ->
-      Logger.info("Attempting to GetInfo (attempt #{attempt}/#{@daemon_rpc_attempts})")
-
-      case HTTPoison.post(url, body, headers) do
-        {:ok, %{body: response_body}} ->
-          IO.inspect(response_body)
-
-          if String.contains?(response_body, "Loading") ||
-               String.contains?(response_body, "Preparing databases") ||
-               String.contains?(response_body, "Rewinding") ||
-               String.contains?(response_body, "RPC server started") ||
-               String.contains?(response_body, "Verifying") do
-            Logger.info("Waiting for Daemon to be ready, attempt #{attempt}")
-            Process.sleep(1000)
-            {:cont, {:error, :wrong_response}}
-          else
-            # Now ew need to convert into a GetInfo before returning it to the UI
-            case BoxWallet.Coins.ReddCoin.GetInfo.from_json(response_body) do
-              {:ok, response} ->
-                # Process the successful response - Halt with result
-                {:halt, {:ok, response}}
-
-              {:error, reason} ->
-                # Handle the error
-                Logger.error("Failed to parse: #{inspect(reason)}")
-                {:halt, {:error, reason}}
-            end
-          end
-
-        {:error, %HTTPoison.Error{reason: reason}} ->
-          Process.sleep(3000)
-          {:cont, {:error, reason}}
-      end
-    end)
-  end
-
   def get_blockchain_info(auth) do
     body =
       Jason.encode!(%{
@@ -571,7 +520,9 @@ defmodule Boxwallet.Coins.ReddCoin do
     case HTTPoison.post(url, body, headers) do
       {:ok, %{body: response_body}} ->
         case BoxWallet.Coins.ReddCoin.GetPeerInfo.from_json(response_body) do
-          {:ok, response} -> {:ok, response}
+          {:ok, response} ->
+            {:ok, response}
+
           {:error, reason} ->
             Logger.error("Failed to parse GetPeerInfo: #{inspect(reason)}")
             {:error, reason}
@@ -603,7 +554,9 @@ defmodule Boxwallet.Coins.ReddCoin do
     case HTTPoison.post(url, body, headers) do
       {:ok, %{body: response_body}} ->
         case BoxWallet.Coins.ReddCoin.GetNewAddress.from_json(response_body) do
-          {:ok, response} -> {:ok, response}
+          {:ok, response} ->
+            {:ok, response}
+
           {:error, reason} ->
             Logger.error("Failed to parse GetNewAddress: #{inspect(reason)}")
             {:error, reason}
