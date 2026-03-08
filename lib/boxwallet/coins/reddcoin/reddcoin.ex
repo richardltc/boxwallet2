@@ -619,6 +619,42 @@ defmodule Boxwallet.Coins.ReddCoin do
     end)
   end
 
+  def get_staking_info(auth) do
+    body =
+      Jason.encode!(%{
+        jsonrpc: "1.0",
+        id: "curltext",
+        method: "getstakinginfo",
+        params: []
+      })
+
+    url = "http://127.0.0.1:#{auth.rpc_port}/wallet/BoxWallet"
+
+    headers = [
+      {"Content-Type", "text/plain"},
+      {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
+    ]
+
+    Logger.info("Attempting to GetStakingInfo")
+
+    case HTTPoison.post(url, body, headers) do
+      {:ok, %{body: response_body}} ->
+        IO.inspect(response_body)
+
+        case BoxWallet.Coins.ReddCoin.GetStakingInfo.from_json(response_body) do
+          {:ok, response} ->
+            {:ok, response}
+
+          {:error, reason} ->
+            Logger.error("Failed to parse GetStakingInfo: #{inspect(reason)}")
+            {:error, reason}
+        end
+
+      {:error, %HTTPoison.Error{reason: reason}} ->
+        {:error, reason}
+    end
+  end
+
   defp populate_conf_file() do
     File.mkdir_p!(get_coin_home_dir())
     conf_file = get_conf_file_location()

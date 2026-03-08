@@ -50,6 +50,7 @@ defmodule BoxwalletWeb.ReddCoinLive do
         headers: server_state.headers,
         version: Boxwallet.Coins.ReddCoin.core_version(),
         coin_auth: server_state.coin_auth,
+        staking: server_state.staking,
         wallet_encryption_status: server_state.wallet_encryption_status,
         hide_balance: BoxWallet.Settings.get(:hide_balance),
         show_prompt: false,
@@ -408,7 +409,21 @@ defmodule BoxwalletWeb.ReddCoinLive do
         }
 
       :staking ->
-        %{name: "hero-bolt", hint: "Stats", color: "text-rddred", state: :disabled}
+        hint =
+          if assigns.staking do
+            "Staking Active :)"
+          else
+            "Staking not active"
+          end
+
+        state =
+          if assigns.staking do
+            :pulsing
+          else
+            :disabled
+          end
+
+        %{name: "hero-bolt", hint: hint, color: "text-rddred", state: state}
     end
   end
 

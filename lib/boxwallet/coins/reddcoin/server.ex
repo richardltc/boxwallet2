@@ -6,6 +6,7 @@ defmodule Boxwallet.Coins.ReddCoin.Server do
 
   @blockchain_info_interval 3_000
   @wallet_info_interval 5_000
+  @staking_info_interval 10_000
   @block_height_interval 60_000
   @peer_info_interval 15_000
 
@@ -57,6 +58,7 @@ defmodule Boxwallet.Coins.ReddCoin.Server do
       balance: 0.0,
       unconfirmed_balance: 0.0,
       immature_balance: 0.0,
+      staking: false,
       wallet_encryption_status: :wes_unknown,
       coin_files_exist: coin_files_exist,
       downloading: false,
@@ -213,6 +215,26 @@ defmodule Boxwallet.Coins.ReddCoin.Server do
 
   def handle_info(:poll_peer_info, state), do: {:noreply, state}
 
+  def handle_info(:poll_staking_info, %{daemon_status: status} = state)
+      when status in [:starting, :running] do
+    case state.coin_auth do
+      {:ok, auth} ->
+        server = self()
+
+        spawn(fn ->
+          result = ReddCoin.get_staking_info(auth)
+          send(server, {:staking_info_result, result})
+        end)
+
+        {:noreply, state}
+
+      _ ->
+        {:noreply, state}
+    end
+  end
+
+  def handle_info(:poll_staking_info, state), do: {:noreply, state}
+
   def handle_info(:poll_block_height, %{daemon_status: status} = state)
       when status in [:starting, :running] do
     server = self()
@@ -315,6 +337,19 @@ defmodule Boxwallet.Coins.ReddCoin.Server do
     {:noreply, state}
   end
 
+  def handle_info({:staking_info_result, {:ok, response}}, state) do
+    state = %{state | staking: response.result.staking == true}
+    broadcast(state)
+    Process.send_after(self(), :poll_staking_info, @staking_info_interval)
+    {:noreply, state}
+  end
+
+  def handle_info({:staking_info_result, {:error, reason}}, state) do
+    Logger.warning("ReddCoin staking info poll failed: #{inspect(reason)}, retrying...")
+    Process.send_after(self(), :poll_staking_info, @staking_info_interval)
+    {:noreply, state}
+  end
+
   # Wallet loading — spawned to avoid blocking
   def handle_info(:load_wallet, %{wallet_loaded: true} = state), do: {:noreply, state}
 
@@ -339,6 +374,7 @@ defmodule Boxwallet.Coins.ReddCoin.Server do
     Logger.info("ReddCoin wallet loaded successfully")
     state = %{state | wallet_loaded: true}
     Process.send_after(self(), :poll_wallet_info, 1_000)
+    Process.send_after(self(), :poll_staking_info, 2_000)
     {:noreply, state}
   end
 
@@ -347,6 +383,7 @@ defmodule Boxwallet.Coins.ReddCoin.Server do
       Logger.info("ReddCoin wallet already loaded")
       state = %{state | wallet_loaded: true}
       Process.send_after(self(), :poll_wallet_info, 1_000)
+      Process.send_after(self(), :poll_staking_info, 2_000)
       {:noreply, state}
     else
       Logger.warning("Failed to load wallet: #{inspect(message)}, attempting to create...")
@@ -372,6 +409,7 @@ defmodule Boxwallet.Coins.ReddCoin.Server do
     Logger.info("ReddCoin wallet created successfully")
     state = %{state | wallet_loaded: true}
     Process.send_after(self(), :poll_wallet_info, 1_000)
+    Process.send_after(self(), :poll_staking_info, 2_000)
     {:noreply, state}
   end
 
@@ -393,6 +431,7 @@ defmodule Boxwallet.Coins.ReddCoin.Server do
         headers_synced: 0,
         difficulty: 0,
         connections: 0,
+        staking: false,
         wallet_encryption_status: :wes_unknown
     }
 
@@ -449,7 +488,7 @@ defmodule Boxwallet.Coins.ReddCoin.Server do
 
   defp schedule_polls do
     Process.send_after(self(), :poll_blockchain_info, 200)
-    # Wallet info polling starts after wallet is loaded (triggered by blockchain_info success)
+    # Wallet info + staking info polling starts after wallet is loaded
     Process.send_after(self(), :poll_block_height, 400)
     Process.send_after(self(), :poll_peer_info, 600)
   end
@@ -473,6 +512,7 @@ defmodule Boxwallet.Coins.ReddCoin.Server do
       unconfirmed_balance: state.unconfirmed_balance,
       immature_balance: state.immature_balance,
       blockchain_is_synced: state.blockchain_is_synced,
+      staking: state.staking,
       wallet_encryption_status: state.wallet_encryption_status,
       downloading: state.downloading,
       download_complete: state.download_complete,
