@@ -1,7 +1,11 @@
 # What is BoxWallet 2?
 
 BoxWallet 2 is a browser based,  multi-coin wallet, that can get your coin-of-choice up and running fast and securely staking with just a few clicks.
-<img src="docs/images/home.png" alt="Home" width="600">  
+<img src="docs/images/home.png" alt="Home" width="600">
+
+An example of the Divi dashboard:
+<img src="docs/images/divi.png" alt="Divi dashboard" width="600">
+
 
 # Getting started with BoxWallet 2
 
