@@ -32,6 +32,8 @@ defmodule BoxwalletWeb.DiviLive do
         coin_daemon_stopping: false,
         coin_daemon_stopped: true,
         balance: 0.0,
+        unconfirmed_balance: 0.0,
+        immature_balance: 0.0,
         block_height: 0,
         blocks_synced: 0,
         headers_synced: 0,
@@ -291,6 +293,8 @@ defmodule BoxwalletWeb.DiviLive do
             socket
             |> assign(:wallet_encryption_status, wallet_encryption_status)
             |> assign(:balance, response.result.balance)
+            |> assign(:unconfirmed_balance, response.result.unconfirmed_balance || 0.0)
+            |> assign(:immature_balance, response.result.immature_balance || 0.0)
 
           {:noreply, socket}
 
@@ -855,7 +859,13 @@ defmodule BoxwalletWeb.DiviLive do
                     </small>
                   </div>
 
-                  <.balance_display balance={@balance} hide_balance={@hide_balance} color="text-divired" />
+                  <.balance_display
+                    balance={@balance}
+                    unconfirmed_balance={@unconfirmed_balance}
+                    immature_balance={@immature_balance}
+                    hide_balance={@hide_balance}
+                    color="text-divired"
+                  />
                 </h2>
                 <p class="text-lg mt-2 mb-4">{@coin_title}</p>
 
