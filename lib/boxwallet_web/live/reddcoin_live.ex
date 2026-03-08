@@ -39,6 +39,8 @@ defmodule BoxwalletWeb.ReddCoinLive do
         coin_daemon_stopping: server_state.daemon_status == :stopping,
         coin_daemon_stopped: server_state.daemon_status == :stopped,
         balance: server_state.balance,
+        unconfirmed_balance: server_state.unconfirmed_balance,
+        immature_balance: server_state.immature_balance,
         block_height: server_state.block_height,
         blocks_synced: server_state.blocks_synced,
         headers_synced: server_state.headers_synced,
@@ -535,6 +537,8 @@ defmodule BoxwalletWeb.ReddCoinLive do
 
                   <.balance_display
                     balance={@balance}
+                    unconfirmed_balance={@unconfirmed_balance}
+                    immature_balance={@immature_balance}
                     hide_balance={@hide_balance}
                     color="text-rddred"
                   />

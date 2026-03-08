@@ -55,6 +55,8 @@ defmodule Boxwallet.Coins.ReddCoin.Server do
       block_height: 0,
       blockchain_is_synced: false,
       balance: 0.0,
+      unconfirmed_balance: 0.0,
+      immature_balance: 0.0,
       wallet_encryption_status: :wes_unknown,
       coin_files_exist: coin_files_exist,
       downloading: false,
@@ -270,7 +272,9 @@ defmodule Boxwallet.Coins.ReddCoin.Server do
       state
       | daemon_status: :running,
         wallet_encryption_status: wallet_encryption_status,
-        balance: response.result.balance
+        balance: response.result.balance,
+        unconfirmed_balance: response.result.unconfirmed_balance || 0.0,
+        immature_balance: response.result.immature_balance || 0.0
     }
 
     broadcast(state)
@@ -466,6 +470,8 @@ defmodule Boxwallet.Coins.ReddCoin.Server do
       connections: state.connections,
       block_height: state.block_height,
       balance: state.balance,
+      unconfirmed_balance: state.unconfirmed_balance,
+      immature_balance: state.immature_balance,
       blockchain_is_synced: state.blockchain_is_synced,
       wallet_encryption_status: state.wallet_encryption_status,
       downloading: state.downloading,

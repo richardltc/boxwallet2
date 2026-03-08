@@ -4,18 +4,30 @@ defmodule BoxwalletWeb.WalletBalanceDisplay do
   import BoxwalletWeb.CoreComponents
 
   attr :balance, :float, required: true
+  attr :unconfirmed_balance, :float, default: 0.0
+  attr :immature_balance, :float, default: 0.0
   attr :hide_balance, :boolean, required: true
   attr :color, :string, default: "text-gray-500"
 
   def balance_display(assigns) do
+    unconfirmed = assigns.unconfirmed_balance || 0.0
+    immature = assigns.immature_balance || 0.0
+    has_unconfirmed = unconfirmed > 0 or immature > 0
+    display_balance = assigns.balance + unconfirmed + immature
+
+    assigns =
+      assigns
+      |> Phoenix.Component.assign(:has_unconfirmed, has_unconfirmed)
+      |> Phoenix.Component.assign(:display_balance, display_balance)
+
     ~H"""
     <div class="relative flex items-baseline gap-1">
       <span class={["text-lg font-normal", @color]}>
-        Balance:
+        {if @has_unconfirmed, do: "Unconfirmed Balance:", else: "Balance:"}
       </span>
 
       <small class="badge text-3xl font-mono border-0">
-        {if @hide_balance, do: "●●●●●●", else: Number.Delimit.number_to_delimited(@balance, precision: 2)}
+        {if @hide_balance, do: "●●●●●●", else: Number.Delimit.number_to_delimited(@display_balance, precision: 2)}
       </small>
 
       <button
