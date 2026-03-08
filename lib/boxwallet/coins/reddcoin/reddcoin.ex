@@ -591,7 +591,7 @@ defmodule Boxwallet.Coins.ReddCoin do
         params: []
       })
 
-    url = "http://127.0.0.1:#{auth.rpc_port}"
+    url = "http://127.0.0.1:#{auth.rpc_port}/wallet/BoxWallet"
 
     headers = [
       {"Content-Type", "text/plain"},
@@ -623,7 +623,7 @@ defmodule Boxwallet.Coins.ReddCoin do
         params: []
       })
 
-    url = "http://127.0.0.1:#{auth.rpc_port}"
+    url = "http://127.0.0.1:#{auth.rpc_port}/wallet/BoxWallet"
 
     headers = [
       {"Content-Type", "text/plain"},
@@ -819,6 +819,8 @@ defmodule Boxwallet.Coins.ReddCoin do
       {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
     ]
 
+    url = url <> "/wallet/BoxWallet"
+
     Logger.info("Attempting to Encrypt wallet")
 
     case HTTPoison.post(url, body, headers) do
@@ -858,6 +860,8 @@ defmodule Boxwallet.Coins.ReddCoin do
       {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
     ]
 
+    url = url <> "/wallet/BoxWallet"
+
     Logger.info("Attempting to Unlock wallet")
 
     case HTTPoison.post(url, body, headers) do
@@ -890,7 +894,7 @@ defmodule Boxwallet.Coins.ReddCoin do
         params: ["#{password}", 9_999_999, true]
       })
 
-    url = "http://127.0.0.1:#{auth.rpc_port}"
+    url = "http://127.0.0.1:#{auth.rpc_port}/wallet/BoxWallet"
 
     headers = [
       {"Content-Type", "text/plain"},
