@@ -126,32 +126,50 @@ defmodule BoxwalletWeb.ReddCoinLive do
   end
 
   def handle_event("lock_wallet", _params, socket) do
-    {:ok, _coin_auth} = socket.assigns.coin_auth
+    {:ok, coin_auth} = socket.assigns.coin_auth
     # TODO: ReddCoin.lock_wallet(coin_auth)
     {:noreply, socket}
   end
 
-  def handle_event("prompt_submitted", %{"answer" => _password}, socket) do
+  def handle_event("prompt_submitted", %{"answer" => password}, socket) do
     Process.send_after(self(), :clear_flash, 4000)
 
-    {:ok, _coin_auth} = socket.assigns.coin_auth
+    {:ok, coin_auth} = socket.assigns.coin_auth
 
     socket =
       case socket.assigns.prompt_action do
         :encrypt ->
-          # TODO: ReddCoin.wallet_encrypt(coin_auth, password)
-          IO.puts("Encrypting wallet...")
-          socket
+          case ReddCoin.wallet_encrypt(coin_auth, password) do
+            :ok ->
+              socket
+              |> put_flash(:info, "Wallet encrypted successfully.")
+              |> assign(wallet_encryption_status: :wes_locked)
+
+            {:error, reason} ->
+              put_flash(socket, :error, "Encryption failed: #{reason}")
+          end
 
         :unlock ->
-          # TODO: ReddCoin.wallet_unlock(coin_auth, password)
-          IO.puts("Unlocking wallet...")
-          socket
+          case ReddCoin.wallet_unlock(coin_auth, password) do
+            :ok ->
+              socket
+              |> put_flash(:info, "Wallet unlocked successfully.")
+              |> assign(wallet_encryption_status: :wes_unlocked)
+
+            {:error, reason} ->
+              put_flash(socket, :error, "Unable to unlock wallet: #{reason}")
+          end
 
         :unlock_for_staking ->
-          # TODO: ReddCoin.wallet_unlock_fs(coin_auth, password)
-          IO.puts("Unlocking wallet for staking...")
-          socket
+          case ReddCoin.wallet_unlock_fs(coin_auth, password) do
+            :ok ->
+              socket
+              |> put_flash(:info, "Wallet unlocked for staking successfully.")
+              |> assign(wallet_encryption_status: :wes_unlocked_for_staking)
+
+            {:error, reason} ->
+              put_flash(socket, :error, "Unable to unlock wallet: #{reason}")
+          end
       end
 
     {:noreply, assign(socket, show_prompt: false, prompt_action: nil)}
