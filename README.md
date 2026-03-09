@@ -6,6 +6,9 @@ BoxWallet 2 is a browser based,  multi-coin wallet, that can get your coin-of-ch
 The Divi dashboard, nearly fully synced ready for staking:
 <img src="docs/images/divi.png" alt="Divi dashboard" width="600">
 
+The ReddCoin dashboard, displaying recent transactions:
+<img src="docs/images/redd_transactions.png" alt="ReddCoin dashboard" width="600">
+
 
 # Getting started with BoxWallet 2
 
