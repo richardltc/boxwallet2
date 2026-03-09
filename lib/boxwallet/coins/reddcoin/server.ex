@@ -9,6 +9,8 @@ defmodule Boxwallet.Coins.ReddCoin.Server do
   @staking_info_interval 10_000
   @block_height_interval 60_000
   @peer_info_interval 15_000
+  @transactions_interval_fast 3_000
+  @transactions_interval_slow 15_000
 
   # --- Public API ---
 
@@ -34,6 +36,10 @@ defmodule Boxwallet.Coins.ReddCoin.Server do
 
   def refresh do
     GenServer.cast(__MODULE__, :refresh)
+  end
+
+  def set_active_tab(tab) do
+    GenServer.cast(__MODULE__, {:set_active_tab, tab})
   end
 
   # --- GenServer Callbacks ---
@@ -63,7 +69,9 @@ defmodule Boxwallet.Coins.ReddCoin.Server do
       coin_files_exist: coin_files_exist,
       downloading: false,
       download_complete: false,
-      download_error: nil
+      download_error: nil,
+      transactions: [],
+      active_tab: :home
     }
 
     # Check if daemon is already running
@@ -141,6 +149,17 @@ defmodule Boxwallet.Coins.ReddCoin.Server do
       result = ReddCoin.download_coin()
       send(server, {:download_result, result})
     end)
+
+    {:noreply, state}
+  end
+
+  def handle_cast({:set_active_tab, tab}, state) do
+    state = %{state | active_tab: tab}
+
+    # Kick off an immediate poll when switching to transactions tab
+    if tab == :transactions and state.daemon_status == :running and state.wallet_loaded do
+      send(self(), :poll_transactions)
+    end
 
     {:noreply, state}
   end
@@ -234,6 +253,26 @@ defmodule Boxwallet.Coins.ReddCoin.Server do
   end
 
   def handle_info(:poll_staking_info, state), do: {:noreply, state}
+
+  def handle_info(:poll_transactions, %{daemon_status: status} = state)
+      when status in [:starting, :running] do
+    case state.coin_auth do
+      {:ok, auth} ->
+        server = self()
+
+        spawn(fn ->
+          result = ReddCoin.list_transactions(auth)
+          send(server, {:transactions_result, result})
+        end)
+
+        {:noreply, state}
+
+      _ ->
+        {:noreply, state}
+    end
+  end
+
+  def handle_info(:poll_transactions, state), do: {:noreply, state}
 
   def handle_info(:poll_block_height, %{daemon_status: status} = state)
       when status in [:starting, :running] do
@@ -350,6 +389,25 @@ defmodule Boxwallet.Coins.ReddCoin.Server do
     {:noreply, state}
   end
 
+  def handle_info({:transactions_result, {:ok, response}}, state) do
+    state = %{state | transactions: response.result}
+    broadcast(state)
+
+    interval =
+      if state.active_tab == :transactions,
+        do: @transactions_interval_fast,
+        else: @transactions_interval_slow
+
+    Process.send_after(self(), :poll_transactions, interval)
+    {:noreply, state}
+  end
+
+  def handle_info({:transactions_result, {:error, reason}}, state) do
+    Logger.warning("ReddCoin transactions poll failed: #{inspect(reason)}, retrying...")
+    Process.send_after(self(), :poll_transactions, @transactions_interval_slow)
+    {:noreply, state}
+  end
+
   # Wallet loading — spawned to avoid blocking
   def handle_info(:load_wallet, %{wallet_loaded: true} = state), do: {:noreply, state}
 
@@ -375,6 +433,7 @@ defmodule Boxwallet.Coins.ReddCoin.Server do
     state = %{state | wallet_loaded: true}
     Process.send_after(self(), :poll_wallet_info, 1_000)
     Process.send_after(self(), :poll_staking_info, 2_000)
+    Process.send_after(self(), :poll_transactions, 3_000)
     {:noreply, state}
   end
 
@@ -384,6 +443,7 @@ defmodule Boxwallet.Coins.ReddCoin.Server do
       state = %{state | wallet_loaded: true}
       Process.send_after(self(), :poll_wallet_info, 1_000)
       Process.send_after(self(), :poll_staking_info, 2_000)
+      Process.send_after(self(), :poll_transactions, 3_000)
       {:noreply, state}
     else
       Logger.warning("Failed to load wallet: #{inspect(message)}, attempting to create...")
@@ -410,6 +470,7 @@ defmodule Boxwallet.Coins.ReddCoin.Server do
     state = %{state | wallet_loaded: true}
     Process.send_after(self(), :poll_wallet_info, 1_000)
     Process.send_after(self(), :poll_staking_info, 2_000)
+    Process.send_after(self(), :poll_transactions, 3_000)
     {:noreply, state}
   end
 
@@ -432,7 +493,8 @@ defmodule Boxwallet.Coins.ReddCoin.Server do
         difficulty: 0,
         connections: 0,
         staking: false,
-        wallet_encryption_status: :wes_unknown
+        wallet_encryption_status: :wes_unknown,
+        transactions: []
     }
 
     broadcast(state)
@@ -516,7 +578,8 @@ defmodule Boxwallet.Coins.ReddCoin.Server do
       wallet_encryption_status: state.wallet_encryption_status,
       downloading: state.downloading,
       download_complete: state.download_complete,
-      download_error: state.download_error
+      download_error: state.download_error,
+      transactions: state.transactions
     }
 
     Phoenix.PubSub.broadcast(Boxwallet.PubSub, "reddcoin:status", {:reddcoin_state, payload})

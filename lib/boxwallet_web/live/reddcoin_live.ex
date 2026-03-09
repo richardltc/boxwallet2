@@ -59,6 +59,7 @@ defmodule BoxwalletWeb.ReddCoinLive do
         prompt_confirm: "",
         passwords_match: false,
         active_tab: :home,
+        transactions: server_state.transactions,
         show_receive_modal: false,
         receive_address: ""
       )
@@ -96,7 +97,9 @@ defmodule BoxwalletWeb.ReddCoinLive do
   end
 
   def handle_event("switch_tab", %{"tab" => tab}, socket) do
-    {:noreply, assign(socket, :active_tab, String.to_existing_atom(tab))}
+    tab = String.to_existing_atom(tab)
+    ReddCoin.Server.set_active_tab(tab)
+    {:noreply, assign(socket, :active_tab, tab)}
   end
 
   def handle_event("show_encrypt_prompt", _params, socket) do
@@ -583,7 +586,7 @@ defmodule BoxwalletWeb.ReddCoinLive do
               on_download="download_coin"
             />
           <% else %>
-            <.coin_transactions color="text-rddred" coin_daemon_started={@coin_daemon_started} />
+            <.coin_transactions color="text-rddred" coin_daemon_started={@coin_daemon_started} transactions={@transactions} />
           <% end %>
         </div>
       </div>
