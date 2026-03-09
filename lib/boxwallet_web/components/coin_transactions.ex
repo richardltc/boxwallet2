@@ -5,6 +5,7 @@ defmodule BoxwalletWeb.CoinTransactions do
   attr :color, :string, required: true
   attr :coin_daemon_started, :boolean, default: false
   attr :transactions, :list, default: []
+  attr :confirmed_after, :integer, default: 6
 
   def coin_transactions(assigns) do
     ~H"""
@@ -13,18 +14,17 @@ defmodule BoxwalletWeb.CoinTransactions do
 
       <div class="flex justify-center gap-4 mt-4">
         <button
-          class="btn btn-outline gap-2"
+          class="btn btn-outline btn-boxwalletgreen px-8 disabled:opacity-40"
           phx-click="receive_address"
           disabled={!@coin_daemon_started}
           title={if @coin_daemon_started, do: "Get a new receive address", else: "Daemon not running"}
         >
-          <.icon name="hero-arrow-down-tray" class="w-5 h-5" />
-          Receive
+          <span class="hero-arrow-down-tray h-6 w-6" /> Receive
         </button>
       </div>
 
       <div :if={@transactions != []} class="mt-4 divide-y divide-base-300">
-        <.transaction :for={tx <- @transactions} transaction={tx} />
+        <.transaction :for={tx <- Enum.reverse(@transactions)} transaction={tx} confirmed_after={@confirmed_after} />
       </div>
 
       <p :if={@transactions == []} class="text-gray-400 mt-4 text-center">
@@ -35,6 +35,7 @@ defmodule BoxwalletWeb.CoinTransactions do
   end
 
   attr :transaction, :map, required: true
+  attr :confirmed_after, :integer, required: true
 
   def transaction(assigns) do
     assigns = assign(assigns, :formatted_time, format_blocktime(assigns.transaction.blocktime))
@@ -62,10 +63,10 @@ defmodule BoxwalletWeb.CoinTransactions do
       </div>
 
       <div class="flex-shrink-0">
-        <%= if @transaction.confirmations < 1 do %>
-          <span class="badge badge-warning badge-sm">Confirming</span>
-        <% else %>
+        <%= if @transaction.confirmations >= @confirmed_after do %>
           <span class="badge badge-success badge-sm">Confirmed</span>
+        <% else %>
+          <span class="badge badge-warning badge-sm">Confirming ({@transaction.confirmations}/{@confirmed_after})</span>
         <% end %>
       </div>
     </div>
