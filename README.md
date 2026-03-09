@@ -4,7 +4,7 @@ BoxWallet 2 is a browser based,  multi-coin wallet, that can get your coin-of-ch
 <img src="docs/images/home.png" alt="Home" width="600">
 
 An example of the Divi dashboard:
-<img src="docs/images/divi.png" alt="Divi dashboard" width="600">
+<img src="docs/images/divi.gif" alt="Divi dashboard" width="600">
 
 
 # Getting started with BoxWallet 2
