@@ -3,19 +3,24 @@
 BoxWallet 2 is a browser based,  multi-coin wallet, that can get your coin-of-choice up and running fast and securely staking with just a few clicks.
 <img src="docs/images/home.png" alt="Home" width="600">
 
-An example of the Divi dashboard:
+The Divi dashboard, nearly fully synced ready for staking:
 <img src="docs/images/divi.png" alt="Divi dashboard" width="600">
 
 
 # Getting started with BoxWallet 2
 
-The easiest way of getting started and managing BoxWallet is via the BoxWallet Manager app found here:
+The easiest way to get started with BoxWallet is through the **BoxWallet Manager**.
+
+It’s a simple, lightweight CLI app that handles the entire installation and update process for you. You can find the latest version here:
 
 https://github.com/richardltc/bw_manager/releases/latest
 
-Just download and run and it will do the rest for you :)
+Just download and run—it’ll take care of the rest! :)
 
-However, if you prefer to do things manaully, you can do so by following the instructions below...
+However, if you prefer to do things manually, you can do so by following the instructions below...
+
+<details>
+<summary>Download Pre-built Releases</summary>
 
 ## Download Pre-built Releases
 
@@ -84,7 +89,10 @@ xattr -rd com.apple.quarantine boxwallet
 
 Once started, open your browser and navigate to `http://localhost:4000`
 
----
+</details>
+
+<details>
+<summary>Building from Source</summary>
 
 ## Building from Source
 
@@ -145,3 +153,5 @@ After this step is complete, you're now ready to run BoxWallet. Running the comm
 By default, you'll only be able to access on your local box. If you'd like to run the server on a separate box, such as a Raspberry Pi, please change the ip address in the file: `config\dev.exs` from `127, 0, 0, 1` to `0.0.0.0` and re-start the `mix phx.server`
 
 Congratulations, and thank you for using BoxWallet :)
+
+</details>
