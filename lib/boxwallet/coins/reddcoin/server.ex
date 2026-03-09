@@ -71,7 +71,8 @@ defmodule Boxwallet.Coins.ReddCoin.Server do
       download_complete: false,
       download_error: nil,
       transactions: [],
-      active_tab: :home
+      active_tab: :home,
+      transactions_timer: nil
     }
 
     # Check if daemon is already running
@@ -157,9 +158,12 @@ defmodule Boxwallet.Coins.ReddCoin.Server do
     state = %{state | active_tab: tab}
 
     # Kick off an immediate poll when switching to transactions tab
-    if tab == :transactions and state.daemon_status == :running and state.wallet_loaded do
-      send(self(), :poll_transactions)
-    end
+    state =
+      if tab == :transactions and state.daemon_status == :running and state.wallet_loaded do
+        schedule_transactions_poll(state, 0)
+      else
+        state
+      end
 
     {:noreply, state}
   end
@@ -398,13 +402,13 @@ defmodule Boxwallet.Coins.ReddCoin.Server do
         do: @transactions_interval_fast,
         else: @transactions_interval_slow
 
-    Process.send_after(self(), :poll_transactions, interval)
+    state = schedule_transactions_poll(state, interval)
     {:noreply, state}
   end
 
   def handle_info({:transactions_result, {:error, reason}}, state) do
     Logger.warning("ReddCoin transactions poll failed: #{inspect(reason)}, retrying...")
-    Process.send_after(self(), :poll_transactions, @transactions_interval_slow)
+    state = schedule_transactions_poll(state, @transactions_interval_slow)
     {:noreply, state}
   end
 
@@ -433,7 +437,7 @@ defmodule Boxwallet.Coins.ReddCoin.Server do
     state = %{state | wallet_loaded: true}
     Process.send_after(self(), :poll_wallet_info, 1_000)
     Process.send_after(self(), :poll_staking_info, 2_000)
-    Process.send_after(self(), :poll_transactions, 3_000)
+    state = schedule_transactions_poll(state, 3_000)
     {:noreply, state}
   end
 
@@ -443,7 +447,7 @@ defmodule Boxwallet.Coins.ReddCoin.Server do
       state = %{state | wallet_loaded: true}
       Process.send_after(self(), :poll_wallet_info, 1_000)
       Process.send_after(self(), :poll_staking_info, 2_000)
-      Process.send_after(self(), :poll_transactions, 3_000)
+      state = schedule_transactions_poll(state, 3_000)
       {:noreply, state}
     else
       Logger.warning("Failed to load wallet: #{inspect(message)}, attempting to create...")
@@ -470,7 +474,7 @@ defmodule Boxwallet.Coins.ReddCoin.Server do
     state = %{state | wallet_loaded: true}
     Process.send_after(self(), :poll_wallet_info, 1_000)
     Process.send_after(self(), :poll_staking_info, 2_000)
-    Process.send_after(self(), :poll_transactions, 3_000)
+    state = schedule_transactions_poll(state, 3_000)
     {:noreply, state}
   end
 
@@ -553,6 +557,12 @@ defmodule Boxwallet.Coins.ReddCoin.Server do
     # Wallet info + staking info polling starts after wallet is loaded
     Process.send_after(self(), :poll_block_height, 400)
     Process.send_after(self(), :poll_peer_info, 600)
+  end
+
+  defp schedule_transactions_poll(state, delay) do
+    if state.transactions_timer, do: Process.cancel_timer(state.transactions_timer)
+    timer = Process.send_after(self(), :poll_transactions, delay)
+    %{state | transactions_timer: timer}
   end
 
   defp broadcast(state) do
