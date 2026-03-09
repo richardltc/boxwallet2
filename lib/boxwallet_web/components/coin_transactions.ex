@@ -4,6 +4,7 @@ defmodule BoxwalletWeb.CoinTransactions do
 
   attr :color, :string, required: true
   attr :coin_daemon_started, :boolean, default: false
+  attr :transactions, :list, default: []
 
   def coin_transactions(assigns) do
     ~H"""
@@ -22,8 +23,76 @@ defmodule BoxwalletWeb.CoinTransactions do
         </button>
       </div>
 
-      <p class="text-gray-400 mt-4 text-center">Transaction history coming soon</p>
+      <div :if={@transactions != []} class="mt-4 divide-y divide-base-300">
+        <.transaction :for={tx <- @transactions} transaction={tx} />
+      </div>
+
+      <p :if={@transactions == []} class="text-gray-400 mt-4 text-center">
+        No transactions yet
+      </p>
     </div>
     """
+  end
+
+  attr :transaction, :map, required: true
+
+  def transaction(assigns) do
+    assigns = assign(assigns, :formatted_time, format_blocktime(assigns.transaction.blocktime))
+
+    ~H"""
+    <div class="flex items-center gap-3 px-4 py-3">
+      <div class="flex-shrink-0">
+        <%= if @transaction.category == "receive" do %>
+          <.icon name="hero-arrow-down" class="w-5 h-5 text-green-500" />
+        <% else %>
+          <.icon name="hero-arrow-up" class="w-5 h-5 text-red-500" />
+        <% end %>
+      </div>
+
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-medium truncate">
+          {format_amount(@transaction.amount)}
+        </p>
+        <p class="text-xs text-gray-400">
+          {@formatted_time}
+        </p>
+        <p class="text-xs text-gray-400 truncate">
+          Received on: <span class="font-mono">{@transaction.address}</span>
+        </p>
+      </div>
+
+      <div class="flex-shrink-0">
+        <%= if @transaction.confirmations < 1 do %>
+          <span class="badge badge-warning badge-sm">Confirming</span>
+        <% else %>
+          <span class="badge badge-success badge-sm">Confirmed</span>
+        <% end %>
+      </div>
+    </div>
+    """
+  end
+
+  defp format_amount(amount) when amount >= 0, do: "+#{:erlang.float_to_binary(amount, decimals: 2)}"
+  defp format_amount(amount), do: :erlang.float_to_binary(amount, decimals: 2)
+
+  defp format_blocktime(nil), do: "Pending"
+
+  defp format_blocktime(unix_time) do
+    {:ok, dt} = DateTime.from_unix(unix_time)
+    now = DateTime.utc_now()
+    today = DateTime.to_date(now)
+    tx_date = DateTime.to_date(dt)
+    time_str = Calendar.strftime(dt, "%H:%M")
+
+    cond do
+      tx_date == today ->
+        "Today at #{time_str}"
+
+      tx_date == Date.add(today, -1) ->
+        "Yesterday at #{time_str}"
+
+      true ->
+        Calendar.strftime(dt, "%d %b %Y at %H:%M")
+    end
   end
 end
