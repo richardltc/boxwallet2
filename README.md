@@ -7,7 +7,7 @@ The Divi dashboard, nearly fully synced ready for staking:
 <img src="docs/images/divi.png" alt="Divi dashboard" width="600">
 
 The ReddCoin dashboard, displaying recent transactions:
-<img src="docs/images/redd_transactions.png" alt="ReddCoin dashboard" width="600">
+<img src="docs/images/rdd_transactions.png" alt="ReddCoin dashboard" width="600">
 
 
 # Getting started with BoxWallet 2
