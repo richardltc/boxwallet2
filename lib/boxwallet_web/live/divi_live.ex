@@ -1,7 +1,5 @@
-# import BoxWallet.App
-import BoxwalletWeb.CoreWalletToolbar
-
 defmodule BoxwalletWeb.DiviLive do
+  import BoxwalletWeb.CoreWalletToolbar
   import BoxwalletWeb.CoreWalletBalance
   import BoxwalletWeb.PromptModal
   import BoxwalletWeb.WalletBalanceDisplay
@@ -15,328 +13,70 @@ defmodule BoxwalletWeb.DiviLive do
   alias Boxwallet.Coins.Divi
 
   def mount(_params, _session, socket) do
+    if connected?(socket) do
+      Phoenix.PubSub.subscribe(Boxwallet.PubSub, "divi:status")
+    end
+
+    # Seed initial state from GenServer
+    server_state = Divi.Server.get_state()
+
     socket =
       assign(socket,
-        blockchain_is_synced: false,
+        blockchain_is_synced: server_state.blockchain_is_synced,
         coin_name: "Divi",
         coin_title: "The foundation for a truly decentralized future.",
         coin_description:
-          "Our rapidly changing world requires flexible financial products. Through our innovative technology, we’re building the future of finance.",
+          "Our rapidly changing world requires flexible financial products. Through our innovative technology, we're building the future of finance.",
         show_install_alert: false,
-        coin_files_exist: Divi.files_exist(),
-        download_complete: false,
-        download_error: nil,
-        downloading: false,
-        coin_daemon_starting: false,
-        coin_daemon_started: false,
-        coin_daemon_stopping: false,
-        coin_daemon_stopped: true,
-        balance: 0.0,
-        unconfirmed_balance: 0.0,
-        immature_balance: 0.0,
-        block_height: 0,
-        blocks_synced: 0,
-        headers_synced: 0,
-        # peer_max_synced_blocks: 0,
-        # peer_max_synced_headers: 0,
-        connections: 0,
-        difficulty: 0,
+        coin_files_exist: server_state.coin_files_exist,
+        download_complete: server_state.download_complete,
+        download_error: server_state.download_error,
+        downloading: server_state.downloading,
+        coin_daemon_starting: server_state.daemon_status == :starting,
+        coin_daemon_started: server_state.daemon_status == :running,
+        coin_daemon_stopping: server_state.daemon_status == :stopping,
+        coin_daemon_stopped: server_state.daemon_status == :stopped,
+        balance: server_state.balance,
+        unconfirmed_balance: server_state.unconfirmed_balance,
+        immature_balance: server_state.immature_balance,
+        block_height: server_state.block_height,
+        blocks_synced: server_state.blocks_synced,
+        headers_synced: server_state.headers_synced,
+        blocks: server_state.blocks,
+        connections: server_state.connections,
+        difficulty: server_state.difficulty,
+        headers: server_state.headers,
+        version: server_state.version,
+        coin_auth: server_state.coin_auth,
+        staking_status: server_state.staking_status,
+        wallet_encryption_status: server_state.wallet_encryption_status,
+        hide_balance: BoxWallet.Settings.get(:hide_balance),
         show_prompt: false,
-        staking_status: "Staking Not Active",
-        version: "...",
-        coin_auth: Divi.get_auth_values(),
-        wallet_encryption_status: :wes_unknown,
         prompt_action: nil,
         prompt_answer: "",
         prompt_confirm: "",
         passwords_match: false,
-        hide_balance: BoxWallet.Settings.get(:hide_balance),
-        active_tab: :home
+        active_tab: :home,
+        transactions: server_state.transactions
       )
 
-    # 1. Always check connected? so it doesn't run twice (once for static, once for websocket)
-    if connected?(socket) do
-      Process.send_after(self(), :check_get_block_height, 400)
-
-      send(self(), :verify_daemon_status)
-    end
-
-    # {:ok, coin_auth} = socket.assigns.coin_auth
-
-    {:ok,
-     socket
-     |> assign(:coin_daemon_started, false)
-     |> assign(:coin_daemon_stopped, true)
-     |> assign(:checking_daemon, true)}
+    {:ok, socket}
   end
 
-  def handle_info(:verify_daemon_status, socket) do
-    # 2. This runs "in the background" immediately after mount
-    case socket.assigns.coin_auth do
-      {:ok, coin_auth} ->
-        case Divi.daemon_is_running(coin_auth) do
-          true ->
-            IO.puts("#{socket.assigns.coin_name} Verify daemon status - Daemon is alive!")
+  # --- PubSub handler ---
 
-            # 3. Trigger your specific info checks
-            Process.send_after(self(), :check_get_info_status, 100)
-            Process.send_after(self(), :check_get_blockchain_info_status, 200)
-            Process.send_after(self(), :check_get_wallet_info_status, 300)
-            Process.send_after(self(), :check_get_mn_sync_status, 400)
+  def handle_info({:divi_state, state_map}, socket) do
+    was_stopping = socket.assigns.coin_daemon_stopping
+    socket = assign(socket, state_map)
 
-            {:noreply,
-             socket
-             |> assign(:coin_daemon_started, true)
-             |> assign(:coin_daemon_stopped, false)
-             |> assign(:checking_daemon, false)}
-
-          false ->
-            IO.puts("#{socket.assigns.coin_name} Daemon not running")
-            {:noreply, assign(socket, :loading_daemon, false)}
-        end
-
-      {:error, :enoent} ->
-        IO.puts(
-          "#{socket.assigns.coin_name} Config file not found. User probably needs to install/download."
-        )
-
-        {:noreply, assign(socket, checking_daemon: false)}
-
-      {:error, reason} ->
-        IO.puts("❌ Error loading auth: #{inspect(reason)}")
-        {:noreply, assign(socket, checking_daemon: false)}
-    end
-  end
-
-  def handle_info(:check_get_block_height, socket) do
-    if socket.assigns.coin_daemon_started do
-    case Divi.get_block_height() do
-      {:ok, count} ->
-        Process.send_after(self(), :check_get_block_height, 60_000)
-        {:noreply, assign(socket, :block_height, count)}
-
-      {:error, reason} ->
-        Logger.warning("Unable to get block height: #{inspect(reason)}, retrying in 65s")
-        Process.send_after(self(), :check_get_block_height, 65_000)
-        {:noreply, socket}
-    end
-    else
-      Process.send_after(self(), :check_get_block_height, 60_000)
-      {:noreply, socket}
-    end
-  end
-
-  def handle_info(:check_get_blockchain_info_status, socket) do
-    # Only keep checking if we think we are supposed to be starting/running
-    if socket.assigns.coin_daemon_starting or socket.assigns.coin_daemon_started do
-      {:ok, coin_auth} = socket.assigns.coin_auth
-
-      case Divi.get_blockchain_info(coin_auth) do
-        {:ok, response} ->
-          socket =
-            socket
-            |> assign(:get_blockchain_info_response, response)
-            |> assign(
-              :blocks_synced,
-              response.result.blocks || 0
-            )
-            |> assign(
-              :blocks_synced_display,
-              Number.Delimit.number_to_delimited(response.result.blocks, precision: 0) || 0
-            )
-            |> assign(
-              :difficulty,
-              Number.Delimit.number_to_delimited(response.result.difficulty, precision: 0) || 0
-            )
-            |> assign(
-              :headers_synced,
-              response.result.headers || 0
-            )
-
-          # Process.send_after(self(), :check_get_blockchain_info_status, 2000)
-          {:noreply, socket}
-
-        {:error, _reason} ->
-          IO.puts("#{socket.assigns.coin_name} Daemon not ready yet... retrying in 2s")
-
-          Process.send_after(self(), :check_get_blockchain_info_status, 2000)
-
-          {:noreply, socket}
+    socket =
+      if state_map[:coin_daemon_stopped] && was_stopping do
+        Process.send_after(self(), :clear_flash, 4_000)
+        put_flash(socket, :info, "#{socket.assigns.coin_name} Daemon stopped successfully.")
+      else
+        socket
       end
-    else
-      # If the user clicked "Stop" while it was booting, we stop polling.
-      {:noreply, socket}
-    end
-  end
 
-  def handle_info(:check_get_info_status, socket) do
-    # Only keep checking if we think we are supposed to be starting/running
-    if socket.assigns.coin_daemon_starting or socket.assigns.coin_daemon_started do
-      {:ok, coin_auth} = socket.assigns.coin_auth
-
-      case Divi.get_info(coin_auth) do
-        {:ok, response} ->
-          IO.puts("#{socket.assigns.coin_name} Daemon is alive!")
-
-          socket =
-            socket
-            |> assign(:coin_daemon_starting, false)
-            |> assign(:coin_daemon_started, true)
-            |> assign(:getinfo_response, response)
-            |> assign(:connections, response.result.connections || 0)
-            |> assign(:staking_status, response.result.staking_status || "Staking Not Active")
-            |> assign(:version, response.result.version || "v...")
-
-          Process.send_after(self(), :check_get_info_status, 2000)
-          Process.send_after(self(), :check_get_blockchain_info_status, 2000)
-          Process.send_after(self(), :check_get_wallet_info_status, 2000)
-          Process.send_after(self(), :check_get_mn_sync_status, 2000)
-          # Process.send_after(self(), :check_get_peer_info_status, 2000)
-          {:noreply, socket}
-
-        {:error, _reason} ->
-          IO.puts("#{socket.assigns.coin_name} Daemon not ready yet... retrying in 2s")
-
-          # 4. Failed (daemon still booting).
-          # Schedule ANOTHER check for 2 seconds later.
-          Process.send_after(self(), :check_get_info_status, 2000)
-
-          {:noreply, socket}
-      end
-    else
-      # If the user clicked "Stop" while it was booting, we stop polling.
-      {:noreply, socket}
-    end
-  end
-
-  def handle_info(:check_get_mn_sync_status, socket) do
-    # Only keep checking if we think we are supposed to be starting/running
-    if socket.assigns.coin_daemon_starting or socket.assigns.coin_daemon_started do
-      {:ok, coin_auth} = socket.assigns.coin_auth
-
-      case Divi.get_mn_sync_status(coin_auth) do
-        {:ok, response} ->
-          blockchain_is_synced = response.result.is_blockchain_synced
-
-          socket =
-            socket
-            |> assign(:blockchain_is_synced, blockchain_is_synced)
-
-          {:noreply, socket}
-
-        {:error, _reason} ->
-          IO.puts("⏳ Unable to get_mn_sync_status... retrying in 2s")
-
-          Process.send_after(self(), :check_get_mn_sync_status, 2000)
-
-          {:noreply, socket}
-      end
-    else
-      # If the user clicked "Stop" while it was booting, we stop polling.
-      {:noreply, socket}
-    end
-  end
-
-  def handle_info(:check_get_peer_info_status, socket) do
-    if socket.assigns.coin_daemon_starting or socket.assigns.coin_daemon_started do
-      {:ok, coin_auth} = socket.assigns.coin_auth
-
-      case Divi.get_peer_info(coin_auth) do
-        {:ok, %{max_synced_headers: max_synced_headers, max_synced_blocks: max_synced_blocks}} ->
-          socket =
-            socket
-            |> assign(
-              :peer_max_synced_headers,
-              Number.Delimit.number_to_delimited(max_synced_headers, precision: 0) || 0
-            )
-            |> assign(:peer_max_synced_blocks, max_synced_blocks || 0)
-            |> assign(
-              :peer_max_synced_blocks_display,
-              Number.Delimit.number_to_delimited(max_synced_blocks, precision: 0) || "0"
-            )
-
-          {:noreply, socket}
-
-        {:error, _reason} ->
-          IO.puts("#{socket.assigns.coin_name} Peer info not ready yet... retrying in 2s")
-          Process.send_after(self(), :check_get_peer_info_status, 2000)
-          {:noreply, socket}
-      end
-    else
-      {:noreply, socket}
-    end
-  end
-
-  def handle_info(:check_get_wallet_info_status, socket) do
-    # Only keep checking if we think we are supposed to be starting/running
-    if socket.assigns.coin_daemon_starting or socket.assigns.coin_daemon_started do
-      {:ok, coin_auth} = socket.assigns.coin_auth
-
-      case Divi.get_wallet_info(coin_auth) do
-        {:ok, response} ->
-          wallet_encryption_status =
-            case response.result.encryption_status do
-              "unencrypted" ->
-                :wes_unencrypted
-
-              "unlocked" ->
-                :wes_unlocked
-
-              "locked" ->
-                :wes_locked
-
-              "unlocked-for-staking" ->
-                :wes_unlocked_for_staking
-            end
-
-          socket =
-            socket
-            |> assign(:wallet_encryption_status, wallet_encryption_status)
-            |> assign(:balance, response.result.balance)
-            |> assign(:unconfirmed_balance, response.result.unconfirmed_balance || 0.0)
-            |> assign(:immature_balance, response.result.immature_balance || 0.0)
-
-          {:noreply, socket}
-
-        {:error, _reason} ->
-          IO.puts("⏳ Unable to get_wallet_info... retrying in 2s")
-
-          Process.send_after(self(), :check_get_wallet_info_status, 2000)
-
-          {:noreply, socket}
-      end
-    else
-      # If the user clicked "Stop" while it was booting, we stop polling.
-      {:noreply, socket}
-    end
-  end
-
-  def handle_info({:daemon_stop_result, {:ok, _response}}, socket) do
-    Process.send_after(self(), :clear_flash, 4000)
-
-    {:noreply,
-     socket
-     |> put_flash(:info, "#{socket.assigns.coin_name} Daemon stopped successfully")
-     |> assign(:coin_daemon_starting, false)
-     |> assign(:coin_daemon_started, false)
-     |> assign(:coin_daemon_stopped, true)
-     |> assign(:connections, 0)
-     |> assign(:blocks_synced, 0)
-     |> assign(:headers_synced, 0)
-     |> assign(:difficulty, 0)
-     |> assign(:coin_daemon_stopping, true)
-     |> assign(:daemon_status, :stopped)}
-  end
-
-  def handle_info({:daemon_stop_result, {:error, reason}}, socket) do
-    {:noreply,
-     socket
-     |> put_flash(:error, "Failed to stop daemon: #{inspect(reason)}")
-     |> assign(:daemon_stopping, false)}
-  end
-
-  def handle_info(:hide_success_message, socket) do
-    socket = assign(socket, download_complete: false)
     {:noreply, socket}
   end
 
@@ -344,52 +84,18 @@ defmodule BoxwalletWeb.DiviLive do
     {:noreply, clear_flash(socket)}
   end
 
-  def handle_info(:perform_download, socket) do
-    IO.puts("🔄 Performing download")
+  # --- UI Event Handlers ---
 
-    case Divi.download_coin() do
-      {:ok} ->
-        IO.puts("#{socket.assigns.coin_name} Download completed successfully")
-
-        socket =
-          socket
-          |> assign(downloading: false)
-          |> assign(show_install_alert: false)
-          |> assign(download_complete: true)
-          |> assign(coin_files_exist: true)
-          |> assign(download_error: nil)
-
-        # Auto-hide success message after 5 seconds..
-        Process.send_after(self(), :hide_success_message, 5000)
-
-        {:noreply, socket}
-
-      {:error, reason} ->
-        IO.puts("#{socket.assigns.coin_name} Download failed")
-        IO.inspect(reason, label: "ERROR - Error reason")
-
-        socket =
-          socket
-          |> assign(downloading: false)
-          |> assign(show_install_alert: false)
-          |> assign(download_complete: false)
-          |> assign(download_error: "Download failed: #{inspect(reason)}")
-
-        {:noreply, socket}
-    end
+  def handle_event("toggle_hide_balance", _params, socket) do
+    new_value = !socket.assigns.hide_balance
+    BoxWallet.Settings.set(:hide_balance, new_value)
+    {:noreply, assign(socket, :hide_balance, new_value)}
   end
 
-  def handle_event("download_divi", _, socket) do
-    IO.puts("🚀 Starting download event")
-
-    # Set the loading state
-    socket = assign(socket, downloading: true, show_install_alert: true)
-
-    # Send a message to self to perform the download
-    # This keeps the UI responsive while downloading
-    send(self(), :perform_download)
-
-    {:noreply, socket}
+  def handle_event("switch_tab", %{"tab" => tab}, socket) do
+    tab = String.to_existing_atom(tab)
+    Divi.Server.set_active_tab(tab)
+    {:noreply, assign(socket, :active_tab, tab)}
   end
 
   def handle_event("show_encrypt_prompt", _params, socket) do
@@ -422,61 +128,9 @@ defmodule BoxwalletWeb.DiviLive do
   end
 
   def handle_event("lock_wallet", _params, socket) do
-    {:ok, coin_auth} = socket.assigns.coin_auth
+    {:ok, _coin_auth} = socket.assigns.coin_auth
     # TODO: Divi.lock_wallet(coin_auth)
     {:noreply, socket}
-  end
-
-  def handle_event("start_coin_daemon", _, socket) do
-    IO.puts("Attempting to start #{socket.assigns.coin_name} Daemon...")
-    # {:ok, coin_auth} = socket.assigns.coin_auth
-
-    socket =
-      case Divi.start_daemon() do
-        {:ok} ->
-          IO.puts("#{socket.assigns.coin_name} Starting...")
-          # assign(socket, coin_daemon_started: true, coin_daemon_stopped: false)
-          socket =
-            socket
-            |> assign(:coin_daemon_starting, true)
-            |> assign(:coin_daemon_started, false)
-            |> assign(:coin_daemon_stopped, false)
-
-          IO.puts("Calling getinfo...")
-          # Send a message to 'self' to check status in 2000ms
-          Process.send_after(self(), :check_get_info_status, 2000)
-
-          {:noreply, socket}
-
-        {:error, reason} ->
-          Logger.error("Failed to start #{reason}")
-
-          socket =
-            socket
-            |> put_flash(:error, "Could not start daemon: #{inspect(reason)}")
-            |> assign(:coin_daemon_started, false)
-
-          {:noreply, socket}
-      end
-  end
-
-  def handle_event("stop_coin_daemon", _, socket) do
-    {:ok, coin_auth} = socket.assigns.coin_auth
-
-    IO.puts("Attempting to stop #{socket.assigns.coin_name} Daemon...")
-
-    parent = self()
-
-    spawn(fn ->
-      result = Divi.stop_daemon(coin_auth)
-      send(parent, {:daemon_stop_result, result})
-    end)
-
-    {:noreply,
-     socket
-     |> put_flash(:info, "Stopping daemon...")
-     |> assign(:coin_daemon_stopping, true)
-     |> assign(wallet_encryption_status: :wes_unknown)}
   end
 
   def handle_event("prompt_submitted", %{"answer" => password}, socket) do
@@ -498,14 +152,17 @@ defmodule BoxwalletWeb.DiviLive do
           end
 
         :unlock ->
-          # TODO: Divi.unlock_wallet(coin_auth, password)
-          IO.puts("Unlocking wallet...")
-          socket
+          case Divi.wallet_unlock(coin_auth, password) do
+            :ok ->
+              socket
+              |> put_flash(:info, "Wallet unlocked successfully.")
+              |> assign(wallet_encryption_status: :wes_unlocked)
+
+            {:error, reason} ->
+              put_flash(socket, :error, "Unable to unlock wallet: #{reason}")
+          end
 
         :unlock_for_staking ->
-          # TODO: Divi.unlock_wallet_for_staking(coin_auth, password)
-          IO.puts("Unlocking wallet for staking...")
-
           case Divi.wallet_unlock_fs(coin_auth, password) do
             :ok ->
               socket
@@ -520,16 +177,6 @@ defmodule BoxwalletWeb.DiviLive do
     {:noreply, assign(socket, show_prompt: false, prompt_action: nil)}
   end
 
-  def handle_event("toggle_hide_balance", _params, socket) do
-    new_value = !socket.assigns.hide_balance
-    BoxWallet.Settings.set(:hide_balance, new_value)
-    {:noreply, assign(socket, :hide_balance, new_value)}
-  end
-
-  def handle_event("switch_tab", %{"tab" => tab}, socket) do
-    {:noreply, assign(socket, :active_tab, String.to_existing_atom(tab))}
-  end
-
   def handle_event("prompt_cancelled", _params, socket) do
     {:noreply,
      assign(socket,
@@ -541,12 +188,35 @@ defmodule BoxwalletWeb.DiviLive do
      )}
   end
 
+  def handle_event("download_coin", _, socket) do
+    Divi.Server.download_coin()
+    {:noreply, assign(socket, downloading: true, show_install_alert: true)}
+  end
+
+  def handle_event("start_coin_daemon", _, socket) do
+    IO.puts("Attempting to start #{socket.assigns.coin_name} Daemon...")
+    Divi.Server.start_daemon()
+    {:noreply, assign(socket, coin_daemon_starting: true, coin_daemon_stopped: false)}
+  end
+
+  def handle_event("stop_coin_daemon", _, socket) do
+    IO.puts("Attempting to stop #{socket.assigns.coin_name} Daemon...")
+    Divi.Server.stop_daemon()
+
+    Process.send_after(self(), :clear_flash, 4_000)
+
+    {:noreply,
+     socket
+     |> put_flash(:info, "Stopping #{socket.assigns.coin_name} Daemon...")
+     |> assign(:coin_daemon_stopping, true)
+     |> assign(wallet_encryption_status: :wes_unknown)}
+  end
+
   defp get_icon_state(name, assigns) do
     case name do
       :files ->
         %{
           name: "hero-arrow-down-tray",
-          # "Core files",
           hint:
             if(assigns.coin_files_exist,
               do: "Core files exist",
@@ -578,7 +248,6 @@ defmodule BoxwalletWeb.DiviLive do
       :connections ->
         connections = assigns.connections
 
-        # Determine the hint text based on the connection count.
         hint =
           case connections do
             0 ->
@@ -591,17 +260,10 @@ defmodule BoxwalletWeb.DiviLive do
             _ when connections > 0 ->
               "#{connections} connections"
 
-            # Fallback for unexpected values like -1, etc.
             _ ->
               "Connecting..."
-
-              # 0 -> "Waiting for connections..."
-              # _ when connections > 0 -> "#{connections} connections"
-              # # Fallback for unexpected values like -1, etc.
-              # _ -> "Connecting..."
           end
 
-        # state = if connections > 0, do: :enabled, else: :disabled
         state =
           case connections do
             0 ->
@@ -640,7 +302,6 @@ defmodule BoxwalletWeb.DiviLive do
             _ when connections > 0 ->
               "Syncing..."
 
-            # Fallback for unexpected values like -1, etc.
             _ ->
               "Idle."
           end
@@ -653,7 +314,6 @@ defmodule BoxwalletWeb.DiviLive do
             assigns.coin_daemon_started ->
               if connections > 0 and !assigns.blockchain_is_synced, do: :rotating, else: :enabled
 
-            # assigns.coin_daemon_started -> if connections > 0, do: :rotating
             assigns.coin_daemon_stopped ->
               :disabled
 
@@ -720,13 +380,14 @@ defmodule BoxwalletWeb.DiviLive do
         }
 
       :staking ->
-        hint =          cond do
-          assigns.staking_status == "Staking Not Active" ->
-            "Staking not active"
+        hint =
+          cond do
+            assigns.staking_status == "Staking Not Active" ->
+              "Staking not active"
 
-          assigns.staking_status == "Staking Active" ->
-            "Staking Active :)"
-        end
+            assigns.staking_status == "Staking Active" ->
+              "Staking Active :)"
+          end
 
         state =
           cond do
@@ -738,8 +399,6 @@ defmodule BoxwalletWeb.DiviLive do
           end
 
         %{name: "hero-bolt", hint: hint, color: "text-divired", state: state}
-
-        # ... add other icons here
     end
   end
 
@@ -874,7 +533,7 @@ defmodule BoxwalletWeb.DiviLive do
             </div>
           </div>
 
-    <%= if @active_tab == :home do %>
+          <%= if @active_tab == :home do %>
             <.coin_home_section
               coin_name={@coin_name}
               coin_description={@coin_description}
@@ -889,10 +548,10 @@ defmodule BoxwalletWeb.DiviLive do
               coin_daemon_started={@coin_daemon_started}
               coin_daemon_stopped={@coin_daemon_stopped}
               wallet_encryption_status={@wallet_encryption_status}
-              on_download="download_divi"
+              on_download="download_coin"
             />
           <% else %>
-            <.coin_transactions color="text-divired" />
+            <.coin_transactions color="text-divired" coin_daemon_started={@coin_daemon_started} transactions={@transactions} />
           <% end %>
         </div>
       </div>

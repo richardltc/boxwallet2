@@ -19,6 +19,7 @@ defmodule Boxwallet.Application do
       {DNSCluster, query: Application.get_env(:boxwallet, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Boxwallet.PubSub},
       Boxwallet.Coins.ReddCoin.Server,
+      Boxwallet.Coins.Divi.Server,
       # Start to serve requests, typically the last entry
       BoxwalletWeb.Endpoint
     ]
