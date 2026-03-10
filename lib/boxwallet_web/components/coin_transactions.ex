@@ -24,7 +24,7 @@ defmodule BoxwalletWeb.CoinTransactions do
       </div>
 
       <div :if={@transactions != []} class="mt-4 divide-y divide-base-300">
-        <.transaction :for={tx <- Enum.reverse(@transactions)} transaction={tx} confirmed_after={@confirmed_after} />
+        <.transaction :for={tx <- Enum.reverse(@transactions)} transaction={tx} confirmed_after={@confirmed_after} color={@color} />
       </div>
 
       <p :if={@transactions == []} class="text-gray-400 mt-4 text-center">
@@ -36,6 +36,7 @@ defmodule BoxwalletWeb.CoinTransactions do
 
   attr :transaction, :map, required: true
   attr :confirmed_after, :integer, required: true
+  attr :color, :string, required: true
 
   def transaction(assigns) do
     assigns = assign(assigns, :formatted_time, format_blocktime(assigns.transaction.blocktime))
@@ -43,10 +44,13 @@ defmodule BoxwalletWeb.CoinTransactions do
     ~H"""
     <div class="flex items-center gap-3 px-4 py-3">
       <div class="flex-shrink-0">
-        <%= if @transaction.category == "receive" do %>
-          <.icon name="hero-arrow-down" class="w-5 h-5 text-green-500" />
-        <% else %>
-          <.icon name="hero-arrow-up" class="w-5 h-5 text-red-500" />
+        <%= cond do %>
+          <% @transaction.category == "stake_reward" -> %>
+            <.icon name="hero-bolt" class={"w-5 h-5 " <> @color} />
+          <% @transaction.category == "receive" -> %>
+            <.icon name="hero-arrow-down" class={"w-5 h-5 " <> @color} />
+          <% true -> %>
+            <.icon name="hero-arrow-up" class="w-5 h-5 text-red-500" />
         <% end %>
       </div>
 
