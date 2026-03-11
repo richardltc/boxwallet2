@@ -241,7 +241,7 @@ defmodule Boxwallet.Coins.PrivateDivi do
     end
   end
 
-  defp get_conf_file_location() do
+  def get_conf_file_location() do
     Path.join(get_coin_home_dir(), @conf_file)
   end
 

@@ -7,6 +7,7 @@ defmodule BoxwalletWeb.DiviLive do
   import BoxwalletWeb.CoinSidebar
   import BoxwalletWeb.CoinHomeSection
   import BoxwalletWeb.CoinTransactions
+  import BoxwalletWeb.CoinSettings
   use Number
   use BoxwalletWeb, :live_view
   require Logger
@@ -57,7 +58,8 @@ defmodule BoxwalletWeb.DiviLive do
         prompt_confirm: "",
         passwords_match: false,
         active_tab: :home,
-        transactions: server_state.transactions
+        transactions: server_state.transactions,
+        testnet_enabled: testnet_enabled?(Divi)
       )
 
     {:ok, socket}
@@ -210,6 +212,40 @@ defmodule BoxwalletWeb.DiviLive do
      |> put_flash(:info, "Stopping #{socket.assigns.coin_name} Daemon...")
      |> assign(:coin_daemon_stopping, true)
      |> assign(wallet_encryption_status: :wes_unknown)}
+  end
+
+  def handle_event("confirm_toggle_testnet", _params, socket) do
+    new_value = !socket.assigns.testnet_enabled
+    conf_file = Divi.get_conf_file_location()
+
+    if new_value do
+      BoxWallet.Coins.ConfigManager.enable_testnet(conf_file)
+    else
+      BoxWallet.Coins.ConfigManager.disable_testnet(conf_file)
+    end
+
+    Process.send_after(self(), :clear_flash, 4_000)
+
+    if socket.assigns.coin_daemon_started do
+      Divi.Server.stop_daemon()
+
+      {:noreply,
+       socket
+       |> assign(testnet_enabled: new_value, coin_daemon_stopping: true)
+       |> put_flash(:info, "Testnet #{if new_value, do: "enabled", else: "disabled"}. Stopping #{socket.assigns.coin_name} Daemon...")}
+    else
+      {:noreply,
+       socket
+       |> assign(testnet_enabled: new_value)
+       |> put_flash(:info, "Testnet #{if new_value, do: "enabled", else: "disabled"}. Restart the daemon for changes to take effect.")}
+    end
+  end
+
+  defp testnet_enabled?(coin_module) do
+    case BoxWallet.Coins.ConfigManager.get_label_value(coin_module.get_conf_file_location(), "testnet") do
+      {:ok, "1"} -> true
+      _ -> false
+    end
   end
 
   defp get_icon_state(name, assigns) do
@@ -533,25 +569,32 @@ defmodule BoxwalletWeb.DiviLive do
             </div>
           </div>
 
-          <%= if @active_tab == :home do %>
-            <.coin_home_section
-              coin_name={@coin_name}
-              coin_description={@coin_description}
-              headers_synced={@headers_synced}
-              blocks_synced={@blocks_synced}
-              block_height={@block_height}
-              color="text-divired"
-              coin_files_exist={@coin_files_exist}
-              downloading={@downloading}
-              download_complete={@download_complete}
-              download_error={@download_error}
-              coin_daemon_started={@coin_daemon_started}
-              coin_daemon_stopped={@coin_daemon_stopped}
-              wallet_encryption_status={@wallet_encryption_status}
-              on_download="download_coin"
-            />
-          <% else %>
-            <.coin_transactions color="text-divired" coin_daemon_started={@coin_daemon_started} transactions={@transactions} />
+          <%= case @active_tab do %>
+            <% :home -> %>
+              <.coin_home_section
+                coin_name={@coin_name}
+                coin_description={@coin_description}
+                headers_synced={@headers_synced}
+                blocks_synced={@blocks_synced}
+                block_height={@block_height}
+                color="text-divired"
+                coin_files_exist={@coin_files_exist}
+                downloading={@downloading}
+                download_complete={@download_complete}
+                download_error={@download_error}
+                coin_daemon_started={@coin_daemon_started}
+                coin_daemon_stopped={@coin_daemon_stopped}
+                wallet_encryption_status={@wallet_encryption_status}
+                on_download="download_coin"
+              />
+            <% :settings -> %>
+              <.coin_settings
+                coin_name={@coin_name}
+                color="text-divired"
+                testnet_enabled={@testnet_enabled}
+              />
+            <% _ -> %>
+              <.coin_transactions color="text-divired" coin_daemon_started={@coin_daemon_started} transactions={@transactions} />
           <% end %>
         </div>
       </div>

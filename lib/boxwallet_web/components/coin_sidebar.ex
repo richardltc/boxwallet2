@@ -26,6 +26,15 @@ defmodule BoxwalletWeb.CoinSidebar do
         <.icon name="hero-banknotes" class={"w-6 h-6 " <> @color} />
         <span class="text-[10px] font-semibold uppercase tracking-wide">Trans</span>
       </button>
+      <button
+        class={"btn btn-ghost btn-square flex flex-col items-center h-auto py-2 gap-0.5" <> if(@active_tab == :settings, do: "", else: " opacity-40")}
+        title="Settings"
+        phx-click="switch_tab"
+        phx-value-tab="settings"
+      >
+        <.icon name="hero-cog-6-tooth" class={"w-6 h-6 " <> @color} />
+        <span class="text-[10px] font-semibold uppercase tracking-wide">Settings</span>
+      </button>
     </aside>
     """
   end
