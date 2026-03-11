@@ -127,7 +127,7 @@ defmodule Boxwallet.Coins.ReddCoin do
       {:ok, %{body: response_body}} ->
         IO.inspect(response_body)
 
-        if !String.contains?(response_body, ~c"\"error\":null\"") do
+        if !String.contains?(response_body, "\"error\":null") do
           {:error, :wrong_response}
         else
           :ok
@@ -309,7 +309,7 @@ defmodule Boxwallet.Coins.ReddCoin do
     end
   end
 
-  defp get_conf_file_location() do
+  def get_conf_file_location() do
     Path.join(get_coin_home_dir(), @conf_file)
   end
 
