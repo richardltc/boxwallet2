@@ -3,7 +3,7 @@
 BoxWallet 2 is a browser based,  multi-coin wallet, that can get your coin-of-choice up and running fast and securely staking with just a few clicks.
 <img src="docs/images/home.png" alt="Home" width="600">
 
-Starting the Divi wallet...
+Starting the Divi wallet.
 <img src="docs/images/divi_start.gif" alt="Divi start" width="600">
 
 
