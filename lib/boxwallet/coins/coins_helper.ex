@@ -1,6 +1,81 @@
 defmodule BoxWallet.Coins.CoinHelper do
   require Logger
 
+  @doc """
+  Returns the total and free disk space in bytes for the primary disk.
+  Checks C:\\ on Windows or /home (falling back to /) on Linux/macOS.
+  Returns {:ok, %{total: mb, free: mb}} or {:error, reason}.
+  """
+  def disk_free do
+    case :os.type() do
+      {:unix, _} ->
+        path = if File.exists?("/home"), do: "/home", else: "/"
+
+        case System.cmd("df", ["-Pk", path]) do
+          {output, 0} -> parse_df_output(output)
+          {_, code} -> {:error, "df failed with exit code #{code}"}
+        end
+
+      {:win32, :nt} ->
+        case System.cmd("wmic", [
+               "logicaldisk",
+               "where",
+               "caption=\"C:\"",
+               "get",
+               "size,freespace",
+               "/format:list"
+             ]) do
+          {output, 0} -> parse_wmic_output(output)
+          {_, code} -> {:error, "wmic failed with exit code #{code}"}
+        end
+
+      _ ->
+        {:error, "Unsupported operating system"}
+    end
+  end
+
+  defp parse_df_output(output) do
+    case String.split(output, "\n", trim: true) do
+      [_header | [data | _]] ->
+        case String.split(data, ~r/\s+/, trim: true) do
+          [_fs, total_kb, _used, free_kb | _] ->
+            {:ok, %{total: div(String.to_integer(total_kb), 1024), free: div(String.to_integer(free_kb), 1024)}}
+
+          _ ->
+            {:error, "Unexpected df output columns"}
+        end
+
+      _ ->
+        {:error, "Unexpected df output format"}
+    end
+  end
+
+  defp parse_wmic_output(output) do
+    lines = String.split(output, "\n", trim: true)
+
+    free =
+      Enum.find_value(lines, fn line ->
+        case String.split(String.trim(line), "=") do
+          ["FreeSpace", val] -> String.to_integer(String.trim(val))
+          _ -> nil
+        end
+      end)
+
+    total =
+      Enum.find_value(lines, fn line ->
+        case String.split(String.trim(line), "=") do
+          ["Size", val] -> String.to_integer(String.trim(val))
+          _ -> nil
+        end
+      end)
+
+    if free && total do
+      {:ok, %{total: div(total, 1024 * 1024), free: div(free, 1024 * 1024)}}
+    else
+      {:error, "Failed to parse wmic output"}
+    end
+  end
+
   def create_conf_file_if_not_exists(filepath) do
     if File.exists?(filepath) do
       {:ok, "File already exists: #{filepath}"}
