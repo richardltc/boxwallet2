@@ -696,7 +696,14 @@ defmodule Boxwallet.Coins.ReddCoin do
 
     BoxWallet.Coins.ConfigManager.add_label_if_missing(conf_file, "rpcuser", @rpc_user)
     BoxWallet.Coins.ConfigManager.add_label_if_missing(conf_file, "rpcpassword", password)
-    BoxWallet.Coins.ConfigManager.add_label_if_missing(conf_file, "daemon", "1")
+
+    # On Windows, reddcoind doesn't support daemon=1, so we skip it
+    # and use a Port-based approach in start_daemon/0 instead
+    case :os.type() do
+      {:win32, _} -> :ok
+      _ -> BoxWallet.Coins.ConfigManager.add_label_if_missing(conf_file, "daemon", "1")
+    end
+
     BoxWallet.Coins.ConfigManager.add_label_if_missing(conf_file, "server", "1")
     BoxWallet.Coins.ConfigManager.add_label_if_missing(conf_file, "rpcport", @rpc_port)
   end
@@ -757,15 +764,45 @@ defmodule Boxwallet.Coins.ReddCoin do
     full_path_daemon =
       Path.join([BoxWallet.App.home_folder(), daemon_filename])
 
-    # Start the daemon and immediately detach
-    spawn(fn ->
-      System.cmd(full_path_daemon, [])
-    end)
+    case :os.type() do
+      {:win32, _} ->
+        # On Windows, daemon=1 is not supported, so we run via a Port
+        # which avoids unbounded memory growth from buffered stdout
+        spawn(fn ->
+          port =
+            Port.open(
+              {:spawn_executable, full_path_daemon},
+              [:binary, :stderr_to_stdout, :exit_status]
+            )
+
+          daemon_port_loop(port)
+        end)
+
+      _ ->
+        # On Linux/Mac, daemon=1 in conf causes the process to fork to background,
+        # so System.cmd returns quickly
+        spawn(fn ->
+          System.cmd(full_path_daemon, [])
+        end)
+    end
 
     # Give it a moment to start, then check if it's running
     Process.sleep(100)
-    # Check via other means (e.g., port check, pid file, etc.)
     {:ok}
+  end
+
+  defp daemon_port_loop(port) do
+    receive do
+      {^port, {:data, data}} ->
+        Logger.info("reddcoind: #{String.trim(data)}")
+        daemon_port_loop(port)
+
+      {^port, {:exit_status, 0}} ->
+        Logger.info("reddcoind exited normally")
+
+      {^port, {:exit_status, code}} ->
+        Logger.error("reddcoind exited with status #{code}")
+    end
   end
 
   def stop_daemon(auth) do
