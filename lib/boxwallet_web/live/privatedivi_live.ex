@@ -825,6 +825,11 @@ defmodule BoxwalletWeb.PrivateDiviLive do
                 coin_name={@coin_name}
                 color="text-red-400"
                 testnet_enabled={@testnet_enabled}
+                coin_files_exist={@coin_files_exist}
+                downloading={@downloading}
+                download_complete={@download_complete}
+                download_error={@download_error}
+                on_update="download_privatedivi"
               />
             <% _ -> %>
               <.coin_transactions color="text-red-400" />
