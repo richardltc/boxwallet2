@@ -627,6 +627,11 @@ defmodule BoxwalletWeb.ReddCoinLive do
                 coin_name={@coin_name}
                 color="text-rddred"
                 testnet_enabled={@testnet_enabled}
+                coin_files_exist={@coin_files_exist}
+                downloading={@downloading}
+                download_complete={@download_complete}
+                download_error={@download_error}
+                on_update="download_coin"
               />
             <% _ -> %>
               <.coin_transactions color="text-rddred" coin_daemon_started={@coin_daemon_started} transactions={@transactions} />

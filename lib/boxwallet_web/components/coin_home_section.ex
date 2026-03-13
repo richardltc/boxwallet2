@@ -35,18 +35,10 @@ defmodule BoxwalletWeb.CoinHomeSection do
     <!-- Action buttons -->
     <div class="card-actions justify-center mt-8">
       <button
-        class={
-          if @coin_files_exist,
-            do: "btn btn-outline btn-boxwalletgreen px-8 disabled:opacity-40",
-            else: "btn btn-boxwalletgreen px-8 disabled:opacity-40"
-        }
+        class="btn btn-boxwalletgreen px-8 disabled:opacity-40"
         onclick="install_modal.showModal()"
-        disabled={@downloading}
-        title={
-          if @coin_files_exist,
-            do: "Update existing #{@coin_name} core files",
-            else: "Install #{@coin_name} core files"
-        }
+        disabled={@downloading or @coin_files_exist}
+        title={"Install #{@coin_name} core files"}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -62,7 +54,7 @@ defmodule BoxwalletWeb.CoinHomeSection do
             d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"
           />
         </svg>
-        {if @coin_files_exist, do: "Update", else: "Install"}
+        Install
       </button>
       <!-- DaisyUI Modal Dialog -->
       <dialog id="install_modal" class="modal">
