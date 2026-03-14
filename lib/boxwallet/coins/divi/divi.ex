@@ -1,8 +1,8 @@
 # lib/my_app/coins/divi.ex
 defmodule Boxwallet.Coins.Divi do
   require Logger
-  @behaviour BoxWallet.CoinDaemon
-  import BoxWallet.App
+  # @behaviour BoxWallet.CoinDaemon
+  # import BoxWallet.App
 
   @coin_name "DIVI"
   # @coin_name_abbrev "DIVI"
@@ -142,7 +142,6 @@ defmodule Boxwallet.Coins.Divi do
     # File.mkdir_p!(app_home_dir)
     IO.puts("#{BoxWallet.App.name()} is downloading to: #{app_home_dir}")
     IO.puts("System detected as: #{:erlang.system_info(:system_architecture)}")
-    sys_info = to_string(:erlang.system_info(:system_architecture))
 
     # The result will contain, :ok, the download_to and download_from
 
@@ -695,20 +694,6 @@ defmodule Boxwallet.Coins.Divi do
     File.rm_rf!(downloaded_file)
   end
 
-  # specify the variables that need to be passed in here maybe "from" and "to" or something?
-  defp unarchive_file(full_file_path, location) do
-    case BoxWallet.Coins.CoinHelper.unarchive(full_file_path, location) do
-      :ok ->
-        # IO.inspect(result, label: "result")
-        IO.puts("Download and extraction completed successfully")
-        {:ok}
-
-      {:error, reason} ->
-        IO.puts("Extraction failed: #{inspect(reason)}")
-        {:error, "Extraction failed: #{reason}"}
-    end
-  end
-
   # def install_daemon do
   #   try do
   #     File.mkdir_p!(@install_path)
@@ -909,20 +894,20 @@ defmodule Boxwallet.Coins.Divi do
     end
   end
 
-  def get_sync_info do
-    try do
-      headers = [
-        {"Authorization",
-         "Basic " <>
-           Base.encode64("#{@rpc_credentials[:username]}:#{@rpc_credentials[:password]}")}
-      ]
+  # def get_sync_info do
+  #   try do
+  #     headers = [
+  #       {"Authorization",
+  #        "Basic " <>
+  #          Base.encode64("#{@rpc_credentials[:username]}:#{@rpc_credentials[:password]}")}
+  #     ]
 
-      body = Jason.encode!(%{"jsonrpc" => "2.0", "method" => "getblockchaininfo", "id" => 1})
-      {:ok, response} = HTTPoison.post(@rpc_url, body, headers)
-      %{"result" => %{"blocks" => blocks, "headers" => headers}} = Jason.decode!(response.body)
-      %{blocks: blocks, headers: headers, progress: trunc(blocks / max(headers, 1) * 100)}
-    rescue
-      _ -> %{blocks: 0, headers: 0, progress: 0}
-    end
-  end
+  #     body = Jason.encode!(%{"jsonrpc" => "2.0", "method" => "getblockchaininfo", "id" => 1})
+  #     {:ok, response} = HTTPoison.post(@rpc_url, body, headers)
+  #     %{"result" => %{"blocks" => blocks, "headers" => headers}} = Jason.decode!(response.body)
+  #     %{blocks: blocks, headers: headers, progress: trunc(blocks / max(headers, 1) * 100)}
+  #   rescue
+  #     _ -> %{blocks: 0, headers: 0, progress: 0}
+  #   end
+  # end
 end
