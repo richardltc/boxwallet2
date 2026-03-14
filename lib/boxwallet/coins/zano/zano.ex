@@ -785,40 +785,22 @@ defmodule Boxwallet.Coins.Zano do
     {:ok}
   end
 
-  def stop_daemon(auth) do
-    body =
-      Jason.encode!(%{
-        jsonrpc: "1.0",
-        id: "curltext",
-        method: "stop",
-        params: []
-      })
+  def stop_daemon(_auth) do
+    Logger.info("Sending SIGINT to #{@coin_name} daemon...")
 
-    url = "http://127.0.0.1:#{auth.rpc_port}"
+    case :os.type() do
+      {:win32, _} ->
+        case System.cmd("taskkill", ["/IM", @daemon_file_win], stderr_to_stdout: true) do
+          {_output, 0} -> {:ok, "daemon stopped"}
+          {output, code} -> {:error, "taskkill failed (#{code}): #{output}"}
+        end
 
-    headers = [
-      {"Content-Type", "text/plain"},
-      {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
-    ]
-
-    Enum.reduce_while(1..@daemon_stop_attempts, {:error, :no_attempts}, fn attempt, _acc ->
-      Logger.info("Attempting to stop daemon (attempt #{attempt}/#{@daemon_stop_attempts})")
-
-      case HTTPoison.post(url, body, headers) do
-        {:ok, %{body: response_body}} ->
-          if String.contains?(response_body, "#{@coin_name} server stopping") do
-            Logger.info("Successfully stopped daemon on attempt #{attempt}")
-            {:halt, {:ok, response_body}}
-          else
-            Process.sleep(@daemon_rpc_sleep_interval)
-            {:cont, {:error, :wrong_response}}
-          end
-
-        {:error, %HTTPoison.Error{reason: reason}} ->
-          Process.sleep(@daemon_rpc_sleep_interval)
-          {:cont, {:error, reason}}
-      end
-    end)
+      _ ->
+        case System.cmd("pkill", ["-INT", @daemon_file_lin], stderr_to_stdout: true) do
+          {_output, 0} -> {:ok, "daemon stopped"}
+          {output, code} -> {:error, "pkill failed (#{code}): #{output}"}
+        end
+    end
   end
 
   def wallet_encrypt(auth, password) do
