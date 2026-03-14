@@ -770,7 +770,13 @@ defmodule Boxwallet.Coins.Zano do
 
     # Start the daemon and immediately detach
     spawn(fn ->
-      System.cmd(full_path_daemon, [])
+      case :os.type() do
+        {:win32, _} ->
+          System.cmd("cmd.exe", ["/C", "start", "/b", full_path_daemon])
+
+        _ ->
+          System.cmd(full_path_daemon, ["--no-console", "--no-predownload"])
+      end
     end)
 
     # Give it a moment to start, then check if it's running
@@ -800,7 +806,7 @@ defmodule Boxwallet.Coins.Zano do
 
       case HTTPoison.post(url, body, headers) do
         {:ok, %{body: response_body}} ->
-          if String.contains?(response_body, "DIVI server stopping") do
+          if String.contains?(response_body, "#{@coin_name} server stopping") do
             Logger.info("Successfully stopped daemon on attempt #{attempt}")
             {:halt, {:ok, response_body}}
           else
