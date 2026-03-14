@@ -1,8 +1,8 @@
 # lib/my_app/coins/divi.ex
 defmodule Boxwallet.Coins.Zano do
   require Logger
-  @behaviour BoxWallet.CoinDaemon
-  import BoxWallet.App
+  # @behaviour BoxWallet.CoinDaemon
+  # import BoxWallet.App
 
   @coin_name "Zano"
   # @coin_name_abbrev "Zano"
@@ -23,7 +23,7 @@ defmodule Boxwallet.Coins.Zano do
   # @download_file_bs "primer.zip"
 
   # <> "/"
-  @extracted_dir_linux "squashfs-root/usr/bin"
+  @extracted_dir_linux "squashfs-root"
   # <> "\\"
   # @extracted_dir_windows "divi-" <> @core_version
 
@@ -90,10 +90,10 @@ defmodule Boxwallet.Coins.Zano do
       end
 
     full_path_cli =
-      Path.join([BoxWallet.App.home_folder(), @extracted_dir_linux, "bin", cli_filename])
+      Path.join([BoxWallet.App.home_folder(), @extracted_dir_linux, "usr", "bin", cli_filename])
 
     full_path_daemon =
-      Path.join([BoxWallet.App.home_folder(), @extracted_dir_linux, "bin", daemon_filename])
+      Path.join([BoxWallet.App.home_folder(), @extracted_dir_linux, "usr", "bin", daemon_filename])
 
     dest_path_cli =
       Path.join([BoxWallet.App.home_folder(), cli_filename])
@@ -146,7 +146,7 @@ defmodule Boxwallet.Coins.Zano do
     # File.mkdir_p!(app_home_dir)
     IO.puts("#{BoxWallet.App.name()} is downloading to: #{app_home_dir}")
     IO.puts("System detected as: #{:erlang.system_info(:system_architecture)}")
-    sys_info = to_string(:erlang.system_info(:system_architecture))
+    # sys_info = to_string(:erlang.system_info(:system_architecture))
 
     # The result will contain, :ok, the download_to and download_from
 
@@ -173,6 +173,8 @@ defmodule Boxwallet.Coins.Zano do
         case unarchive_file(full_file_path, app_home_dir) do
           {:ok} ->
             Logger.info("Extraction completed successfully")
+            copy_extracted_files()
+            tidy_downloaded_files(full_file_path)
             populate_conf_file()
             {:ok}
 
@@ -930,20 +932,20 @@ defmodule Boxwallet.Coins.Zano do
     end
   end
 
-  def get_sync_info do
-    try do
-      headers = [
-        {"Authorization",
-         "Basic " <>
-           Base.encode64("#{@rpc_credentials[:username]}:#{@rpc_credentials[:password]}")}
-      ]
+  # def get_sync_info do
+  #   try do
+  #     headers = [
+  #       {"Authorization",
+  #        "Basic " <>
+  #          Base.encode64("#{@rpc_credentials[:username]}:#{@rpc_credentials[:password]}")}
+  #     ]
 
-      body = Jason.encode!(%{"jsonrpc" => "2.0", "method" => "getblockchaininfo", "id" => 1})
-      {:ok, response} = HTTPoison.post(@rpc_url, body, headers)
-      %{"result" => %{"blocks" => blocks, "headers" => headers}} = Jason.decode!(response.body)
-      %{blocks: blocks, headers: headers, progress: trunc(blocks / max(headers, 1) * 100)}
-    rescue
-      _ -> %{blocks: 0, headers: 0, progress: 0}
-    end
-  end
+  #     body = Jason.encode!(%{"jsonrpc" => "2.0", "method" => "getblockchaininfo", "id" => 1})
+  #     {:ok, response} = HTTPoison.post(@rpc_url, body, headers)
+  #     %{"result" => %{"blocks" => blocks, "headers" => headers}} = Jason.decode!(response.body)
+  #     %{blocks: blocks, headers: headers, progress: trunc(blocks / max(headers, 1) * 100)}
+  #   rescue
+  #     _ -> %{blocks: 0, headers: 0, progress: 0}
+  #   end
+  # end
 end
