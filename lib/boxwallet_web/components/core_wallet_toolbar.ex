@@ -70,11 +70,7 @@ defmodule BoxwalletWeb.CoreWalletToolbar do
         <div class="relative group">
           <.icon
             name={icon.name}
-            class={[
-              @icon_class,
-              icon.color,
-              state_class(icon.state)
-            ]}
+            class={Enum.join([@icon_class, icon.color, state_class(icon.state)], " ")}
           />
           <%= if Map.get(icon, :hint) do %>
             <span class={@hint_class}>

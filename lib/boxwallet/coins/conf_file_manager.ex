@@ -120,19 +120,6 @@ defmodule BoxWallet.Coins.ConfigManager do
   end
 
   @doc """
-  Generates a random alphanumeric string of the specified length.
-
-  ## Parameters
-    - length: The length of the string to generate
-
-  ## Examples
-      iex> RandomString.generate(10)
-      "aB3xY7qZ9m"
-
-      iex> RandomString.generate(5)
-      "K4p2L"
-  """
-  @doc """
   Enables testnet by setting `testnet=1` and adding a `[test]` section that
   duplicates the rpcport, rpcuser, and rpcpassword from the top-level config.
   This is required by newer Bitcoin-derived daemons which only apply settings

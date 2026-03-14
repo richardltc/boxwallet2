@@ -2,7 +2,7 @@
 defmodule Boxwallet.Coins.Litecoin do
   require Logger
 
-  @behaviour BoxWallet.CoinDaemon
+  # @behaviour BoxWallet.CoinDaemon
   import BoxWallet.App
 
   @coin_name "Litecoin"
@@ -25,7 +25,8 @@ defmodule Boxwallet.Coins.Litecoin do
   @extracted_dir_windows "litecoin-" <> @core_version
 
   # https://github.com/litecoin-project/litecoin/releases/download/v0.21.4/litecoin-0.21.4-x86_64-linux-gnu.tar.gz
-  @download_url "https://github.com/litecoin-project/litecoin/releases/download/v" <> @core_version <> "/"
+  @download_url "https://github.com/litecoin-project/litecoin/releases/download/v" <>
+                  @core_version <> "/"
   # @download_url_bs "https://"
 
   @conf_file "litecoin.conf"
@@ -637,20 +638,6 @@ defmodule Boxwallet.Coins.Litecoin do
     File.rm_rf!(downloaded_file)
   end
 
-  # specify the variables that need to be passed in here maybe "from" and "to" or something?
-  defp unarchive_file(full_file_path, location) do
-    case BoxWallet.Coins.CoinHelper.unarchive(full_file_path, location) do
-      :ok ->
-        # IO.inspect(result, label: "result")
-        IO.puts("Download and extraction completed successfully")
-        {:ok}
-
-      {:error, reason} ->
-        IO.puts("Extraction failed: #{inspect(reason)}")
-        {:error, "Extraction failed: #{reason}"}
-    end
-  end
-
   # def install_daemon do
   #   try do
   #     File.mkdir_p!(@install_path)
@@ -962,20 +949,20 @@ defmodule Boxwallet.Coins.Litecoin do
     end
   end
 
-  def get_sync_info do
-    try do
-      headers = [
-        {"Authorization",
-         "Basic " <>
-           Base.encode64("#{@rpc_credentials[:username]}:#{@rpc_credentials[:password]}")}
-      ]
+  # def get_sync_info do
+  #   try do
+  #     headers = [
+  #       {"Authorization",
+  #        "Basic " <>
+  #          Base.encode64("#{@rpc_credentials[:username]}:#{@rpc_credentials[:password]}")}
+  #     ]
 
-      body = Jason.encode!(%{"jsonrpc" => "2.0", "method" => "getblockchaininfo", "id" => 1})
-      {:ok, response} = HTTPoison.post(@rpc_url, body, headers)
-      %{"result" => %{"blocks" => blocks, "headers" => headers}} = Jason.decode!(response.body)
-      %{blocks: blocks, headers: headers, progress: trunc(blocks / max(headers, 1) * 100)}
-    rescue
-      _ -> %{blocks: 0, headers: 0, progress: 0}
-    end
-  end
+  #     body = Jason.encode!(%{"jsonrpc" => "2.0", "method" => "getblockchaininfo", "id" => 1})
+  #     {:ok, response} = HTTPoison.post(@rpc_url, body, headers)
+  #     %{"result" => %{"blocks" => blocks, "headers" => headers}} = Jason.decode!(response.body)
+  #     %{blocks: blocks, headers: headers, progress: trunc(blocks / max(headers, 1) * 100)}
+  #   rescue
+  #     _ -> %{blocks: 0, headers: 0, progress: 0}
+  #   end
+  # end
 end
