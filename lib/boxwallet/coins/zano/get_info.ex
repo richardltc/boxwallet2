@@ -25,7 +25,8 @@ defmodule BoxWallet.Coins.Zano.GetInfo do
       :default_fee,
       :minimum_fee,
       :status,
-      :total_coins
+      :total_coins,
+      :max_net_seen_height
     ]
 
     @type t :: %__MODULE__{
@@ -48,7 +49,8 @@ defmodule BoxWallet.Coins.Zano.GetInfo do
             default_fee: integer(),
             minimum_fee: integer(),
             status: String.t(),
-            total_coins: String.t()
+            total_coins: String.t(),
+            max_net_seen_height: integer()
           }
   end
 
@@ -70,11 +72,11 @@ defmodule BoxWallet.Coins.Zano.GetInfo do
     end
   end
 
-  defp parse(%{"result" => result, "error" => error, "id" => id}) do
+  defp parse(%{"result" => result, "id" => id} = decoded) do
     {:ok,
      %__MODULE__{
        result: parse_result(result),
-       error: error,
+       error: Map.get(decoded, "error"),
        id: id
      }}
   end
@@ -104,7 +106,8 @@ defmodule BoxWallet.Coins.Zano.GetInfo do
       default_fee: result["default_fee"],
       minimum_fee: result["minimum_fee"],
       status: result["status"],
-      total_coins: result["total_coins"]
+      total_coins: result["total_coins"],
+      max_net_seen_height: result["max_net_seen_height"]
     }
   end
 end
