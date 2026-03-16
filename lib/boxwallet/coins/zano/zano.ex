@@ -396,7 +396,7 @@ defmodule Boxwallet.Coins.Zano do
 
       case HTTPoison.post(url, body, headers) do
         {:ok, %{body: response_body}} ->
-          case BoxWallet.Coins.Zano.GetInfo.from_json(response_body) do
+            case BoxWallet.Coins.Zano.GetInfo.from_json(response_body) do
             {:ok, response} ->
               {:halt, {:ok, response}}
 

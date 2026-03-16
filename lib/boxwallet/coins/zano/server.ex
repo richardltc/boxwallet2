@@ -4,6 +4,8 @@ defmodule Boxwallet.Coins.Zano.Server do
 
   alias Boxwallet.Coins.Zano
 
+  @get_info_interval 3_000
+
   # --- Public API ---
 
   def start_link(_opts) do
@@ -39,7 +41,12 @@ defmodule Boxwallet.Coins.Zano.Server do
       coin_files_exist: coin_files_exist,
       downloading: false,
       download_complete: false,
-      download_error: nil
+      download_error: nil,
+      connections: 0,
+      blocks_synced: 0,
+      headers_synced: 0,
+      block_height: 0,
+      blockchain_is_synced: false
     }
 
     state =
@@ -47,6 +54,7 @@ defmodule Boxwallet.Coins.Zano.Server do
         {:ok, auth} ->
           if Zano.daemon_is_running(auth) do
             Logger.info("Zano daemon already running on init")
+            Process.send_after(self(), :poll_get_info, 200)
             %{state | daemon_status: :running}
           else
             state
@@ -71,6 +79,7 @@ defmodule Boxwallet.Coins.Zano.Server do
         Logger.info("Zano daemon starting...")
         state = %{state | daemon_status: :starting}
         broadcast(state)
+        Process.send_after(self(), :poll_get_info, 2_000)
         {:noreply, state}
 
       {:error, reason} ->
@@ -114,10 +123,60 @@ defmodule Boxwallet.Coins.Zano.Server do
     {:noreply, state}
   end
 
+  # --- get_info polling ---
+
+  @impl true
+  def handle_info(:poll_get_info, %{daemon_status: status} = state)
+      when status in [:starting, :running] do
+    case state.coin_auth do
+      {:ok, auth} ->
+        server = self()
+
+        spawn(fn ->
+          result = Zano.get_info(auth)
+          send(server, {:get_info_result, result})
+        end)
+
+        {:noreply, state}
+
+      _ ->
+        {:noreply, state}
+    end
+  end
+
+  def handle_info(:poll_get_info, state), do: {:noreply, state}
+
+  def handle_info({:get_info_result, {:ok, response}}, state) do
+    r = response.result
+    connections = (r.incoming_connections_count || 0) + (r.outgoing_connections_count || 0)
+    blocks_synced = r.height || 0
+    block_height = max(r.max_net_seen_height || 0, blocks_synced)
+
+    state = %{
+      state
+      | daemon_status: :running,
+        connections: connections,
+        blocks_synced: blocks_synced,
+        headers_synced: blocks_synced,
+        block_height: block_height,
+        blockchain_is_synced: block_height > 0 and blocks_synced >= block_height
+    }
+
+    broadcast(state)
+    Process.send_after(self(), :poll_get_info, @get_info_interval)
+    {:noreply, state}
+  end
+
+  def handle_info({:get_info_result, {:error, _reason}}, state) do
+    Logger.warning("Zano get_info poll failed, retrying...")
+    Process.send_after(self(), :poll_get_info, @get_info_interval)
+    {:noreply, state}
+  end
+
   @impl true
   def handle_info({:daemon_stop_result, {:ok, _response}}, state) do
     Logger.info("Zano daemon stopped successfully")
-    state = %{state | daemon_status: :stopped}
+    state = %{state | daemon_status: :stopped, connections: 0, blocks_synced: 0, headers_synced: 0, block_height: 0, blockchain_is_synced: false}
     broadcast(state)
     {:noreply, state}
   end
@@ -178,7 +237,12 @@ defmodule Boxwallet.Coins.Zano.Server do
       coin_daemon_stopping: state.daemon_status == :stopping,
       downloading: state.downloading,
       download_complete: state.download_complete,
-      download_error: state.download_error
+      download_error: state.download_error,
+      connections: state.connections,
+      blocks_synced: state.blocks_synced,
+      headers_synced: state.headers_synced,
+      block_height: state.block_height,
+      blockchain_is_synced: state.blockchain_is_synced
     }
 
     Phoenix.PubSub.broadcast(Boxwallet.PubSub, "zano:status", {:zano_state, payload})
