@@ -115,28 +115,23 @@ defmodule Boxwallet.Coins.Zano do
   def daemon_is_running(auth) do
     body =
       Jason.encode!(%{
-        jsonrpc: "1.0",
-        id: "curltext",
+        jsonrpc: "2.0",
+        id: 0,
         method: "getinfo",
-        params: []
+        params: %{flags: 0}
       })
 
-    url = "http://127.0.0.1:#{auth.rpc_port}"
+    url = "http://127.0.0.1:#{auth.rpc_port}/json_rpc"
 
-    headers = [
-      {"Content-Type", "text/plain"},
-      {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
-    ]
+    headers = [{"Content-Type", "application/json"}]
 
-    Logger.info("Attempting to call GetInfo to see if Daemon is running")
+    Logger.info("Attempting to call GetInfo to see if Zano Daemon is running")
 
     case HTTPoison.post(url, body, headers) do
-      {:ok, %{body: _}} ->
-        # IO.inspect(response_body).
-        IO.puts("We think the Daemon is running...")
+      {:ok, %{status_code: 200}} ->
         true
 
-      {:error, %HTTPoison.Error{reason: _reason}} ->
+      _ ->
         false
     end
   end
@@ -386,50 +381,32 @@ defmodule Boxwallet.Coins.Zano do
   def get_info(auth) do
     body =
       Jason.encode!(%{
-        jsonrpc: "1.0",
-        id: "curltext",
+        jsonrpc: "2.0",
+        id: 0,
         method: "getinfo",
-        params: []
+        params: %{flags: 1_048_575}
       })
 
-    url = "http://127.0.0.1:#{auth.rpc_port}"
+    url = "http://127.0.0.1:#{auth.rpc_port}/json_rpc"
 
-    headers = [
-      {"Content-Type", "text/plain"},
-      {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
-    ]
+    headers = [{"Content-Type", "application/json"}]
 
     Enum.reduce_while(1..@daemon_rpc_attempts, {:error, :no_attempts}, fn attempt, _acc ->
       Logger.info("Attempting to GetInfo (attempt #{attempt}/#{@daemon_rpc_attempts})")
 
       case HTTPoison.post(url, body, headers) do
         {:ok, %{body: response_body}} ->
-          # IO.inspect(response_body)
+          case BoxWallet.Coins.Zano.GetInfo.from_json(response_body) do
+            {:ok, response} ->
+              {:halt, {:ok, response}}
 
-          if String.contains?(response_body, "Loading") ||
-               String.contains?(response_body, "Preparing databases") ||
-               String.contains?(response_body, "Rewinding") ||
-               String.contains?(response_body, "RPC server started") ||
-               String.contains?(response_body, "Verifying") do
-            Logger.info("Waiting for Daemon to be ready, attempt #{attempt}")
-            Process.sleep(1000)
-            {:cont, {:error, :wrong_response}}
-          else
-            # Now ew need to convert into a GetInfo before returning it to the UI
-            case BoxWallet.Coins.Divi.GetInfo.from_json(response_body) do
-              {:ok, response} ->
-                # Process the successful response - Halt with result
-                {:halt, {:ok, response}}
-
-              {:error, reason} ->
-                # Handle the error
-                Logger.error("Failed to parse: #{inspect(reason)}")
-                {:halt, {:error, reason}}
-            end
+            {:error, reason} ->
+              Logger.error("Failed to parse GetInfo: #{inspect(reason)}")
+              {:halt, {:error, reason}}
           end
 
         {:error, %HTTPoison.Error{reason: reason}} ->
-          Process.sleep(3000)
+          Process.sleep(@daemon_rpc_sleep_interval)
           {:cont, {:error, reason}}
       end
     end)
