@@ -23,7 +23,6 @@ defmodule BoxwalletWeb.ZanoLive do
 
     socket =
       assign(socket,
-        blockchain_is_synced: false,
         coin_name: "Zano",
         coin_title:
           "Zano (ZANO) — a privacy-focused cryptocurrency with confidential transactions and assets.",
@@ -41,13 +40,14 @@ defmodule BoxwalletWeb.ZanoLive do
         balance: 0,
         unconfirmed_balance: 0,
         immature_balance: 0,
-        block_height: 0,
-        blocks_synced: 0,
-        headers_synced: 0,
+        block_height: server_state.block_height,
+        blocks_synced: server_state.blocks_synced,
+        headers_synced: server_state.headers_synced,
         blocks: 0,
-        connections: 0,
+        connections: server_state.connections,
         difficulty: 0,
         headers: 0,
+        blockchain_is_synced: server_state.blockchain_is_synced,
         version: Zano.core_version(),
         coin_auth: server_state.coin_auth,
         staking: false,
