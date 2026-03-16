@@ -12,8 +12,15 @@ defmodule BoxwalletWeb.ZanoLive do
   use BoxwalletWeb, :live_view
   require Logger
   alias Boxwallet.Coins.Zano
+  alias Boxwallet.Coins.Zano.Server, as: ZanoServer
 
   def mount(_params, _session, socket) do
+    if connected?(socket) do
+      Phoenix.PubSub.subscribe(Boxwallet.PubSub, "zano:status")
+    end
+
+    server_state = ZanoServer.get_state()
+
     socket =
       assign(socket,
         blockchain_is_synced: false,
@@ -23,14 +30,14 @@ defmodule BoxwalletWeb.ZanoLive do
         coin_description:
           "Zano is a scalable, secure, and privacy-centric cryptocurrency built for confidential transactions. It features hybrid PoW/PoS consensus, confidential assets, and an Ionic Swap protocol for trustless atomic swaps. Designed with a developer-friendly layer for building confidential decentralised applications.",
         show_install_alert: false,
-        coin_files_exist: Zano.files_exist(),
-        download_complete: false,
-        download_error: nil,
-        downloading: false,
-        coin_daemon_starting: false,
-        coin_daemon_started: false,
-        coin_daemon_stopping: false,
-        coin_daemon_stopped: true,
+        coin_files_exist: server_state.coin_files_exist,
+        download_complete: server_state.download_complete,
+        download_error: server_state.download_error,
+        downloading: server_state.downloading,
+        coin_daemon_starting: server_state.daemon_status == :starting,
+        coin_daemon_started: server_state.daemon_status == :running,
+        coin_daemon_stopping: server_state.daemon_status == :stopping,
+        coin_daemon_stopped: server_state.daemon_status == :stopped,
         balance: 0,
         unconfirmed_balance: 0,
         immature_balance: 0,
@@ -42,7 +49,7 @@ defmodule BoxwalletWeb.ZanoLive do
         difficulty: 0,
         headers: 0,
         version: Zano.core_version(),
-        coin_auth: {:error, :not_available},
+        coin_auth: server_state.coin_auth,
         staking: false,
         wallet_encryption_status: :wes_unknown,
         hide_balance: BoxWallet.Settings.get(:hide_balance),
@@ -60,25 +67,25 @@ defmodule BoxwalletWeb.ZanoLive do
     {:ok, socket}
   end
 
+  # --- PubSub handler ---
+
+  def handle_info({:zano_state, state_map}, socket) do
+    was_stopping = socket.assigns.coin_daemon_stopping
+    socket = assign(socket, state_map)
+
+    socket =
+      if state_map[:coin_daemon_stopped] && was_stopping do
+        Process.send_after(self(), :clear_flash, 4_000)
+        put_flash(socket, :info, "#{socket.assigns.coin_name} Daemon stopped successfully.")
+      else
+        socket
+      end
+
+    {:noreply, socket}
+  end
+
   def handle_info(:clear_flash, socket) do
     {:noreply, clear_flash(socket)}
-  end
-
-  def handle_info({:download_complete}, socket) do
-    {:noreply,
-     assign(socket,
-       downloading: false,
-       download_complete: true,
-       coin_files_exist: true
-     )}
-  end
-
-  def handle_info({:download_error, reason}, socket) do
-    {:noreply,
-     assign(socket,
-       downloading: false,
-       download_error: reason
-     )}
   end
 
   # --- UI Event Handlers ---
@@ -95,21 +102,27 @@ defmodule BoxwalletWeb.ZanoLive do
   end
 
   def handle_event("download_coin", _, socket) do
-    parent = self()
-
-    Task.start(fn ->
-      case Zano.download_coin() do
-        {:ok} -> send(parent, {:download_complete})
-        {:error, reason} -> send(parent, {:download_error, reason})
-      end
-    end)
-
+    ZanoServer.download_coin()
     {:noreply, assign(socket, downloading: true, show_install_alert: true)}
   end
 
-  # Stub handlers for buttons rendered by coin_home_section (not wired up for Zano yet)
-  def handle_event("start_coin_daemon", _, socket), do: {:noreply, socket}
-  def handle_event("stop_coin_daemon", _, socket), do: {:noreply, socket}
+  def handle_event("start_coin_daemon", _, socket) do
+    ZanoServer.start_daemon()
+    {:noreply, assign(socket, coin_daemon_starting: true, coin_daemon_stopped: false)}
+  end
+
+  def handle_event("stop_coin_daemon", _, socket) do
+    ZanoServer.stop_daemon()
+
+    Process.send_after(self(), :clear_flash, 4_000)
+
+    {:noreply,
+     socket
+     |> put_flash(:info, "Stopping #{socket.assigns.coin_name} Daemon...")
+     |> assign(:coin_daemon_stopping, true)
+     |> assign(wallet_encryption_status: :wes_unknown)}
+  end
+
   def handle_event("show_encrypt_prompt", _params, socket), do: {:noreply, socket}
   def handle_event("show_unlock_prompt", _params, socket), do: {:noreply, socket}
   def handle_event("show_unlock_staking_prompt", _params, socket), do: {:noreply, socket}
