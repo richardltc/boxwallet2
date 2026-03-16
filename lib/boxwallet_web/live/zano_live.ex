@@ -414,7 +414,7 @@ defmodule BoxwalletWeb.ZanoLive do
               on_download="download_coin"
             />
           <% else %>
-            <.coin_transactions color="text-zanoblue" coin_daemon_started={@coin_daemon_started} transactions={@transactions} />
+            <.coin_transactions color="text-zanoblue" coin_daemon_started={@coin_daemon_started} transactions={@transactions} receive_coming_soon={true} />
           <% end %>
         </div>
       </div>

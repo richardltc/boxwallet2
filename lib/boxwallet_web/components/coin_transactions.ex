@@ -6,6 +6,7 @@ defmodule BoxwalletWeb.CoinTransactions do
   attr :coin_daemon_started, :boolean, default: false
   attr :transactions, :list, default: []
   attr :confirmed_after, :integer, default: 6
+  attr :receive_coming_soon, :boolean, default: false
 
   def coin_transactions(assigns) do
     ~H"""
@@ -13,14 +14,21 @@ defmodule BoxwalletWeb.CoinTransactions do
       <p class={"text-lg font-semibold text-center " <> @color}>Transactions</p>
 
       <div class="flex justify-center gap-4 mt-4">
-        <button
-          class="btn btn-outline btn-boxwalletgreen px-8 disabled:opacity-40"
-          phx-click="receive_address"
-          disabled={!@coin_daemon_started}
-          title={if @coin_daemon_started, do: "Get a new receive address", else: "Daemon not running"}
-        >
-          <span class="hero-arrow-down-tray h-6 w-6" /> Receive
-        </button>
+        <%= if @receive_coming_soon do %>
+          <button class="btn btn-outline btn-boxwalletgreen px-8 opacity-40 cursor-not-allowed" disabled title="Coming soon">
+            <span class="hero-arrow-down-tray h-6 w-6" /> Receive
+            <span class="badge badge-sm ml-1">Coming soon</span>
+          </button>
+        <% else %>
+          <button
+            class="btn btn-outline btn-boxwalletgreen px-8 disabled:opacity-40"
+            phx-click="receive_address"
+            disabled={!@coin_daemon_started}
+            title={if @coin_daemon_started, do: "Get a new receive address", else: "Daemon not running"}
+          >
+            <span class="hero-arrow-down-tray h-6 w-6" /> Receive
+          </button>
+        <% end %>
       </div>
 
       <div :if={@transactions != []} class="mt-4 divide-y divide-base-300">
