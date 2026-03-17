@@ -27,7 +27,7 @@ defmodule BoxwalletWeb.WalletBalanceDisplay do
       </span>
 
       <small class="badge text-3xl font-mono border-0">
-        {if @hide_balance, do: "●●●●●●", else: Number.Delimit.number_to_delimited(@display_balance, precision: 2)}
+        {if @hide_balance, do: "●●●●●●", else: Number.Delimit.number_to_delimited(@display_balance, precision: 8)}
       </small>
 
       <button
