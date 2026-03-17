@@ -26,6 +26,7 @@ defmodule BoxwalletWeb.DiviLive do
       assign(socket,
         blockchain_is_synced: server_state.blockchain_is_synced,
         coin_name: "Divi",
+        coin_name_abbrev: Divi.coin_name_abbrev(),
         coin_title: "The foundation for a truly decentralized future.",
         coin_description:
           "Our rapidly changing world requires flexible financial products. Through our innovative technology, we're building the future of finance.",
@@ -606,7 +607,7 @@ defmodule BoxwalletWeb.DiviLive do
             <% :receive -> %>
               <.coin_transactions color="text-divired" coin_daemon_started={@coin_daemon_started} transactions={@transactions} />
             <% :send -> %>
-              <.coin_send color="text-divired" coin_daemon_started={@coin_daemon_started} />
+              <.coin_send color="text-divired" coin_daemon_started={@coin_daemon_started} coin_name_abbrev={@coin_name_abbrev} />
             <% _ -> %>
               <.coin_transactions color="text-divired" coin_daemon_started={@coin_daemon_started} transactions={@transactions} />
           <% end %>

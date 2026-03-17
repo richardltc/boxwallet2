@@ -5,7 +5,8 @@ defmodule Boxwallet.Coins.Zano do
   # import BoxWallet.App
 
   @coin_name "Zano"
-  # @coin_name_abbrev "Zano"
+  @coin_name_abbrev "ZANO"
+  def coin_name_abbrev, do: @coin_name_abbrev
 
   @home_dir_lin ".Zano"
   @home_dir_mac "Zano"

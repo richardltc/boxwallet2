@@ -5,6 +5,9 @@ defmodule BoxwalletWeb.CoinSend do
   attr :color, :string, required: true
   attr :coin_daemon_started, :boolean, default: false
   attr :coming_soon, :boolean, default: false
+  attr :address_valid, :atom, default: :empty
+  attr :send_address, :string, default: ""
+  attr :coin_name_abbrev, :string, default: ""
 
   def coin_send(assigns) do
     ~H"""
@@ -19,21 +22,29 @@ defmodule BoxwalletWeb.CoinSend do
           </button>
         </div>
       <% else %>
-        <form phx-submit="send_coin" class="mt-6 max-w-lg mx-auto space-y-4">
+        <form phx-submit="send_coin" phx-change="validate_send_address" class="mt-6 max-w-lg mx-auto space-y-4">
           <div>
             <label class="label text-sm font-medium">Address</label>
             <input
               type="text"
               name="address"
+              value={@send_address}
               placeholder="Enter recipient address"
               class="input input-bordered w-full"
               required
               disabled={!@coin_daemon_started}
             />
+            <%= case @address_valid do %>
+              <% :valid -> %>
+                <p class="text-sm text-green-500 mt-1">Valid address</p>
+              <% :invalid -> %>
+                <p class="text-sm text-red-500 mt-1">Invalid address</p>
+              <% _ -> %>
+            <% end %>
           </div>
 
           <div>
-            <label class="label text-sm font-medium">Amount</label>
+            <label class="label text-sm font-medium">Amount {@coin_name_abbrev}</label>
             <input
               type="number"
               name="amount"
@@ -50,7 +61,7 @@ defmodule BoxwalletWeb.CoinSend do
             <button
               type="submit"
               class="btn btn-outline btn-boxwalletgreen px-8"
-              disabled={!@coin_daemon_started}
+              disabled={!@coin_daemon_started || @address_valid != :valid}
               title={if @coin_daemon_started, do: "Send coins", else: "Daemon not running"}
             >
               <span class="hero-paper-airplane h-6 w-6" /> Send
