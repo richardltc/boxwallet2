@@ -49,7 +49,9 @@ defmodule BoxwalletWeb.PrivateDiviLive do
         passwords_match: false,
         hide_balance: BoxWallet.Settings.get(:hide_balance),
         active_tab: :home,
-        testnet_enabled: testnet_enabled?(PrivateDivi)
+        testnet_enabled: testnet_enabled?(PrivateDivi),
+        disk_used_bytes: disk_used_bytes(),
+        disk_total_bytes: disk_total_bytes()
       )
 
     if connected?(socket) do
@@ -474,6 +476,20 @@ defmodule BoxwalletWeb.PrivateDiviLive do
     end
   end
 
+  defp disk_used_bytes do
+    case BoxWallet.Coins.CoinHelper.disk_free() do
+      {:ok, %{total: total_mb, free: free_mb}} -> (total_mb - free_mb) * 1_048_576
+      _ -> 0
+    end
+  end
+
+  defp disk_total_bytes do
+    case BoxWallet.Coins.CoinHelper.disk_free() do
+      {:ok, %{total: total_mb}} -> total_mb * 1_048_576
+      _ -> 0
+    end
+  end
+
   defp testnet_enabled?(coin_module) do
     case BoxWallet.Coins.ConfigManager.get_label_value(coin_module.get_conf_file_location(), "testnet") do
       {:ok, "1"} -> true
@@ -819,6 +835,8 @@ defmodule BoxwalletWeb.PrivateDiviLive do
                 coin_daemon_stopped={@coin_daemon_stopped}
                 wallet_encryption_status={@wallet_encryption_status}
                 on_download="download_privatedivi"
+                disk_used_bytes={@disk_used_bytes}
+                disk_total_bytes={@disk_total_bytes}
               />
             <% :settings -> %>
               <.coin_settings

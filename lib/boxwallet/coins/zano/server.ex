@@ -35,6 +35,15 @@ defmodule Boxwallet.Coins.Zano.Server do
     coin_auth = Zano.get_auth_values()
     coin_files_exist = Zano.files_exist()
 
+    {disk_used_bytes, disk_total_bytes} =
+      case BoxWallet.Coins.CoinHelper.disk_free() do
+        {:ok, %{total: total_mb, free: free_mb}} ->
+          {(total_mb - free_mb) * 1_048_576, total_mb * 1_048_576}
+
+        _ ->
+          {0, 0}
+      end
+
     state = %{
       coin_auth: coin_auth,
       daemon_status: :stopped,
@@ -46,7 +55,9 @@ defmodule Boxwallet.Coins.Zano.Server do
       blocks_synced: 0,
       headers_synced: 0,
       block_height: 0,
-      blockchain_is_synced: false
+      blockchain_is_synced: false,
+      disk_used_bytes: disk_used_bytes,
+      disk_total_bytes: disk_total_bytes
     }
 
     state =
@@ -69,6 +80,16 @@ defmodule Boxwallet.Coins.Zano.Server do
 
   @impl true
   def handle_call(:get_state, _from, state) do
+    {disk_used_bytes, disk_total_bytes} =
+      case BoxWallet.Coins.CoinHelper.disk_free() do
+        {:ok, %{total: total_mb, free: free_mb}} ->
+          {(total_mb - free_mb) * 1_048_576, total_mb * 1_048_576}
+
+        _ ->
+          {state.disk_used_bytes, state.disk_total_bytes}
+      end
+
+    state = %{state | disk_used_bytes: disk_used_bytes, disk_total_bytes: disk_total_bytes}
     {:reply, state, state}
   end
 
@@ -242,7 +263,9 @@ defmodule Boxwallet.Coins.Zano.Server do
       blocks_synced: state.blocks_synced,
       headers_synced: state.headers_synced,
       block_height: state.block_height,
-      blockchain_is_synced: state.blockchain_is_synced
+      blockchain_is_synced: state.blockchain_is_synced,
+      disk_used_bytes: state.disk_used_bytes,
+      disk_total_bytes: state.disk_total_bytes
     }
 
     Phoenix.PubSub.broadcast(Boxwallet.PubSub, "zano:status", {:zano_state, payload})
