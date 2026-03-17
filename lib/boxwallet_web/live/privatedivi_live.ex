@@ -7,6 +7,7 @@ defmodule BoxwalletWeb.PrivateDiviLive do
   import BoxwalletWeb.CoinSidebar
   import BoxwalletWeb.CoinHomeSection
   import BoxwalletWeb.CoinTransactions
+  import BoxwalletWeb.CoinSend
   import BoxwalletWeb.CoinSettings
   use Number
   use BoxwalletWeb, :live_view
@@ -849,6 +850,10 @@ defmodule BoxwalletWeb.PrivateDiviLive do
                 download_error={@download_error}
                 on_update="download_privatedivi"
               />
+            <% :receive -> %>
+              <.coin_transactions color="text-red-400" />
+            <% :send -> %>
+              <.coin_send color="text-red-400" coin_daemon_started={@coin_daemon_started} />
             <% _ -> %>
               <.coin_transactions color="text-red-400" />
           <% end %>
