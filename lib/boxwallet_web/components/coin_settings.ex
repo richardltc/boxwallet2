@@ -27,7 +27,7 @@ defmodule BoxwalletWeb.CoinSettings do
           </p>
         </div>
         <button
-          class="btn btn-outline btn-boxwalletgreen px-8 disabled:opacity-40"
+          class="btn btn-outline btn-boxwalletgreen px-8"
           onclick="update_modal.showModal()"
           disabled={@downloading or !@coin_files_exist}
           title={"Update #{@coin_name} core files"}

@@ -15,13 +15,13 @@ defmodule BoxwalletWeb.CoinTransactions do
 
       <div class="flex justify-center gap-4 mt-4">
         <%= if @receive_coming_soon do %>
-          <button class="btn btn-outline btn-boxwalletgreen px-8 opacity-40 cursor-not-allowed" disabled title="Coming soon">
+          <button class="btn btn-outline btn-boxwalletgreen px-8 cursor-not-allowed" disabled title="Coming soon">
             <span class="hero-arrow-down-tray h-6 w-6" /> Receive
             <span class="badge badge-sm ml-1">Coming soon</span>
           </button>
         <% else %>
           <button
-            class="btn btn-outline btn-boxwalletgreen px-8 disabled:opacity-40"
+            class="btn btn-outline btn-boxwalletgreen px-8"
             phx-click="receive_address"
             disabled={!@coin_daemon_started}
             title={if @coin_daemon_started, do: "Get a new receive address", else: "Daemon not running"}

@@ -41,7 +41,7 @@ defmodule BoxwalletWeb.CoinHomeSection do
     <!-- Action buttons -->
     <div class="card-actions justify-center mt-8">
       <button
-        class="btn btn-boxwalletgreen px-8 disabled:opacity-40"
+        class="btn btn-boxwalletgreen px-8"
         onclick="install_modal.showModal()"
         disabled={@downloading or @coin_files_exist}
         title={"Install #{@coin_name} core files"}
@@ -88,7 +88,7 @@ defmodule BoxwalletWeb.CoinHomeSection do
       </dialog>
 
       <button
-        class="btn btn-outline btn-boxwalletgreen px-8 disabled:opacity-40"
+        class="btn btn-outline btn-boxwalletgreen px-8"
         phx-click="start_coin_daemon"
         disabled={!@coin_files_exist or !@coin_daemon_stopped}
         title={"Start #{@coin_name} Daemon"}
@@ -97,7 +97,7 @@ defmodule BoxwalletWeb.CoinHomeSection do
       </button>
 
       <button
-        class="btn btn-outline btn-boxwalletgreen px-8 disabled:opacity-40"
+        class="btn btn-outline btn-boxwalletgreen px-8"
         phx-click="stop_coin_daemon"
         disabled={!@coin_daemon_started}
         title={"Stop #{@coin_name} Daemon"}
@@ -107,7 +107,7 @@ defmodule BoxwalletWeb.CoinHomeSection do
 
       <div class="dropdown dropdown-bottom">
         <button
-          class="btn btn-outline btn-boxwalletgreen px-8 disabled:opacity-40"
+          class="btn btn-outline btn-boxwalletgreen px-8"
           disabled={!@coin_daemon_started}
           phx-click={
             case @wallet_encryption_status do
