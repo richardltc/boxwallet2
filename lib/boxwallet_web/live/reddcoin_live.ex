@@ -69,7 +69,9 @@ defmodule BoxwalletWeb.ReddCoinLive do
         disk_used_bytes: server_state.disk_used_bytes,
         disk_total_bytes: server_state.disk_total_bytes,
         send_address: "",
-        address_valid: :empty
+        address_valid: :empty,
+        pending_send_address: nil,
+        pending_send_amount: nil
       )
 
     {:ok, socket}
@@ -113,6 +115,46 @@ defmodule BoxwalletWeb.ReddCoinLive do
       end
 
     {:noreply, assign(socket, send_address: address, address_valid: validity)}
+  end
+
+  def handle_event("send_coin", %{"address" => address, "amount" => amount_str}, socket) do
+    wes = socket.assigns.wallet_encryption_status
+
+    if wes in [:wes_locked, :wes_unlocked_for_staking] do
+      {:noreply,
+       assign(socket,
+         show_prompt: true,
+         prompt_action: :unlock_for_send,
+         prompt_answer: "",
+         pending_send_address: address,
+         pending_send_amount: amount_str
+       )}
+    else
+      do_send(socket, address, amount_str)
+    end
+  end
+
+  defp do_send(socket, address, amount_str) do
+    Process.send_after(self(), :clear_flash, 4_000)
+
+    with true <- ReddCoin.validate_address(address),
+         {amount, _} <- Float.parse(amount_str),
+         {:ok, coin_auth} <- socket.assigns.coin_auth,
+         {:ok, txid} <- ReddCoin.send_to_address(coin_auth, address, amount) do
+      {:noreply,
+       socket
+       |> put_flash(:info, "Sent #{amount_str} #{socket.assigns.coin_name_abbrev} successfully. TX: #{txid}")
+       |> assign(send_address: "", address_valid: :empty)}
+    else
+      false ->
+        {:noreply, put_flash(socket, :error, "Invalid address.")}
+
+      :error ->
+        {:noreply, put_flash(socket, :error, "Invalid amount.")}
+
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, "Send failed: #{reason}")}
+    end
   end
 
   def handle_event("switch_tab", %{"tab" => tab}, socket) do
@@ -191,6 +233,20 @@ defmodule BoxwalletWeb.ReddCoinLive do
               socket
               |> put_flash(:info, "Wallet unlocked for staking successfully.")
               |> assign(wallet_encryption_status: :wes_unlocked_for_staking)
+
+            {:error, reason} ->
+              put_flash(socket, :error, "Unable to unlock wallet: #{reason}")
+          end
+
+        :unlock_for_send ->
+          case ReddCoin.wallet_unlock(coin_auth, password) do
+            :ok ->
+              address = socket.assigns.pending_send_address
+              amount_str = socket.assigns.pending_send_amount
+              socket = assign(socket, wallet_encryption_status: :wes_unlocked, pending_send_address: nil, pending_send_amount: nil)
+              # do_send returns {:noreply, socket}, extract the socket
+              {:noreply, send_socket} = do_send(socket, address, amount_str)
+              send_socket
 
             {:error, reason} ->
               put_flash(socket, :error, "Unable to unlock wallet: #{reason}")
@@ -511,6 +567,7 @@ defmodule BoxwalletWeb.ReddCoinLive do
             :encrypt -> "Enter a new password to encrypt your wallet:"
             :unlock -> "Enter your wallet password to unlock:"
             :unlock_for_staking -> "Enter your wallet password to unlock for staking:"
+            :unlock_for_send -> "Enter your wallet password to unlock and send:"
             _ -> "Enter your wallet password:"
           end
         }
