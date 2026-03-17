@@ -1013,6 +1013,47 @@ defmodule Boxwallet.Coins.ReddCoin do
     end
   end
 
+  def set_tx_fee(auth, fee) do
+    body =
+      Jason.encode!(%{
+        jsonrpc: "1.0",
+        id: "boxwallet",
+        method: "settxfee",
+        params: [fee]
+      })
+
+    url = "http://127.0.0.1:#{auth.rpc_port}"
+
+    headers = [
+      {"Content-Type", "text/plain"},
+      {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
+    ]
+
+    Logger.info("Attempting to SetTxFee to #{fee}")
+
+    case HTTPoison.post(url, body, headers) do
+      {:ok, %{body: response_body}} ->
+        case Jason.decode(response_body) do
+          {:ok, %{"error" => nil}} ->
+            :ok
+
+          {:ok, %{"error" => %{"message" => message}}} ->
+            Logger.error("settxfee failed: #{message}")
+            {:error, message}
+
+          {:ok, %{"error" => error}} ->
+            Logger.error("settxfee failed: #{inspect(error)}")
+            {:error, inspect(error)}
+
+          {:error, _} ->
+            {:error, "Failed to parse response"}
+        end
+
+      {:error, %HTTPoison.Error{reason: reason}} ->
+        {:error, %HTTPoison.Error{reason: reason}}
+    end
+  end
+
   def staking(auth, enable) do
     body =
       Jason.encode!(%{
