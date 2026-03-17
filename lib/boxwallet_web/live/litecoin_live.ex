@@ -7,6 +7,7 @@ defmodule BoxwalletWeb.LitecoinLive do
   import BoxwalletWeb.CoinSidebar
   import BoxwalletWeb.CoinHomeSection
   import BoxwalletWeb.CoinTransactions
+  import BoxwalletWeb.CoinSend
   import BoxwalletWeb.CoinSettings
   import BoxwalletWeb.ReceiveAddressModal
   use Number
@@ -633,6 +634,10 @@ defmodule BoxwalletWeb.LitecoinLive do
                 download_error={@download_error}
                 on_update="download_coin"
               />
+            <% :receive -> %>
+              <.coin_transactions color="text-litecoinblue" coin_daemon_started={@coin_daemon_started} transactions={@transactions} />
+            <% :send -> %>
+              <.coin_send color="text-litecoinblue" coin_daemon_started={@coin_daemon_started} />
             <% _ -> %>
               <.coin_transactions color="text-litecoinblue" coin_daemon_started={@coin_daemon_started} transactions={@transactions} />
           <% end %>

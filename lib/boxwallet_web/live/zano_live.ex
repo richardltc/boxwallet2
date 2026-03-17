@@ -7,6 +7,7 @@ defmodule BoxwalletWeb.ZanoLive do
   import BoxwalletWeb.CoinSidebar
   import BoxwalletWeb.CoinHomeSection
   import BoxwalletWeb.CoinTransactions
+  import BoxwalletWeb.CoinSend
   import BoxwalletWeb.ReceiveAddressModal
   use Number
   use BoxwalletWeb, :live_view
@@ -398,27 +399,32 @@ defmodule BoxwalletWeb.ZanoLive do
             </div>
           </div>
 
-          <%= if @active_tab == :home do %>
-            <.coin_home_section
-              coin_name={@coin_name}
-              coin_description={@coin_description}
-              headers_synced={@headers_synced}
-              blocks_synced={@blocks_synced}
-              block_height={@block_height}
-              color="text-zanoblue"
-              coin_files_exist={@coin_files_exist}
-              downloading={@downloading}
-              download_complete={@download_complete}
-              download_error={@download_error}
-              coin_daemon_started={@coin_daemon_started}
-              coin_daemon_stopped={@coin_daemon_stopped}
-              wallet_encryption_status={@wallet_encryption_status}
-              on_download="download_coin"
-              disk_used_bytes={@disk_used_bytes}
-              disk_total_bytes={@disk_total_bytes}
-            />
-          <% else %>
-            <.coin_transactions color="text-zanoblue" coin_daemon_started={@coin_daemon_started} transactions={@transactions} receive_coming_soon={true} />
+          <%= case @active_tab do %>
+            <% :home -> %>
+              <.coin_home_section
+                coin_name={@coin_name}
+                coin_description={@coin_description}
+                headers_synced={@headers_synced}
+                blocks_synced={@blocks_synced}
+                block_height={@block_height}
+                color="text-zanoblue"
+                coin_files_exist={@coin_files_exist}
+                downloading={@downloading}
+                download_complete={@download_complete}
+                download_error={@download_error}
+                coin_daemon_started={@coin_daemon_started}
+                coin_daemon_stopped={@coin_daemon_stopped}
+                wallet_encryption_status={@wallet_encryption_status}
+                on_download="download_coin"
+                disk_used_bytes={@disk_used_bytes}
+                disk_total_bytes={@disk_total_bytes}
+              />
+            <% :receive -> %>
+              <.coin_transactions color="text-zanoblue" coin_daemon_started={@coin_daemon_started} transactions={@transactions} receive_coming_soon={true} />
+            <% :send -> %>
+              <.coin_send color="text-zanoblue" coin_daemon_started={@coin_daemon_started} coming_soon={true} />
+            <% _ -> %>
+              <.coin_transactions color="text-zanoblue" coin_daemon_started={@coin_daemon_started} transactions={@transactions} receive_coming_soon={true} />
           <% end %>
         </div>
       </div>
