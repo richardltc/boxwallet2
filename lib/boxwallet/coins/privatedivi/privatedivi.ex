@@ -6,6 +6,7 @@ defmodule Boxwallet.Coins.PrivateDivi do
 
   @coin_name "PrivateDivi"
   @coin_name_abbrev "PDIVI"
+  def coin_name_abbrev, do: @coin_name_abbrev
 
   @home_dir_lin ".privatedivi"
   @home_dir_mac "PrivateDivi"

@@ -6,7 +6,8 @@ defmodule Boxwallet.Coins.Litecoin do
   import BoxWallet.App
 
   @coin_name "Litecoin"
-  # @coin_name_abbrev "RDD"
+  @coin_name_abbrev "LTC"
+  def coin_name_abbrev, do: @coin_name_abbrev
 
   @home_dir_lin ".litecoin"
   @home_dir_mac "Litecoin"

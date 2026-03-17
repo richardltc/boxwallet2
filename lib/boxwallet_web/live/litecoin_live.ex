@@ -27,6 +27,7 @@ defmodule BoxwalletWeb.LitecoinLive do
       assign(socket,
         blockchain_is_synced: server_state.blockchain_is_synced,
         coin_name: "Litecoin",
+        coin_name_abbrev: Litecoin.coin_name_abbrev(),
         coin_title:
           "Litecoin (LTC) — a peer-to-peer cryptocurrency for fast, low-cost payments.",
         coin_description:
@@ -637,7 +638,7 @@ defmodule BoxwalletWeb.LitecoinLive do
             <% :receive -> %>
               <.coin_transactions color="text-litecoinblue" coin_daemon_started={@coin_daemon_started} transactions={@transactions} />
             <% :send -> %>
-              <.coin_send color="text-litecoinblue" coin_daemon_started={@coin_daemon_started} />
+              <.coin_send color="text-litecoinblue" coin_daemon_started={@coin_daemon_started} coin_name_abbrev={@coin_name_abbrev} />
             <% _ -> %>
               <.coin_transactions color="text-litecoinblue" coin_daemon_started={@coin_daemon_started} transactions={@transactions} />
           <% end %>

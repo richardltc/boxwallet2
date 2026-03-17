@@ -5,7 +5,8 @@ defmodule Boxwallet.Coins.Divi do
   # import BoxWallet.App
 
   @coin_name "DIVI"
-  # @coin_name_abbrev "DIVI"
+  @coin_name_abbrev "DIVI"
+  def coin_name_abbrev, do: @coin_name_abbrev
 
   @home_dir_lin ".divi"
   @home_dir_mac "DIVI"

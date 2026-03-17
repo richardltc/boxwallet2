@@ -19,6 +19,7 @@ defmodule BoxwalletWeb.PrivateDiviLive do
       assign(socket,
         blockchain_is_synced: false,
         coin_name: "PrivateDivi",
+        coin_name_abbrev: PrivateDivi.coin_name_abbrev(),
         coin_title: "Private cryptocurrency network.",
         coin_description:
           "PrivateDivi is a private cryptocurrency network built on the Divi codebase, delivering fast and secure transactions.",
@@ -853,7 +854,7 @@ defmodule BoxwalletWeb.PrivateDiviLive do
             <% :receive -> %>
               <.coin_transactions color="text-red-400" />
             <% :send -> %>
-              <.coin_send color="text-red-400" coin_daemon_started={@coin_daemon_started} />
+              <.coin_send color="text-red-400" coin_daemon_started={@coin_daemon_started} coin_name_abbrev={@coin_name_abbrev} />
             <% _ -> %>
               <.coin_transactions color="text-red-400" />
           <% end %>

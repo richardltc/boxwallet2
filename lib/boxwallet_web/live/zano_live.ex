@@ -25,6 +25,7 @@ defmodule BoxwalletWeb.ZanoLive do
     socket =
       assign(socket,
         coin_name: "Zano",
+        coin_name_abbrev: Zano.coin_name_abbrev(),
         coin_title:
           "Zano (ZANO) — a privacy-focused cryptocurrency with confidential transactions and assets.",
         coin_description:
@@ -422,7 +423,7 @@ defmodule BoxwalletWeb.ZanoLive do
             <% :receive -> %>
               <.coin_transactions color="text-zanoblue" coin_daemon_started={@coin_daemon_started} transactions={@transactions} receive_coming_soon={true} />
             <% :send -> %>
-              <.coin_send color="text-zanoblue" coin_daemon_started={@coin_daemon_started} coming_soon={true} />
+              <.coin_send color="text-zanoblue" coin_daemon_started={@coin_daemon_started} coming_soon={true} coin_name_abbrev={@coin_name_abbrev} />
             <% _ -> %>
               <.coin_transactions color="text-zanoblue" coin_daemon_started={@coin_daemon_started} transactions={@transactions} receive_coming_soon={true} />
           <% end %>
