@@ -120,4 +120,10 @@
     --btn-fg: oklch(98% 0 0);
 }
 
+/* In light mode, outline button text uses base-content (dark) instead of the brand colour,
+   matching the home page link text behaviour */
+[data-theme="light"] .btn-outline.btn-boxwalletgreen:not(.btn-active, :hover, :active:focus, :focus-visible, :disabled, [disabled], .btn-disabled) {
+    --btn-fg: var(--color-base-content);
+}
+
 /* This file is for your main application CSS */
