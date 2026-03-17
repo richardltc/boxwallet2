@@ -1013,6 +1013,50 @@ defmodule Boxwallet.Coins.ReddCoin do
     end
   end
 
+  def send_to_address(auth, address, amount) do
+    # Set the transaction fee before sending
+    set_tx_fee(auth, 0.0001)
+
+    body =
+      Jason.encode!(%{
+        jsonrpc: "1.0",
+        id: "boxwallet",
+        method: "sendtoaddress",
+        params: [address, amount]
+      })
+
+    url = "http://127.0.0.1:#{auth.rpc_port}/wallet/BoxWallet"
+
+    headers = [
+      {"Content-Type", "text/plain"},
+      {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
+    ]
+
+    Logger.info("Attempting to SendToAddress #{address} amount #{amount}")
+
+    case HTTPoison.post(url, body, headers) do
+      {:ok, %{body: response_body}} ->
+        case Jason.decode(response_body) do
+          {:ok, %{"error" => nil, "result" => txid}} ->
+            {:ok, txid}
+
+          {:ok, %{"error" => %{"message" => message}}} ->
+            Logger.error("sendtoaddress failed: #{message}")
+            {:error, message}
+
+          {:ok, %{"error" => error}} ->
+            Logger.error("sendtoaddress failed: #{inspect(error)}")
+            {:error, inspect(error)}
+
+          {:error, _} ->
+            {:error, "Failed to parse response"}
+        end
+
+      {:error, %HTTPoison.Error{reason: reason}} ->
+        {:error, %HTTPoison.Error{reason: reason}}
+    end
+  end
+
   def set_tx_fee(auth, fee) do
     body =
       Jason.encode!(%{
