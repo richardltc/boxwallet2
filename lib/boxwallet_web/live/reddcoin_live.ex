@@ -27,6 +27,7 @@ defmodule BoxwalletWeb.ReddCoinLive do
       assign(socket,
         blockchain_is_synced: server_state.blockchain_is_synced,
         coin_name: "ReddCoin",
+        coin_name_abbrev: ReddCoin.coin_name_abbrev(),
         coin_title:
           "ReddCoin (RDD) — blockchain network for social payments, tipping, and micro-transactions.",
         coin_description:
@@ -66,7 +67,9 @@ defmodule BoxwalletWeb.ReddCoinLive do
         show_receive_modal: false,
         receive_address: "",
         disk_used_bytes: server_state.disk_used_bytes,
-        disk_total_bytes: server_state.disk_total_bytes
+        disk_total_bytes: server_state.disk_total_bytes,
+        send_address: "",
+        address_valid: :empty
       )
 
     {:ok, socket}
@@ -99,6 +102,17 @@ defmodule BoxwalletWeb.ReddCoinLive do
     new_value = !socket.assigns.hide_balance
     BoxWallet.Settings.set(:hide_balance, new_value)
     {:noreply, assign(socket, :hide_balance, new_value)}
+  end
+
+  def handle_event("validate_send_address", %{"address" => address}, socket) do
+    validity =
+      cond do
+        address == "" -> :empty
+        ReddCoin.validate_address(address) -> :valid
+        true -> :invalid
+      end
+
+    {:noreply, assign(socket, send_address: address, address_valid: validity)}
   end
 
   def handle_event("switch_tab", %{"tab" => tab}, socket) do
@@ -641,7 +655,7 @@ defmodule BoxwalletWeb.ReddCoinLive do
             <% :receive -> %>
               <.coin_transactions color="text-rddred" coin_daemon_started={@coin_daemon_started} transactions={@transactions} />
             <% :send -> %>
-              <.coin_send color="text-rddred" coin_daemon_started={@coin_daemon_started} />
+              <.coin_send color="text-rddred" coin_daemon_started={@coin_daemon_started} address_valid={@address_valid} send_address={@send_address} coin_name_abbrev={@coin_name_abbrev} />
             <% _ -> %>
               <.coin_transactions color="text-rddred" coin_daemon_started={@coin_daemon_started} transactions={@transactions} />
           <% end %>
