@@ -126,4 +126,11 @@
     --btn-fg: var(--color-base-content);
 }
 
+/* Polished focus ring for inputs */
+.input:focus, .input:focus-within {
+    outline: 2px solid var(--color-boxwalletgreen);
+    outline-offset: 1px;
+    border-color: var(--color-boxwalletgreen);
+}
+
 /* This file is for your main application CSS */
