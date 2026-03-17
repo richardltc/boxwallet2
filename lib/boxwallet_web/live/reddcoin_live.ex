@@ -63,7 +63,9 @@ defmodule BoxwalletWeb.ReddCoinLive do
         transactions: server_state.transactions,
         testnet_enabled: testnet_enabled?(ReddCoin),
         show_receive_modal: false,
-        receive_address: ""
+        receive_address: "",
+        disk_used_bytes: server_state.disk_used_bytes,
+        disk_total_bytes: server_state.disk_total_bytes
       )
 
     {:ok, socket}
@@ -621,6 +623,8 @@ defmodule BoxwalletWeb.ReddCoinLive do
                 coin_daemon_stopped={@coin_daemon_stopped}
                 wallet_encryption_status={@wallet_encryption_status}
                 on_download="download_coin"
+                disk_used_bytes={@disk_used_bytes}
+                disk_total_bytes={@disk_total_bytes}
               />
             <% :settings -> %>
               <.coin_settings

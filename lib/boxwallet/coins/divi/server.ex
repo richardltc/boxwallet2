@@ -50,6 +50,15 @@ defmodule Boxwallet.Coins.Divi.Server do
     coin_auth = Divi.get_auth_values()
     coin_files_exist = Divi.files_exist()
 
+    {disk_used_bytes, disk_total_bytes} =
+      case BoxWallet.Coins.CoinHelper.disk_free() do
+        {:ok, %{total: total_mb, free: free_mb}} ->
+          {(total_mb - free_mb) * 1_048_576, total_mb * 1_048_576}
+
+        _ ->
+          {0, 0}
+      end
+
     state = %{
       coin_auth: coin_auth,
       daemon_status: :stopped,
@@ -73,7 +82,9 @@ defmodule Boxwallet.Coins.Divi.Server do
       version: "...",
       transactions: [],
       active_tab: :home,
-      transactions_timer: nil
+      transactions_timer: nil,
+      disk_used_bytes: disk_used_bytes,
+      disk_total_bytes: disk_total_bytes
     }
 
     # Check if daemon is already running
@@ -97,6 +108,16 @@ defmodule Boxwallet.Coins.Divi.Server do
 
   @impl true
   def handle_call(:get_state, _from, state) do
+    {disk_used_bytes, disk_total_bytes} =
+      case BoxWallet.Coins.CoinHelper.disk_free() do
+        {:ok, %{total: total_mb, free: free_mb}} ->
+          {(total_mb - free_mb) * 1_048_576, total_mb * 1_048_576}
+
+        _ ->
+          {state.disk_used_bytes, state.disk_total_bytes}
+      end
+
+    state = %{state | disk_used_bytes: disk_used_bytes, disk_total_bytes: disk_total_bytes}
     {:reply, state, state}
   end
 
@@ -566,7 +587,9 @@ defmodule Boxwallet.Coins.Divi.Server do
       download_complete: state.download_complete,
       download_error: state.download_error,
       version: state.version,
-      transactions: state.transactions
+      transactions: state.transactions,
+      disk_used_bytes: state.disk_used_bytes,
+      disk_total_bytes: state.disk_total_bytes
     }
 
     Phoenix.PubSub.broadcast(Boxwallet.PubSub, "divi:status", {:divi_state, payload})

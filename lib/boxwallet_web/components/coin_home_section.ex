@@ -1,6 +1,7 @@
 defmodule BoxwalletWeb.CoinHomeSection do
   use Phoenix.Component
   import BoxwalletWeb.SyncProgress
+  import BoxwalletWeb.DiskUsage
 
   attr :coin_name, :string, required: true
   attr :coin_description, :string, required: true
@@ -16,6 +17,8 @@ defmodule BoxwalletWeb.CoinHomeSection do
   attr :coin_daemon_stopped, :boolean, required: true
   attr :wallet_encryption_status, :atom, required: true
   attr :on_download, :string, required: true
+  attr :disk_used_bytes, :any, default: nil
+  attr :disk_total_bytes, :any, default: nil
 
   def coin_home_section(assigns) do
     ~H"""
@@ -24,12 +27,15 @@ defmodule BoxwalletWeb.CoinHomeSection do
       <p class="text-gray-400 text-lg leading-relaxed max-w-2xl mx-auto">
         {@coin_description}
       </p>
-      <.sync_stats
-        headers_synced={@headers_synced}
-        blocks_synced={@blocks_synced}
-        block_height={@block_height}
-        color={@color}
-      />
+      <div class="stats shadow mt-3 flex flex-row gap-8 p-6 justify-center items-center">
+        <.radial_progress label="Headers" synced={@headers_synced} total={@block_height} color={@color} />
+        <.radial_progress label="Blocks" synced={@blocks_synced} total={@block_height} color={@color} />
+        <.disk_usage
+          used_bytes={@disk_used_bytes || 0}
+          total_bytes={@disk_total_bytes || 0}
+          color={@color}
+        />
+      </div>
     </div>
 
     <!-- Action buttons -->

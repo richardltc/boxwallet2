@@ -61,7 +61,9 @@ defmodule BoxwalletWeb.ZanoLive do
         active_tab: :home,
         transactions: [],
         show_receive_modal: false,
-        receive_address: ""
+        receive_address: "",
+        disk_used_bytes: server_state.disk_used_bytes,
+        disk_total_bytes: server_state.disk_total_bytes
       )
 
     {:ok, socket}
@@ -412,6 +414,8 @@ defmodule BoxwalletWeb.ZanoLive do
               coin_daemon_stopped={@coin_daemon_stopped}
               wallet_encryption_status={@wallet_encryption_status}
               on_download="download_coin"
+              disk_used_bytes={@disk_used_bytes}
+              disk_total_bytes={@disk_total_bytes}
             />
           <% else %>
             <.coin_transactions color="text-zanoblue" coin_daemon_started={@coin_daemon_started} transactions={@transactions} receive_coming_soon={true} />
