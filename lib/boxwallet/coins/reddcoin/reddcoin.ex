@@ -6,7 +6,8 @@ defmodule Boxwallet.Coins.ReddCoin do
   # import BoxWallet.App
 
   @coin_name "ReddCoin"
-  # @coin_name_abbrev "RDD"
+  @coin_name_abbrev "RDD"
+  def coin_name_abbrev, do: @coin_name_abbrev
 
   @home_dir_lin ".reddcoin"
   @home_dir_mac "Reddcoin"
@@ -1012,6 +1013,16 @@ defmodule Boxwallet.Coins.ReddCoin do
         {:error, %HTTPoison.Error{reason: reason}}
     end
   end
+
+  @doc """
+  Validates a ReddCoin address.
+  A valid address must be exactly 34 characters long and start with "R".
+  """
+  def validate_address(address) when is_binary(address) do
+    String.length(address) == 34 and String.starts_with?(address, "R")
+  end
+
+  def validate_address(_), do: false
 
   def send_to_address(auth, address, amount) do
     # Set the transaction fee before sending
