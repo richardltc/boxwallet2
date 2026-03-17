@@ -18,13 +18,22 @@ defmodule BoxwalletWeb.CoinSidebar do
         <span class="text-[10px] font-semibold uppercase tracking-wide">Home</span>
       </button>
       <button
-        class={"btn btn-ghost btn-square flex flex-col items-center h-auto py-2 gap-0.5" <> if(@active_tab == :transactions, do: "", else: " opacity-40")}
-        title="Transactions"
+        class={"btn btn-ghost btn-square flex flex-col items-center h-auto py-2 gap-0.5" <> if(@active_tab == :receive, do: "", else: " opacity-40")}
+        title="Receive"
         phx-click="switch_tab"
-        phx-value-tab="transactions"
+        phx-value-tab="receive"
       >
-        <.icon name="hero-banknotes" class={"w-6 h-6 " <> @color} />
-        <span class="text-[10px] font-semibold uppercase tracking-wide">Trans</span>
+        <.icon name="hero-arrow-down-tray" class={"w-6 h-6 " <> @color} />
+        <span class="text-[10px] font-semibold uppercase tracking-wide">Receive</span>
+      </button>
+      <button
+        class={"btn btn-ghost btn-square flex flex-col items-center h-auto py-2 gap-0.5" <> if(@active_tab == :send, do: "", else: " opacity-40")}
+        title="Send"
+        phx-click="switch_tab"
+        phx-value-tab="send"
+      >
+        <.icon name="hero-paper-airplane" class={"w-6 h-6 " <> @color} />
+        <span class="text-[10px] font-semibold uppercase tracking-wide">Send</span>
       </button>
       <button
         class={"btn btn-ghost btn-square flex flex-col items-center h-auto py-2 gap-0.5" <> if(@active_tab == :settings, do: "", else: " opacity-40")}
