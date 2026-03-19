@@ -215,6 +215,33 @@ defmodule BoxWallet.Coins.ConfigManager do
     |> Enum.join("\n")
   end
 
+  @doc """
+  Enables pruning by setting `prune=<size>` in the config file.
+  Size must be at least 600 MB.
+  """
+  def enable_pruning(file_path, size) when is_integer(size) and size >= 600 do
+    set_label_value(file_path, "prune", to_string(size))
+  end
+
+  @doc """
+  Disables pruning by removing the `prune=` entry from the config file entirely.
+  """
+  def disable_pruning(file_path) do
+    case File.read(file_path) do
+      {:ok, content} ->
+        new_content =
+          content
+          |> String.split("\n")
+          |> Enum.reject(fn line -> String.trim(line) |> String.starts_with?("prune=") end)
+          |> Enum.join("\n")
+
+        File.write(file_path, new_content)
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
   def generate_random_string(length) when is_integer(length) and length > 0 do
     @alphanumeric
     |> Enum.take_random(length)

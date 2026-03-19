@@ -65,6 +65,8 @@ defmodule BoxwalletWeb.LitecoinLive do
         active_tab: :home,
         transactions: server_state.transactions,
         testnet_enabled: testnet_enabled?(Litecoin),
+        pruning_enabled: pruning_enabled?(Litecoin),
+        prune_size: get_prune_size(Litecoin),
         show_receive_modal: false,
         receive_address: ""
       )
@@ -276,10 +278,85 @@ defmodule BoxwalletWeb.LitecoinLive do
     end
   end
 
+  def handle_event("stage_prune_size", %{"prune_size" => size_str}, socket) do
+    case Integer.parse(size_str) do
+      {n, _} when n >= 600 -> {:noreply, assign(socket, :prune_size, n)}
+      _ -> {:noreply, socket}
+    end
+  end
+
+  def handle_event("confirm_toggle_pruning", _params, socket) do
+    new_enabled = !socket.assigns.pruning_enabled
+    conf_file = Litecoin.get_conf_file_location()
+
+    if new_enabled do
+      BoxWallet.Coins.ConfigManager.enable_pruning(conf_file, socket.assigns.prune_size)
+    else
+      BoxWallet.Coins.ConfigManager.disable_pruning(conf_file)
+    end
+
+    Process.send_after(self(), :clear_flash, 4_000)
+
+    if socket.assigns.coin_daemon_started do
+      Litecoin.Server.stop_daemon()
+
+      {:noreply,
+       socket
+       |> assign(pruning_enabled: new_enabled, coin_daemon_stopping: true)
+       |> put_flash(:info, "Pruning #{if new_enabled, do: "enabled", else: "disabled"}. Stopping #{socket.assigns.coin_name} Daemon...")}
+    else
+      {:noreply,
+       socket
+       |> assign(pruning_enabled: new_enabled)
+       |> put_flash(:info, "Pruning #{if new_enabled, do: "enabled", else: "disabled"}. Restart the daemon for changes to take effect.")}
+    end
+  end
+
+  def handle_event("confirm_update_prune_size", _params, socket) do
+    conf_file = Litecoin.get_conf_file_location()
+    BoxWallet.Coins.ConfigManager.enable_pruning(conf_file, socket.assigns.prune_size)
+
+    Process.send_after(self(), :clear_flash, 4_000)
+
+    if socket.assigns.coin_daemon_started do
+      Litecoin.Server.stop_daemon()
+
+      {:noreply,
+       socket
+       |> assign(coin_daemon_stopping: true)
+       |> put_flash(:info, "Prune size set to #{socket.assigns.prune_size} MB. Stopping #{socket.assigns.coin_name} Daemon...")}
+    else
+      {:noreply,
+       put_flash(socket, :info, "Prune size set to #{socket.assigns.prune_size} MB. Restart the daemon for changes to take effect.")}
+    end
+  end
+
   defp testnet_enabled?(coin_module) do
     case BoxWallet.Coins.ConfigManager.get_label_value(coin_module.get_conf_file_location(), "testnet") do
       {:ok, "1"} -> true
       _ -> false
+    end
+  end
+
+  defp pruning_enabled?(coin_module) do
+    case BoxWallet.Coins.ConfigManager.get_label_value(coin_module.get_conf_file_location(), "prune") do
+      {:ok, value} ->
+        case Integer.parse(value) do
+          {n, _} -> n > 0
+          _ -> false
+        end
+      _ -> false
+    end
+  end
+
+  defp get_prune_size(coin_module) do
+    case BoxWallet.Coins.ConfigManager.get_label_value(coin_module.get_conf_file_location(), "prune") do
+      {:ok, value} ->
+        case Integer.parse(value) do
+          {n, _} when n >= 600 -> n
+          _ -> 600
+        end
+      _ -> 600
     end
   end
 
@@ -635,6 +712,9 @@ defmodule BoxwalletWeb.LitecoinLive do
                 download_complete={@download_complete}
                 download_error={@download_error}
                 on_update="download_coin"
+                pruning_enabled={@pruning_enabled}
+                prune_size={@prune_size}
+                on_prune_toggle="confirm_toggle_pruning"
               />
             <% :receive -> %>
               <.coin_transactions color="text-litecoinblue" coin_daemon_started={@coin_daemon_started} transactions={@transactions} />
