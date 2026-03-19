@@ -17,6 +17,7 @@ defmodule BoxwalletWeb.DiviLive do
   def mount(_params, _session, socket) do
     if connected?(socket) do
       Phoenix.PubSub.subscribe(Boxwallet.PubSub, "divi:status")
+      Divi.Server.resume_polling()
     end
 
     # Seed initial state from GenServer
@@ -71,6 +72,11 @@ defmodule BoxwalletWeb.DiviLive do
       )
 
     {:ok, socket}
+  end
+
+  def terminate(_reason, _socket) do
+    Divi.Server.pause_polling()
+    :ok
   end
 
   # --- PubSub handler ---

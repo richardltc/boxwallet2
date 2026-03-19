@@ -18,6 +18,7 @@ defmodule BoxwalletWeb.ZanoLive do
   def mount(_params, _session, socket) do
     if connected?(socket) do
       Phoenix.PubSub.subscribe(Boxwallet.PubSub, "zano:status")
+      ZanoServer.resume_polling()
     end
 
     server_state = ZanoServer.get_state()
@@ -69,6 +70,11 @@ defmodule BoxwalletWeb.ZanoLive do
       )
 
     {:ok, socket}
+  end
+
+  def terminate(_reason, _socket) do
+    ZanoServer.pause_polling()
+    :ok
   end
 
   # --- PubSub handler ---

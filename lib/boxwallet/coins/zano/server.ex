@@ -28,6 +28,14 @@ defmodule Boxwallet.Coins.Zano.Server do
     GenServer.cast(__MODULE__, :download_coin)
   end
 
+  def pause_polling do
+    GenServer.cast(__MODULE__, :pause_polling)
+  end
+
+  def resume_polling do
+    GenServer.cast(__MODULE__, :resume_polling)
+  end
+
   # --- GenServer Callbacks ---
 
   @impl true
@@ -57,7 +65,8 @@ defmodule Boxwallet.Coins.Zano.Server do
       block_height: 0,
       blockchain_is_synced: false,
       disk_used_bytes: disk_used_bytes,
-      disk_total_bytes: disk_total_bytes
+      disk_total_bytes: disk_total_bytes,
+      polling_paused: false
     }
 
     state =
@@ -130,6 +139,22 @@ defmodule Boxwallet.Coins.Zano.Server do
     end
   end
 
+  def handle_cast(:pause_polling, state) do
+    Logger.info("Zano polling paused")
+    {:noreply, %{state | polling_paused: true}}
+  end
+
+  def handle_cast(:resume_polling, state) do
+    state = %{state | polling_paused: false}
+
+    if state.daemon_status in [:starting, :running] do
+      Logger.info("Zano polling resumed")
+      Process.send_after(self(), :poll_get_info, 200)
+    end
+
+    {:noreply, state}
+  end
+
   def handle_cast(:download_coin, state) do
     state = %{state | downloading: true, download_complete: false, download_error: nil}
     broadcast(state)
@@ -147,7 +172,7 @@ defmodule Boxwallet.Coins.Zano.Server do
   # --- get_info polling ---
 
   @impl true
-  def handle_info(:poll_get_info, %{daemon_status: status} = state)
+  def handle_info(:poll_get_info, %{daemon_status: status, polling_paused: false} = state)
       when status in [:starting, :running] do
     case state.coin_auth do
       {:ok, auth} ->
@@ -184,13 +209,13 @@ defmodule Boxwallet.Coins.Zano.Server do
     }
 
     broadcast(state)
-    Process.send_after(self(), :poll_get_info, @get_info_interval)
+    maybe_reschedule(state, :poll_get_info, @get_info_interval)
     {:noreply, state}
   end
 
   def handle_info({:get_info_result, {:error, _reason}}, state) do
     Logger.warning("Zano get_info poll failed, retrying...")
-    Process.send_after(self(), :poll_get_info, @get_info_interval)
+    maybe_reschedule(state, :poll_get_info, @get_info_interval)
     {:noreply, state}
   end
 
@@ -248,6 +273,12 @@ defmodule Boxwallet.Coins.Zano.Server do
   end
 
   # --- Private ---
+
+  defp maybe_reschedule(%{polling_paused: true}, _message, _interval), do: :ok
+
+  defp maybe_reschedule(_state, message, interval) do
+    Process.send_after(self(), message, interval)
+  end
 
   defp broadcast(state) do
     payload = %{
