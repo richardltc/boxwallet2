@@ -223,14 +223,18 @@ defmodule Boxwallet.Coins.Litecoin do
   end
 
   def get_block_height() do
-    url = "https://chainz.cryptoid.info/ltc/api.dws?q=getblockcount"
+    url = "https://litecoinspace.org/api/blocks/tip/height"
 
     case Req.get(url) do
-      {:ok, %{status: 200, body: body}} ->
-        # The body is a string (e.g., "3908174"), so we convert it to an integer
-        {count, _} = Integer.parse(body)
-        Logger.info("Blockheight found: #{count}")
-        {:ok, count}
+      {:ok, %{status: 200, body: body}} when is_integer(body) ->
+        Logger.info("Litecoin block height: #{body}")
+        {:ok, body}
+
+      {:ok, %{status: 200, body: body}} when is_binary(body) ->
+        case Integer.parse(body) do
+          {count, _} -> {:ok, count}
+          :error -> {:error, "Unexpected response: #{body}"}
+        end
 
       {:ok, %{status: status}} ->
         {:error, "API returned status code: #{status}"}
