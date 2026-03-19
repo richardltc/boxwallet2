@@ -411,7 +411,7 @@ defmodule Boxwallet.Coins.Litecoin do
             {:cont, {:error, :wrong_response}}
           else
             # Now we need to convert into a GetBlockchainInfo before returning it to the UI
-            case BoxWallet.Coins.ReddCoin.GetBlockchainInfo.from_json(response_body) do
+            case Boxwallet.Coins.Litecoin.GetBlockchainInfo.from_json(response_body) do
               {:ok, response} ->
                 # Process the successful response - Halt with result
                 {:halt, {:ok, response}}
@@ -531,7 +531,7 @@ defmodule Boxwallet.Coins.Litecoin do
             {:cont, {:error, :wrong_response}}
           else
             # Now we need to convert into a GetBlockchainInfo before returning it to the UI
-            case BoxWallet.Coins.ReddCoin.GetWalletInfo.from_json(response_body) do
+            case Boxwallet.Coins.Litecoin.GetWalletInfo.from_json(response_body) do
               {:ok, response} ->
                 # Process the successful response - Halt with result
                 {:halt, {:ok, response}}
@@ -584,34 +584,71 @@ defmodule Boxwallet.Coins.Litecoin do
     end
   end
 
-  def get_staking_info(auth) do
+
+  def load_wallet(auth) do
     body =
       Jason.encode!(%{
         jsonrpc: "1.0",
-        id: "curltext",
-        method: "getstakinginfo",
-        params: []
+        id: "curltest",
+        method: "loadwallet",
+        params: ["BoxWallet"]
       })
 
-    url = "http://127.0.0.1:#{auth.rpc_port}/wallet/BoxWallet"
+    url = "http://127.0.0.1:#{auth.rpc_port}/"
 
     headers = [
       {"Content-Type", "text/plain"},
       {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
     ]
 
-    Logger.info("Attempting to GetStakingInfo")
+    Logger.info("Attempting to load wallet")
 
     case HTTPoison.post(url, body, headers) do
       {:ok, %{body: response_body}} ->
-        IO.inspect(response_body)
+        case Jason.decode(response_body) do
+          {:ok, %{"error" => nil}} ->
+            :ok
 
-        case BoxWallet.Coins.ReddCoin.GetStakingInfo.from_json(response_body) do
-          {:ok, response} ->
-            {:ok, response}
+          {:ok, %{"error" => %{"message" => message}}} ->
+            {:error, message}
 
           {:error, reason} ->
-            Logger.error("Failed to parse GetStakingInfo: #{inspect(reason)}")
+            {:error, reason}
+        end
+
+      {:error, %HTTPoison.Error{reason: reason}} ->
+        {:error, reason}
+    end
+  end
+
+  def create_wallet(auth) do
+    body =
+      Jason.encode!(%{
+        jsonrpc: "1.0",
+        id: "curltest",
+        method: "createwallet",
+        params: ["BoxWallet"]
+      })
+
+    url = "http://127.0.0.1:#{auth.rpc_port}/"
+
+    headers = [
+      {"Content-Type", "text/plain"},
+      {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
+    ]
+
+    Logger.info("Attempting to create wallet")
+
+    case HTTPoison.post(url, body, headers) do
+      {:ok, %{body: response_body}} ->
+        case Jason.decode(response_body) do
+          {:ok, %{"error" => nil}} ->
+            :ok
+
+          {:ok, %{"error" => %{"message" => message}}} ->
+            {:error, message}
+
+          {:error, reason} ->
             {:error, reason}
         end
 
@@ -825,129 +862,6 @@ defmodule Boxwallet.Coins.Litecoin do
     end
   end
 
-  def wallet_unlock_fs(auth, password) do
-    body =
-      Jason.encode!(%{
-        jsonrpc: "1.0",
-        id: "curltext",
-        method: "walletpassphrase",
-        params: ["#{password}", 9_999_999, true]
-      })
-
-    url = "http://127.0.0.1:#{auth.rpc_port}/wallet/BoxWallet"
-
-    headers = [
-      {"Content-Type", "text/plain"},
-      {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
-    ]
-
-    Logger.info("Attempting to Unlock wallet for staking")
-
-    case HTTPoison.post(url, body, headers) do
-      {:ok, %{body: response_body}} ->
-        case Jason.decode(response_body) do
-          {:ok, %{"error" => nil}} ->
-            # After unlocking, enable staking on both wallet and node level
-            set_staking(auth, true)
-            staking(auth, true)
-            :ok
-
-          {:ok, %{"error" => %{"message" => message}}} ->
-            {:error, message}
-
-          {:ok, %{"error" => error}} ->
-            {:error, inspect(error)}
-
-          {:error, _} ->
-            {:error, "Failed to parse response"}
-        end
-
-      {:error, %HTTPoison.Error{reason: reason}} ->
-        {:error, %HTTPoison.Error{reason: reason}}
-    end
-  end
-
-  def set_staking(auth, enable) do
-    body =
-      Jason.encode!(%{
-        jsonrpc: "1.0",
-        id: "curltext",
-        method: "setstaking",
-        params: [enable]
-      })
-
-    url = "http://127.0.0.1:#{auth.rpc_port}/wallet/BoxWallet"
-
-    headers = [
-      {"Content-Type", "text/plain"},
-      {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
-    ]
-
-    Logger.info("Attempting to set wallet staking to #{enable}")
-
-    case HTTPoison.post(url, body, headers) do
-      {:ok, %{body: response_body}} ->
-        case Jason.decode(response_body) do
-          {:ok, %{"error" => nil}} ->
-            :ok
-
-          {:ok, %{"error" => %{"message" => message}}} ->
-            Logger.error("setstaking failed: #{message}")
-            {:error, message}
-
-          {:ok, %{"error" => error}} ->
-            Logger.error("setstaking failed: #{inspect(error)}")
-            {:error, inspect(error)}
-
-          {:error, _} ->
-            {:error, "Failed to parse response"}
-        end
-
-      {:error, %HTTPoison.Error{reason: reason}} ->
-        {:error, %HTTPoison.Error{reason: reason}}
-    end
-  end
-
-  def staking(auth, enable) do
-    body =
-      Jason.encode!(%{
-        jsonrpc: "1.0",
-        id: "curltext",
-        method: "staking",
-        params: [enable]
-      })
-
-    url = "http://127.0.0.1:#{auth.rpc_port}"
-
-    headers = [
-      {"Content-Type", "text/plain"},
-      {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
-    ]
-
-    Logger.info("Attempting to set global staking to #{enable}")
-
-    case HTTPoison.post(url, body, headers) do
-      {:ok, %{body: response_body}} ->
-        case Jason.decode(response_body) do
-          {:ok, %{"error" => nil}} ->
-            :ok
-
-          {:ok, %{"error" => %{"message" => message}}} ->
-            Logger.error("staking failed: #{message}")
-            {:error, message}
-
-          {:ok, %{"error" => error}} ->
-            Logger.error("staking failed: #{inspect(error)}")
-            {:error, inspect(error)}
-
-          {:error, _} ->
-            {:error, "Failed to parse response"}
-        end
-
-      {:error, %HTTPoison.Error{reason: reason}} ->
-        {:error, %HTTPoison.Error{reason: reason}}
-    end
-  end
 
   # def get_sync_info do
   #   try do

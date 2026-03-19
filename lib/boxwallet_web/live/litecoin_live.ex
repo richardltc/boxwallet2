@@ -54,7 +54,6 @@ defmodule BoxwalletWeb.LitecoinLive do
         headers: server_state.headers,
         version: Boxwallet.Coins.Litecoin.core_version(),
         coin_auth: server_state.coin_auth,
-        staking: server_state.staking,
         wallet_encryption_status: server_state.wallet_encryption_status,
         hide_balance: BoxWallet.Settings.get(:hide_balance),
         show_prompt: false,
@@ -124,11 +123,6 @@ defmodule BoxwalletWeb.LitecoinLive do
     {:noreply, assign(socket, show_prompt: true, prompt_action: :unlock, prompt_answer: "")}
   end
 
-  def handle_event("show_unlock_staking_prompt", _params, socket) do
-    {:noreply,
-     assign(socket, show_prompt: true, prompt_action: :unlock_for_staking, prompt_answer: "")}
-  end
-
   def handle_event("validate_passwords", %{"answer" => p1, "answer_confirm" => p2}, socket) do
     {:noreply,
      assign(socket,
@@ -173,16 +167,6 @@ defmodule BoxwalletWeb.LitecoinLive do
               put_flash(socket, :error, "Unable to unlock wallet: #{reason}")
           end
 
-        :unlock_for_staking ->
-          case Litecoin.wallet_unlock_fs(coin_auth, password) do
-            :ok ->
-              socket
-              |> put_flash(:info, "Wallet unlocked for staking successfully.")
-              |> assign(wallet_encryption_status: :wes_unlocked_for_staking)
-
-            {:error, reason} ->
-              put_flash(socket, :error, "Unable to unlock wallet: #{reason}")
-          end
       end
 
     {:noreply, assign(socket, show_prompt: false, prompt_action: nil)}
@@ -488,9 +472,6 @@ defmodule BoxwalletWeb.LitecoinLive do
             assigns.wallet_encryption_status == :wes_locked ->
               "Wallet locked"
 
-            assigns.wallet_encryption_status == :wes_unlocked_for_staking ->
-              "Wallet unlocked for staking :)"
-
             assigns.wallet_encryption_status == :wes_unknown ->
               "Wallet encryption unknown."
           end
@@ -504,9 +485,6 @@ defmodule BoxwalletWeb.LitecoinLive do
               :enabled
 
             assigns.wallet_encryption_status == :wes_locked ->
-              :enabled
-
-            assigns.wallet_encryption_status == :wes_unlocked_for_staking ->
               :enabled
 
             assigns.wallet_encryption_status == :wes_unknown ->
@@ -528,21 +506,7 @@ defmodule BoxwalletWeb.LitecoinLive do
         }
 
       :staking ->
-        hint =
-          if assigns.staking do
-            "Staking Active :)"
-          else
-            "Staking not active"
-          end
-
-        state =
-          if assigns.staking do
-            :pulsing
-          else
-            :disabled
-          end
-
-        %{name: "hero-bolt", hint: hint, color: "text-litecoinblue", state: state}
+        %{name: "hero-bolt", hint: "Staking not supported", color: "text-litecoinblue", state: :disabled}
     end
   end
 
@@ -573,7 +537,6 @@ defmodule BoxwalletWeb.LitecoinLive do
           case @prompt_action do
             :encrypt -> "Enter a new password to encrypt your wallet:"
             :unlock -> "Enter your wallet password to unlock:"
-            :unlock_for_staking -> "Enter your wallet password to unlock for staking:"
             _ -> "Enter your wallet password:"
           end
         }

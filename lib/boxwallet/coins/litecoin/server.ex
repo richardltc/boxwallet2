@@ -6,7 +6,6 @@ defmodule Boxwallet.Coins.Litecoin.Server do
 
   @blockchain_info_interval 3_000
   @wallet_info_interval 5_000
-  @staking_info_interval 10_000
   @block_height_interval 60_000
   @peer_info_interval 15_000
   @transactions_interval_fast 3_000
@@ -72,7 +71,6 @@ defmodule Boxwallet.Coins.Litecoin.Server do
       balance: 0.0,
       unconfirmed_balance: 0.0,
       immature_balance: 0.0,
-      staking: false,
       wallet_encryption_status: :wes_unknown,
       coin_files_exist: coin_files_exist,
       downloading: false,
@@ -191,7 +189,6 @@ defmodule Boxwallet.Coins.Litecoin.Server do
 
       if state.wallet_loaded do
         maybe_reschedule(state, :poll_wallet_info, 1_000)
-        maybe_reschedule(state, :poll_staking_info, 2_000)
         state = schedule_transactions_poll(state, 3_000)
         {:noreply, state}
       else
@@ -271,26 +268,6 @@ defmodule Boxwallet.Coins.Litecoin.Server do
   end
 
   def handle_info(:poll_peer_info, state), do: {:noreply, state}
-
-  def handle_info(:poll_staking_info, %{daemon_status: status, polling_paused: false} = state)
-      when status in [:starting, :running] do
-    case state.coin_auth do
-      {:ok, auth} ->
-        server = self()
-
-        spawn(fn ->
-          result = Litecoin.get_staking_info(auth)
-          send(server, {:staking_info_result, result})
-        end)
-
-        {:noreply, state}
-
-      _ ->
-        {:noreply, state}
-    end
-  end
-
-  def handle_info(:poll_staking_info, state), do: {:noreply, state}
 
   def handle_info(:poll_transactions, %{daemon_status: status, polling_paused: false} = state)
       when status in [:starting, :running] do
@@ -414,19 +391,6 @@ defmodule Boxwallet.Coins.Litecoin.Server do
     {:noreply, state}
   end
 
-  def handle_info({:staking_info_result, {:ok, response}}, state) do
-    state = %{state | staking: response.result.staking == true}
-    broadcast(state)
-    maybe_reschedule(state, :poll_staking_info, @staking_info_interval)
-    {:noreply, state}
-  end
-
-  def handle_info({:staking_info_result, {:error, reason}}, state) do
-    Logger.warning("Litecoin staking info poll failed: #{inspect(reason)}, retrying...")
-    maybe_reschedule(state, :poll_staking_info, @staking_info_interval)
-    {:noreply, state}
-  end
-
   def handle_info({:transactions_result, {:ok, response}}, state) do
     state = %{state | transactions: response.result}
     broadcast(state)
@@ -470,7 +434,7 @@ defmodule Boxwallet.Coins.Litecoin.Server do
     Logger.info("Litecoin wallet loaded successfully")
     state = %{state | wallet_loaded: true}
     maybe_reschedule(state, :poll_wallet_info, 1_000)
-    maybe_reschedule(state, :poll_staking_info, 2_000)
+
     state = schedule_transactions_poll(state, 3_000)
     {:noreply, state}
   end
@@ -480,7 +444,7 @@ defmodule Boxwallet.Coins.Litecoin.Server do
       Logger.info("Litecoin wallet already loaded")
       state = %{state | wallet_loaded: true}
       maybe_reschedule(state, :poll_wallet_info, 1_000)
-      maybe_reschedule(state, :poll_staking_info, 2_000)
+  
       state = schedule_transactions_poll(state, 3_000)
       {:noreply, state}
     else
@@ -507,7 +471,7 @@ defmodule Boxwallet.Coins.Litecoin.Server do
     Logger.info("Litecoin wallet created successfully")
     state = %{state | wallet_loaded: true}
     maybe_reschedule(state, :poll_wallet_info, 1_000)
-    maybe_reschedule(state, :poll_staking_info, 2_000)
+
     state = schedule_transactions_poll(state, 3_000)
     {:noreply, state}
   end
@@ -530,7 +494,6 @@ defmodule Boxwallet.Coins.Litecoin.Server do
         headers_synced: 0,
         difficulty: 0,
         connections: 0,
-        staking: false,
         wallet_encryption_status: :wes_unknown,
         transactions: []
     }
@@ -588,7 +551,7 @@ defmodule Boxwallet.Coins.Litecoin.Server do
 
   defp schedule_polls do
     Process.send_after(self(), :poll_blockchain_info, 200)
-    # Wallet info + staking info polling starts after wallet is loaded
+    # Wallet info polling starts after wallet is loaded
     Process.send_after(self(), :poll_block_height, 400)
     Process.send_after(self(), :poll_peer_info, 600)
   end
@@ -629,7 +592,6 @@ defmodule Boxwallet.Coins.Litecoin.Server do
       unconfirmed_balance: state.unconfirmed_balance,
       immature_balance: state.immature_balance,
       blockchain_is_synced: state.blockchain_is_synced,
-      staking: state.staking,
       wallet_encryption_status: state.wallet_encryption_status,
       downloading: state.downloading,
       download_complete: state.download_complete,
