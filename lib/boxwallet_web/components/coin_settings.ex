@@ -10,6 +10,9 @@ defmodule BoxwalletWeb.CoinSettings do
   attr :download_complete, :boolean, required: true
   attr :download_error, :any, default: nil
   attr :on_update, :string, required: true
+  attr :pruning_enabled, :boolean, default: false
+  attr :prune_size, :integer, default: 600
+  attr :on_prune_toggle, :string, default: nil
 
   def coin_settings(assigns) do
     ~H"""
@@ -138,6 +141,103 @@ defmodule BoxwalletWeb.CoinSettings do
         />
       </div>
 
+      <!-- Pruning section -->
+      <%= if @on_prune_toggle do %>
+        <div class="flex items-center justify-between p-4 bg-base-100 rounded-xl mt-4">
+          <div>
+            <h4 class="font-semibold text-lg">Pruning</h4>
+            <p class="text-sm text-gray-400">
+              Reduce disk usage by deleting old block data.
+              The daemon will be restarted after changing this setting.
+            </p>
+          </div>
+          <div class="flex items-center gap-4">
+            <form phx-change="stage_prune_size" class="flex items-center gap-2">
+              <input
+                type="number"
+                name="prune_size"
+                min="600"
+                value={@prune_size}
+
+                class="input input-bordered input-sm w-32"
+                phx-debounce="300"
+              />
+              <span class="text-xs text-gray-400">MB</span>
+            </form>
+            <%= if @pruning_enabled do %>
+              <button class="btn btn-outline btn-sm" onclick="prune_size_modal.showModal()">
+                Apply
+              </button>
+            <% end %>
+            <input
+              type="checkbox"
+              class={"toggle toggle-lg " <> toggle_color(@color)}
+              checked={@pruning_enabled}
+              onclick="prune_toggle_modal.showModal(); this.checked = !this.checked;"
+            />
+          </div>
+        </div>
+
+        <!-- Pruning toggle confirmation modal -->
+        <dialog id="prune_toggle_modal" class="modal">
+          <div class="modal-box">
+            <h3 class="font-bold text-lg">Confirm Pruning Change</h3>
+            <%= if @pruning_enabled do %>
+              <p class="py-4">
+                Are you sure you want to <strong>disable</strong> pruning?
+                If the daemon is currently running, it will need to be restarted.
+              </p>
+            <% else %>
+              <p class="py-4">
+                Are you sure you want to enable pruning at <strong>{@prune_size} MB</strong>?
+                If the daemon is currently running, it will need to be restarted.
+              </p>
+            <% end %>
+            <div class="modal-action">
+              <form method="dialog">
+                <button
+                  class="btn btn-success mr-2"
+                  phx-click={@on_prune_toggle}
+                  onclick="prune_toggle_modal.close()"
+                >
+                  Yes
+                </button>
+              </form>
+              <form method="dialog">
+                <button class="btn btn-error">No</button>
+              </form>
+            </div>
+          </div>
+        </dialog>
+
+        <!-- Prune size confirmation modal -->
+        <%= if @pruning_enabled do %>
+          <dialog id="prune_size_modal" class="modal">
+            <div class="modal-box">
+              <h3 class="font-bold text-lg">Confirm Prune Size</h3>
+              <p class="py-4">
+                Apply prune size of <strong>{@prune_size} MB</strong>?
+                If the daemon is currently running, it will need to be restarted.
+              </p>
+              <div class="modal-action">
+                <form method="dialog">
+                  <button
+                    class="btn btn-success mr-2"
+                    phx-click="confirm_update_prune_size"
+                    onclick="prune_size_modal.close()"
+                  >
+                    Yes
+                  </button>
+                </form>
+                <form method="dialog">
+                  <button class="btn btn-error">No</button>
+                </form>
+              </div>
+            </div>
+          </dialog>
+        <% end %>
+      <% end %>
+
       <!-- Confirmation modal -->
       <dialog id="testnet_modal" class="modal">
         <div class="modal-box">
@@ -175,5 +275,6 @@ defmodule BoxwalletWeb.CoinSettings do
 
   defp toggle_color("text-divired"), do: "toggle-error"
   defp toggle_color("text-rddred"), do: "toggle-error"
+  defp toggle_color("text-litecoinblue"), do: "toggle-info"
   defp toggle_color(_), do: "toggle-error"
 end
