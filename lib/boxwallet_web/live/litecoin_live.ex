@@ -63,6 +63,8 @@ defmodule BoxwalletWeb.LitecoinLive do
         passwords_match: false,
         active_tab: :home,
         transactions: server_state.transactions,
+        disk_used_bytes: server_state.disk_used_bytes,
+        disk_total_bytes: server_state.disk_total_bytes,
         testnet_enabled: testnet_enabled?(Litecoin),
         pruning_enabled: pruning_enabled?(Litecoin),
         prune_size: get_prune_size(Litecoin),
@@ -664,6 +666,8 @@ defmodule BoxwalletWeb.LitecoinLive do
                 coin_daemon_stopped={@coin_daemon_stopped}
                 wallet_encryption_status={@wallet_encryption_status}
                 on_download="download_coin"
+                disk_used_bytes={@disk_used_bytes}
+                disk_total_bytes={@disk_total_bytes}
               />
             <% :settings -> %>
               <.coin_settings
