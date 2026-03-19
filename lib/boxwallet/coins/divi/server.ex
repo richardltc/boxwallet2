@@ -202,9 +202,10 @@ defmodule Boxwallet.Coins.Divi.Server do
   end
 
   def handle_cast(:resume_polling, state) do
+    was_paused = state.polling_paused
     state = %{state | polling_paused: false}
 
-    if state.daemon_status in [:starting, :running] do
+    if was_paused and state.daemon_status in [:starting, :running] do
       Logger.info("Divi polling resumed")
       schedule_polls()
     end
