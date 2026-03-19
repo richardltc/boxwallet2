@@ -21,8 +21,7 @@ defmodule Boxwallet.Coins.Litecoin do
   @download_file_windows "litecoin-" <> @core_version <> "-win64.zip"
   # @download_file_bs "primer.zip"
 
-  # https://download.reddcoin.com/bin/reddcoin-core-4.22.9/
-  @extracted_dir_linux "litecoin-" <> @core_version <> "-x86_64-linux-gnu"
+  @extracted_dir_linux "litecoin-" <> @core_version
   @extracted_dir_windows "litecoin-" <> @core_version
 
   # https://github.com/litecoin-project/litecoin/releases/download/v0.21.4/litecoin-0.21.4-x86_64-linux-gnu.tar.gz
