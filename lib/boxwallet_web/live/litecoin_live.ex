@@ -18,6 +18,7 @@ defmodule BoxwalletWeb.LitecoinLive do
   def mount(_params, _session, socket) do
     if connected?(socket) do
       Phoenix.PubSub.subscribe(Boxwallet.PubSub, "litecoin:status")
+      Litecoin.Server.resume_polling()
     end
 
     # Seed initial state from GenServer
@@ -69,6 +70,11 @@ defmodule BoxwalletWeb.LitecoinLive do
       )
 
     {:ok, socket}
+  end
+
+  def terminate(_reason, _socket) do
+    Litecoin.Server.pause_polling()
+    :ok
   end
 
   # --- PubSub handler ---
