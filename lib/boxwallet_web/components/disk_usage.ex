@@ -26,7 +26,7 @@ defmodule BoxwalletWeb.DiskUsage do
         total <= 0 -> "---"
         pct >= 100 -> "Full"
         pct == 0 -> "0%"
-        true -> (:io_lib.format("~.1f", [pct]) |> to_string()) <> "%"
+        true -> (:io_lib.format("~.2f", [pct]) |> to_string()) <> "%"
       end
 
     assigns = assign(assigns, pct: pct, formatted: formatted)
