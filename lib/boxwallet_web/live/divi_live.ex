@@ -74,11 +74,6 @@ defmodule BoxwalletWeb.DiviLive do
     {:ok, socket}
   end
 
-  def terminate(_reason, _socket) do
-    Divi.Server.pause_polling()
-    :ok
-  end
-
   # --- PubSub handler ---
 
   def handle_info({:divi_state, state_map}, socket) do
