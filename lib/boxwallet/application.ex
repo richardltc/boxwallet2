@@ -20,6 +20,7 @@ defmodule Boxwallet.Application do
       {Phoenix.PubSub, name: Boxwallet.PubSub},
       Boxwallet.Coins.ReddCoin.Server,
       Boxwallet.Coins.Divi.Server,
+      Boxwallet.Coins.Litecoin.Server,
       Boxwallet.Coins.Zano.Server,
       # Start to serve requests, typically the last entry
       BoxwalletWeb.Endpoint
