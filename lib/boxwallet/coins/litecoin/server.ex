@@ -10,6 +10,7 @@ defmodule Boxwallet.Coins.Litecoin.Server do
   @peer_info_interval 15_000
   @transactions_interval_fast 3_000
   @transactions_interval_slow 15_000
+  @disk_usage_interval 60_000
 
   # --- Public API ---
 
@@ -56,6 +57,15 @@ defmodule Boxwallet.Coins.Litecoin.Server do
     coin_auth = Litecoin.get_auth_values()
     coin_files_exist = Litecoin.files_exist()
 
+    {disk_used_bytes, disk_total_bytes} =
+      case BoxWallet.Coins.CoinHelper.disk_free() do
+        {:ok, %{total: total_mb, free: free_mb}} ->
+          {(total_mb - free_mb) * 1_048_576, total_mb * 1_048_576}
+
+        _ ->
+          {0, 0}
+      end
+
     state = %{
       coin_auth: coin_auth,
       daemon_status: :stopped,
@@ -79,7 +89,9 @@ defmodule Boxwallet.Coins.Litecoin.Server do
       transactions: [],
       active_tab: :home,
       transactions_timer: nil,
-      polling_paused: false
+      polling_paused: false,
+      disk_used_bytes: disk_used_bytes,
+      disk_total_bytes: disk_total_bytes
     }
 
     # Check if daemon is already running
@@ -98,11 +110,23 @@ defmodule Boxwallet.Coins.Litecoin.Server do
           state
       end
 
+    Process.send_after(self(), :poll_disk_usage, @disk_usage_interval)
+
     {:ok, state}
   end
 
   @impl true
   def handle_call(:get_state, _from, state) do
+    {disk_used_bytes, disk_total_bytes} =
+      case BoxWallet.Coins.CoinHelper.disk_free() do
+        {:ok, %{total: total_mb, free: free_mb}} ->
+          {(total_mb - free_mb) * 1_048_576, total_mb * 1_048_576}
+
+        _ ->
+          {state.disk_used_bytes, state.disk_total_bytes}
+      end
+
+    state = %{state | disk_used_bytes: disk_used_bytes, disk_total_bytes: disk_total_bytes}
     {:reply, state, state}
   end
 
@@ -541,6 +565,22 @@ defmodule Boxwallet.Coins.Litecoin.Server do
     {:noreply, state}
   end
 
+  def handle_info(:poll_disk_usage, state) do
+    {disk_used_bytes, disk_total_bytes} =
+      case BoxWallet.Coins.CoinHelper.disk_free() do
+        {:ok, %{total: total_mb, free: free_mb}} ->
+          {(total_mb - free_mb) * 1_048_576, total_mb * 1_048_576}
+
+        _ ->
+          {state.disk_used_bytes, state.disk_total_bytes}
+      end
+
+    state = %{state | disk_used_bytes: disk_used_bytes, disk_total_bytes: disk_total_bytes}
+    broadcast(state)
+    Process.send_after(self(), :poll_disk_usage, @disk_usage_interval)
+    {:noreply, state}
+  end
+
   def handle_info(:clear_download_success, state) do
     state = %{state | download_complete: false}
     broadcast(state)
@@ -557,6 +597,10 @@ defmodule Boxwallet.Coins.Litecoin.Server do
   end
 
   defp maybe_reschedule(%{polling_paused: true}, _message, _interval), do: :ok
+
+  defp maybe_reschedule(%{daemon_status: status}, _message, _interval)
+       when status not in [:starting, :running],
+       do: :ok
 
   defp maybe_reschedule(_state, message, interval) do
     Process.send_after(self(), message, interval)
@@ -596,7 +640,9 @@ defmodule Boxwallet.Coins.Litecoin.Server do
       downloading: state.downloading,
       download_complete: state.download_complete,
       download_error: state.download_error,
-      transactions: state.transactions
+      transactions: state.transactions,
+      disk_used_bytes: state.disk_used_bytes,
+      disk_total_bytes: state.disk_total_bytes
     }
 
     Phoenix.PubSub.broadcast(Boxwallet.PubSub, "litecoin:status", {:litecoin_state, payload})

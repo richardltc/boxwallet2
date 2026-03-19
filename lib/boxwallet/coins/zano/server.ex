@@ -5,6 +5,7 @@ defmodule Boxwallet.Coins.Zano.Server do
   alias Boxwallet.Coins.Zano
 
   @get_info_interval 3_000
+  @disk_usage_interval 60_000
 
   # --- Public API ---
 
@@ -83,6 +84,8 @@ defmodule Boxwallet.Coins.Zano.Server do
         _ ->
           state
       end
+
+    Process.send_after(self(), :poll_disk_usage, @disk_usage_interval)
 
     {:ok, state}
   end
@@ -266,6 +269,22 @@ defmodule Boxwallet.Coins.Zano.Server do
     {:noreply, state}
   end
 
+  def handle_info(:poll_disk_usage, state) do
+    {disk_used_bytes, disk_total_bytes} =
+      case BoxWallet.Coins.CoinHelper.disk_free() do
+        {:ok, %{total: total_mb, free: free_mb}} ->
+          {(total_mb - free_mb) * 1_048_576, total_mb * 1_048_576}
+
+        _ ->
+          {state.disk_used_bytes, state.disk_total_bytes}
+      end
+
+    state = %{state | disk_used_bytes: disk_used_bytes, disk_total_bytes: disk_total_bytes}
+    broadcast(state)
+    Process.send_after(self(), :poll_disk_usage, @disk_usage_interval)
+    {:noreply, state}
+  end
+
   def handle_info(:clear_download_success, state) do
     state = %{state | download_complete: false}
     broadcast(state)
@@ -275,6 +294,10 @@ defmodule Boxwallet.Coins.Zano.Server do
   # --- Private ---
 
   defp maybe_reschedule(%{polling_paused: true}, _message, _interval), do: :ok
+
+  defp maybe_reschedule(%{daemon_status: status}, _message, _interval)
+       when status not in [:starting, :running],
+       do: :ok
 
   defp maybe_reschedule(_state, message, interval) do
     Process.send_after(self(), message, interval)
