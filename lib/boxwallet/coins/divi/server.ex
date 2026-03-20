@@ -366,7 +366,7 @@ defmodule Boxwallet.Coins.Divi.Server do
 
     state = %{
       state
-      | daemon_status: :running,
+      | daemon_status: if(state.daemon_status in [:starting, :running], do: :running, else: state.daemon_status),
         connections: response.result.connections || 0,
         staking_status: response.result.staking_status || "Staking Not Active",
         version: response.result.version || "v..."

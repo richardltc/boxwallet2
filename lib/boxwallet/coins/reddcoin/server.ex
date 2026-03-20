@@ -356,7 +356,7 @@ defmodule Boxwallet.Coins.ReddCoin.Server do
 
     state = %{
       state
-      | daemon_status: :running,
+      | daemon_status: if(state.daemon_status in [:starting, :running], do: :running, else: state.daemon_status),
         blocks_synced: response.result.blocks || 0,
         blocks:
           Number.Delimit.number_to_delimited(response.result.blocks, precision: 0) || 0,
@@ -390,7 +390,7 @@ defmodule Boxwallet.Coins.ReddCoin.Server do
 
     state = %{
       state
-      | daemon_status: :running,
+      | daemon_status: if(state.daemon_status in [:starting, :running], do: :running, else: state.daemon_status),
         wallet_encryption_status: wallet_encryption_status,
         balance: response.result.balance,
         unconfirmed_balance: response.result.unconfirmed_balance || 0.0,
