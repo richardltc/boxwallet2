@@ -43,6 +43,10 @@ defmodule BoxwalletWeb.CoreWalletToolbar do
         from { transform: rotate(0deg); }
         to { transform: rotate(360deg); }
       }
+      @keyframes rotate-ccw {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(-360deg); }
+      }
       @keyframes pulse {
         0%, 100% {
           opacity: 0.7;
@@ -60,6 +64,24 @@ defmodule BoxwalletWeb.CoreWalletToolbar do
       }
       .rotating {
         animation: rotate 10s linear infinite;
+      }
+      .rotating-ccw {
+        animation: rotate-ccw 10s linear infinite;
+      }
+      @keyframes pulse-rotate-ccw {
+        0%, 100% {
+          opacity: 0.7;
+          transform: rotate(0deg) scale(1);
+          filter: brightness(1);
+        }
+        50% {
+          opacity: 1;
+          transform: rotate(-180deg) scale(1.2);
+          filter: brightness(1.8);
+        }
+      }
+      .pulsing-rotating-ccw {
+        animation: pulse-rotate-ccw 2s ease-in-out infinite;
       }
       .pulsing {
         animation: pulse 2s ease-in-out infinite;
@@ -86,6 +108,8 @@ defmodule BoxwalletWeb.CoreWalletToolbar do
   defp state_class(:disabled), do: "opacity-30"
   defp state_class(:flashing), do: "flashing cursor-pointer"
   defp state_class(:rotating), do: "rotating cursor-pointer"
+  defp state_class(:rotating_ccw), do: "rotating-ccw cursor-pointer"
+  defp state_class(:pulsing_rotating_ccw), do: "pulsing-rotating-ccw cursor-pointer"
   defp state_class(:pulsing), do: "pulsing cursor-pointer"
   defp state_class(:enabled), do: "cursor-pointer"
   defp state_class(_), do: "cursor-pointer"
