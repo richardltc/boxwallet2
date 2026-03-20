@@ -74,6 +74,8 @@ defmodule Boxwallet.Coins.Litecoin.Server do
       headers: 0,
       blocks_synced: 0,
       headers_synced: 0,
+      verification_progress: 0.0,
+      daemon_warmup_status: nil,
       difficulty: 0,
       connections: 0,
       block_height: 0,
@@ -328,6 +330,13 @@ defmodule Boxwallet.Coins.Litecoin.Server do
   def handle_info(:poll_block_height, state), do: {:noreply, state}
 
   # Results from spawned RPC calls
+  def handle_info({:blockchain_info_result, {:warming_up, status}}, state) do
+    state = %{state | daemon_warmup_status: status}
+    broadcast(state)
+    maybe_reschedule(state, :poll_blockchain_info, 1_000)
+    {:noreply, state}
+  end
+
   def handle_info({:blockchain_info_result, {:ok, response}}, state) do
     # If wallet hasn't been loaded yet, trigger load now that daemon is confirmed up
     unless state.wallet_loaded do
@@ -336,7 +345,8 @@ defmodule Boxwallet.Coins.Litecoin.Server do
 
     state = %{
       state
-      | daemon_status: :running,
+      | daemon_status: if(state.daemon_status in [:starting, :running], do: :running, else: state.daemon_status),
+        daemon_warmup_status: nil,
         blocks_synced: response.result.blocks || 0,
         blocks:
           Number.Delimit.number_to_delimited(response.result.blocks, precision: 0) || 0,
@@ -345,6 +355,7 @@ defmodule Boxwallet.Coins.Litecoin.Server do
         headers_synced: response.result.headers || 0,
         headers:
           Number.Delimit.number_to_delimited(response.result.headers, precision: 0) || 0,
+        verification_progress: response.result.verificationprogress || 0.0,
         blockchain_is_synced:
           (response.result.verificationprogress || 0) >= 0.9999
     }
@@ -370,7 +381,7 @@ defmodule Boxwallet.Coins.Litecoin.Server do
 
     state = %{
       state
-      | daemon_status: :running,
+      | daemon_status: if(state.daemon_status in [:starting, :running], do: :running, else: state.daemon_status),
         wallet_encryption_status: wallet_encryption_status,
         balance: response.result.balance,
         unconfirmed_balance: response.result.unconfirmed_balance || 0.0,
@@ -516,6 +527,8 @@ defmodule Boxwallet.Coins.Litecoin.Server do
         blocks_synced: 0,
         headers: 0,
         headers_synced: 0,
+        verification_progress: 0.0,
+        daemon_warmup_status: nil,
         difficulty: 0,
         connections: 0,
         wallet_encryption_status: :wes_unknown,
@@ -629,6 +642,8 @@ defmodule Boxwallet.Coins.Litecoin.Server do
       headers: state.headers,
       blocks_synced: state.blocks_synced,
       headers_synced: state.headers_synced,
+      verification_progress: state.verification_progress,
+      daemon_warmup_status: state.daemon_warmup_status,
       difficulty: state.difficulty,
       connections: state.connections,
       block_height: state.block_height,

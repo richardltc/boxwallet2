@@ -203,7 +203,7 @@ defmodule Boxwallet.Coins.Zano.Server do
 
     state = %{
       state
-      | daemon_status: :running,
+      | daemon_status: if(state.daemon_status in [:starting, :running], do: :running, else: state.daemon_status),
         connections: connections,
         blocks_synced: blocks_synced,
         headers_synced: blocks_synced,

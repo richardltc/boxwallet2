@@ -38,11 +38,18 @@ defmodule BoxwalletWeb.SyncProgress do
   attr :synced, :float, required: true
   attr :total, :float, required: true
   attr :color, :string, default: "text-gray-500"
+  attr :pct_override, :float, default: nil
 
   def radial_progress(assigns) do
     synced = if is_number(assigns.synced), do: assigns.synced, else: 0
     total = if is_number(assigns.total), do: assigns.total, else: 0
-    pct = if total > 0, do: Float.round(synced / total * 100, 2), else: 0
+
+    pct =
+      cond do
+        is_number(assigns.pct_override) -> Float.round(assigns.pct_override, 2)
+        total > 0 -> Float.round(synced / total * 100, 2)
+        true -> 0
+      end
 
     formatted =
       cond do
