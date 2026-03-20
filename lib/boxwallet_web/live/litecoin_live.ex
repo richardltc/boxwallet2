@@ -48,6 +48,8 @@ defmodule BoxwalletWeb.LitecoinLive do
         block_height: server_state.block_height,
         blocks_synced: server_state.blocks_synced,
         headers_synced: server_state.headers_synced,
+        verification_progress: server_state.verification_progress,
+        daemon_warmup_status: server_state.daemon_warmup_status,
         blocks: server_state.blocks,
         connections: server_state.connections,
         difficulty: server_state.difficulty,
@@ -363,6 +365,9 @@ defmodule BoxwalletWeb.LitecoinLive do
       :daemon ->
         state =
           cond do
+            assigns.coin_daemon_starting and assigns.daemon_warmup_status == :rewinding ->
+              :pulsing_rotating_ccw
+
             assigns.coin_daemon_starting -> :pulsing
             assigns.coin_daemon_started -> :enabled
             assigns.coin_daemon_stopped -> :disabled
@@ -371,7 +376,10 @@ defmodule BoxwalletWeb.LitecoinLive do
 
         hint =
           cond do
-            assigns.coin_daemon_starting -> "Daemon starting..."
+            assigns.coin_daemon_starting and assigns.daemon_warmup_status == :rewinding ->
+              "Rewinding blocks..."
+
+            assigns.coin_daemon_starting -> "Daemon loading..."
             assigns.coin_daemon_started -> "Daemon running"
             assigns.coin_daemon_stopped -> "Daemon stopped"
             true -> "Idle"
@@ -657,6 +665,7 @@ defmodule BoxwalletWeb.LitecoinLive do
                 headers_synced={@headers_synced}
                 blocks_synced={@blocks_synced}
                 block_height={@block_height}
+                verification_progress={@verification_progress}
                 color="text-litecoinblue"
                 coin_files_exist={@coin_files_exist}
                 downloading={@downloading}
