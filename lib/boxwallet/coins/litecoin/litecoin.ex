@@ -398,40 +398,32 @@ defmodule Boxwallet.Coins.Litecoin do
       {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
     ]
 
-    Enum.reduce_while(1..@daemon_rpc_attempts, {:error, :no_attempts}, fn attempt, _acc ->
-      Logger.info("Attempting to GetBlockchainInfo (attempt #{attempt}/#{@daemon_rpc_attempts})")
+    case HTTPoison.post(url, body, headers) do
+      {:ok, %{body: response_body}} ->
+        cond do
+          String.contains?(response_body, "Rewinding") ->
+            Logger.info("Daemon is rewinding blocks")
+            {:warming_up, :rewinding}
 
-      case HTTPoison.post(url, body, headers) do
-        {:ok, %{body: response_body}} ->
-          IO.inspect(response_body)
+          String.contains?(response_body, "Loading") or
+          String.contains?(response_body, "Preparing databases") or
+          String.contains?(response_body, "RPC server started") or
+          String.contains?(response_body, "Verifying") ->
+            Logger.info("Daemon is loading")
+            {:warming_up, :loading}
 
-          if String.contains?(response_body, "Loading") ||
-               String.contains?(response_body, "Preparing databases") ||
-               String.contains?(response_body, "Rewinding") ||
-               String.contains?(response_body, "RPC server started") ||
-               String.contains?(response_body, "Verifying") do
-            Logger.info("Waiting for Daemon to be ready, attempt #{attempt}")
-            Process.sleep(1000)
-            {:cont, {:error, :wrong_response}}
-          else
-            # Now we need to convert into a GetBlockchainInfo before returning it to the UI
+          true ->
             case Boxwallet.Coins.Litecoin.GetBlockchainInfo.from_json(response_body) do
-              {:ok, response} ->
-                # Process the successful response - Halt with result
-                {:halt, {:ok, response}}
-
+              {:ok, response} -> {:ok, response}
               {:error, reason} ->
-                # Handle the error
-                Logger.error("Failed to parse: #{inspect(reason)}")
-                {:halt, {:error, reason}}
+                Logger.error("Failed to parse getblockchaininfo: #{inspect(reason)}")
+                {:error, reason}
             end
-          end
+        end
 
-        {:error, %HTTPoison.Error{reason: reason}} ->
-          Process.sleep(3000)
-          {:cont, {:error, reason}}
-      end
-    end)
+      {:error, %HTTPoison.Error{reason: reason}} ->
+        {:error, reason}
+    end
   end
 
   def get_peer_info(auth) do

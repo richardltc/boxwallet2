@@ -19,6 +19,7 @@ defmodule BoxwalletWeb.CoinHomeSection do
   attr :on_download, :string, required: true
   attr :disk_used_bytes, :any, default: nil
   attr :disk_total_bytes, :any, default: nil
+  attr :verification_progress, :float, default: nil
 
   def coin_home_section(assigns) do
     ~H"""
@@ -29,7 +30,13 @@ defmodule BoxwalletWeb.CoinHomeSection do
       </p>
       <div class="stats shadow mt-3 flex flex-row gap-8 p-6 justify-center items-center">
         <.radial_progress label="Headers" synced={@headers_synced} total={@block_height} color={@color} />
-        <.radial_progress label="Blocks" synced={@blocks_synced} total={@block_height} color={@color} />
+        <.radial_progress
+          label="Blocks"
+          synced={@blocks_synced}
+          total={@block_height}
+          color={@color}
+          pct_override={if @verification_progress, do: @verification_progress * 100, else: nil}
+        />
         <.disk_usage
           used_bytes={@disk_used_bytes || 0}
           total_bytes={@disk_total_bytes || 0}
