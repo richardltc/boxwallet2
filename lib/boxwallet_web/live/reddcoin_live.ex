@@ -78,11 +78,6 @@ defmodule BoxwalletWeb.ReddCoinLive do
     {:ok, socket}
   end
 
-  def terminate(_reason, _socket) do
-    ReddCoin.Server.pause_polling()
-    :ok
-  end
-
   # --- PubSub handler ---
 
   def handle_info({:reddcoin_state, state_map}, socket) do
