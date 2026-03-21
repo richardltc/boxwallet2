@@ -859,20 +859,59 @@ defmodule Boxwallet.Coins.Litecoin do
   end
 
 
-  # def get_sync_info do
-  #   try do
-  #     headers = [
-  #       {"Authorization",
-  #        "Basic " <>
-  #          Base.encode64("#{@rpc_credentials[:username]}:#{@rpc_credentials[:password]}")}
-  #     ]
+  def validate_address(address) when is_binary(address) do
+    len = String.length(address)
 
-  #     body = Jason.encode!(%{"jsonrpc" => "2.0", "method" => "getblockchaininfo", "id" => 1})
-  #     {:ok, response} = HTTPoison.post(@rpc_url, body, headers)
-  #     %{"result" => %{"blocks" => blocks, "headers" => headers}} = Jason.decode!(response.body)
-  #     %{blocks: blocks, headers: headers, progress: trunc(blocks / max(headers, 1) * 100)}
-  #   rescue
-  #     _ -> %{blocks: 0, headers: 0, progress: 0}
-  #   end
-  # end
+    cond do
+      # Legacy P2PKH (starts with L) or P2SH (starts with M), 34 chars
+      len == 34 and String.starts_with?(address, ["L", "M"]) -> true
+      # Bech32 native SegWit (starts with ltc1), 43 or 62 chars
+      String.starts_with?(address, "ltc1") and len in [43, 62] -> true
+      true -> false
+    end
+  end
+
+  def validate_address(_), do: false
+
+  def send_to_address(auth, address, amount) do
+    body =
+      Jason.encode!(%{
+        jsonrpc: "1.0",
+        id: "boxwallet",
+        method: "sendtoaddress",
+        params: [address, amount]
+      })
+
+    url = "http://127.0.0.1:#{auth.rpc_port}/wallet/BoxWallet"
+
+    headers = [
+      {"Content-Type", "text/plain"},
+      {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
+    ]
+
+    Logger.info("Attempting to SendToAddress #{address} amount #{amount}")
+
+    case HTTPoison.post(url, body, headers) do
+      {:ok, %{body: response_body}} ->
+        case Jason.decode(response_body) do
+          {:ok, %{"error" => nil, "result" => txid}} ->
+            {:ok, txid}
+
+          {:ok, %{"error" => %{"message" => message}}} ->
+            Logger.error("sendtoaddress failed: #{message}")
+            {:error, message}
+
+          {:ok, %{"error" => error}} ->
+            Logger.error("sendtoaddress failed: #{inspect(error)}")
+            {:error, inspect(error)}
+
+          {:error, _} ->
+            {:error, "Failed to parse response"}
+        end
+
+      {:error, %HTTPoison.Error{reason: reason}} ->
+        {:error, %HTTPoison.Error{reason: reason}}
+    end
+  end
+
 end
