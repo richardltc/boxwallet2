@@ -69,7 +69,7 @@ defmodule Boxwallet.Coins.ReddCoin do
           name
 
         {:error, reason} ->
-          Logger.error("Error: #{reason}")
+          Logger.error("[#{@coin_name_abbrev}] Error: #{reason}")
           ""
       end
 
@@ -79,7 +79,7 @@ defmodule Boxwallet.Coins.ReddCoin do
           name
 
         {:error, reason} ->
-          Logger.error("Error: #{reason}")
+          Logger.error("[#{@coin_name_abbrev}] Error: #{reason}")
           ""
       end
 
@@ -95,15 +95,15 @@ defmodule Boxwallet.Coins.ReddCoin do
     dest_path_daemon =
       Path.join([BoxWallet.App.home_folder(), daemon_filename])
 
-    Logger.info("Copying from #{full_path_cli} to #{dest_path_cli}")
+    Logger.info("[#{@coin_name_abbrev}] Copying from #{full_path_cli} to #{dest_path_cli}")
     File.cp!(full_path_cli, dest_path_cli)
-    Logger.info("Copying from #{full_path_daemon} to #{dest_path_daemon}")
+    Logger.info("[#{@coin_name_abbrev}] Copying from #{full_path_daemon} to #{dest_path_daemon}")
     File.cp!(full_path_daemon, dest_path_daemon)
 
     File.chmod!(dest_path_cli, 0o755)
     File.chmod!(dest_path_daemon, 0o755)
 
-    Logger.info("Files copied and permissions set successfully.")
+    Logger.info("[#{@coin_name_abbrev}] Files copied and permissions set successfully.")
   end
 
   def create_wallet(auth) do
@@ -122,7 +122,7 @@ defmodule Boxwallet.Coins.ReddCoin do
       {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
     ]
 
-    Logger.info("Attempting to CreateWallet...")
+    Logger.info("[#{@coin_name_abbrev}] Attempting to CreateWallet...")
 
     case HTTPoison.post(url, body, headers) do
       {:ok, %{body: response_body}} ->
@@ -155,7 +155,7 @@ defmodule Boxwallet.Coins.ReddCoin do
       {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
     ]
 
-    Logger.info("Attempting to LoadWallet...")
+    Logger.info("[#{@coin_name_abbrev}] Attempting to LoadWallet...")
 
     case HTTPoison.post(url, body, headers) do
       {:ok, %{body: response_body}} ->
@@ -191,7 +191,7 @@ defmodule Boxwallet.Coins.ReddCoin do
       {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
     ]
 
-    Logger.info("Attempting to call GetInfo to see if Daemon is running")
+    Logger.info("[#{@coin_name_abbrev}] Attempting to call GetInfo to see if Daemon is running")
 
     case HTTPoison.post(url, body, headers) do
       {:ok, %{body: response_body}} ->
@@ -218,7 +218,7 @@ defmodule Boxwallet.Coins.ReddCoin do
           name
 
         {:error, reason} ->
-          Logger.error("Error: #{reason}")
+          Logger.error("[#{@coin_name_abbrev}] Error: #{reason}")
           # Keep empty string or use some default
           ""
       end
@@ -226,7 +226,7 @@ defmodule Boxwallet.Coins.ReddCoin do
     full_file_dl_url = @download_url <> file_name
 
     full_file_path = Path.join(app_home_dir, file_name)
-    Logger.info("Downloading file to: #{full_file_path}")
+    Logger.info("[#{@coin_name_abbrev}] Downloading file to: #{full_file_path}")
 
     case Req.get(full_file_dl_url, into: File.stream!(full_file_path)) do
       {:ok, %Req.Response{status: 200}} ->
@@ -234,14 +234,14 @@ defmodule Boxwallet.Coins.ReddCoin do
 
         case BoxWallet.Coins.CoinHelper.unarchive(full_file_path, app_home_dir) do
           :ok ->
-            Logger.info("Extraction completed successfully")
+            Logger.info("[#{@coin_name_abbrev}] Extraction completed successfully")
             copy_extracted_files()
             tidy_downloaded_files(full_file_path)
             populate_conf_file()
             {:ok}
 
           {:error, reason} ->
-            Logger.error("Extraction failed: #{inspect(reason)}")
+            Logger.error("[#{@coin_name_abbrev}] Extraction failed: #{inspect(reason)}")
             {:error, "Extraction failed: #{reason}"}
         end
 
@@ -260,12 +260,12 @@ defmodule Boxwallet.Coins.ReddCoin do
           name
 
         {:error, reason} ->
-          Logger.error("Error: #{reason}")
+          Logger.error("[#{@coin_name_abbrev}] Error: #{reason}")
           ""
       end
 
     s = Path.join(BoxWallet.App.home_folder(), daemon_filename)
-    Logger.info("Checking for file: #{s}")
+    Logger.info("[#{@coin_name_abbrev}] Checking for file: #{s}")
     File.exists?(Path.join(BoxWallet.App.home_folder(), daemon_filename))
   end
 
@@ -295,7 +295,7 @@ defmodule Boxwallet.Coins.ReddCoin do
     case Req.get(url) do
       {:ok, %{status: 200, body: %{"backend" => %{"blocks" => blocks}}}}
       when is_integer(blocks) ->
-        Logger.info("Blockheight found: #{blocks}")
+        Logger.info("[#{@coin_name_abbrev}] Blockheight found: #{blocks}")
         {:ok, blocks}
 
       {:ok, %{status: 200, body: _body}} ->
@@ -327,7 +327,7 @@ defmodule Boxwallet.Coins.ReddCoin do
         Path.join([user_home_dir, "AppData", "Roaming", @home_dir_win])
 
       _ ->
-        Logger.error("get_coin_home_dir: Running on an unknown OS!")
+        Logger.error("[#{@coin_name_abbrev}] get_coin_home_dir: Running on an unknown OS!")
     end
   end
 
@@ -464,7 +464,7 @@ defmodule Boxwallet.Coins.ReddCoin do
     ]
 
     Enum.reduce_while(1..@daemon_rpc_attempts, {:error, :no_attempts}, fn attempt, _acc ->
-      Logger.info("Attempting to GetBlockchainInfo (attempt #{attempt}/#{@daemon_rpc_attempts})")
+      Logger.info("[#{@coin_name_abbrev}] Attempting to GetBlockchainInfo (attempt #{attempt}/#{@daemon_rpc_attempts})")
 
       case HTTPoison.post(url, body, headers) do
         {:ok, %{body: response_body}} ->
@@ -475,7 +475,7 @@ defmodule Boxwallet.Coins.ReddCoin do
                String.contains?(response_body, "Rewinding") ||
                String.contains?(response_body, "RPC server started") ||
                String.contains?(response_body, "Verifying") do
-            Logger.info("Waiting for Daemon to be ready, attempt #{attempt}")
+            Logger.info("[#{@coin_name_abbrev}] Waiting for Daemon to be ready, attempt #{attempt}")
             Process.sleep(1000)
             {:cont, {:error, :wrong_response}}
           else
@@ -487,7 +487,7 @@ defmodule Boxwallet.Coins.ReddCoin do
 
               {:error, reason} ->
                 # Handle the error
-                Logger.error("Failed to parse: #{inspect(reason)}")
+                Logger.error("[#{@coin_name_abbrev}] Failed to parse: #{inspect(reason)}")
                 {:halt, {:error, reason}}
             end
           end
@@ -515,7 +515,7 @@ defmodule Boxwallet.Coins.ReddCoin do
       {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
     ]
 
-    Logger.info("Attempting to GetPeerInfo")
+    Logger.info("[#{@coin_name_abbrev}] Attempting to GetPeerInfo")
 
     case HTTPoison.post(url, body, headers) do
       {:ok, %{body: response_body}} ->
@@ -524,7 +524,7 @@ defmodule Boxwallet.Coins.ReddCoin do
             {:ok, response}
 
           {:error, reason} ->
-            Logger.error("Failed to parse GetPeerInfo: #{inspect(reason)}")
+            Logger.error("[#{@coin_name_abbrev}] Failed to parse GetPeerInfo: #{inspect(reason)}")
             {:error, reason}
         end
 
@@ -549,7 +549,7 @@ defmodule Boxwallet.Coins.ReddCoin do
       {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
     ]
 
-    Logger.info("Attempting to GetNewAddress")
+    Logger.info("[#{@coin_name_abbrev}] Attempting to GetNewAddress")
 
     case HTTPoison.post(url, body, headers) do
       {:ok, %{body: response_body}} ->
@@ -558,7 +558,7 @@ defmodule Boxwallet.Coins.ReddCoin do
             {:ok, response}
 
           {:error, reason} ->
-            Logger.error("Failed to parse GetNewAddress: #{inspect(reason)}")
+            Logger.error("[#{@coin_name_abbrev}] Failed to parse GetNewAddress: #{inspect(reason)}")
             {:error, reason}
         end
 
@@ -584,7 +584,7 @@ defmodule Boxwallet.Coins.ReddCoin do
     ]
 
     Enum.reduce_while(1..@daemon_rpc_attempts, {:error, :no_attempts}, fn attempt, _acc ->
-      Logger.info("Attempting to GetWalletInfo (attempt #{attempt}/#{@daemon_rpc_attempts})")
+      Logger.info("[#{@coin_name_abbrev}] Attempting to GetWalletInfo (attempt #{attempt}/#{@daemon_rpc_attempts})")
 
       case HTTPoison.post(url, body, headers) do
         {:ok, %{body: response_body}} ->
@@ -595,7 +595,7 @@ defmodule Boxwallet.Coins.ReddCoin do
                String.contains?(response_body, "Rewinding") ||
                String.contains?(response_body, "RPC server started") ||
                String.contains?(response_body, "Verifying") do
-            Logger.info("Waiting for Daemon to be ready, attempt #{attempt}")
+            Logger.info("[#{@coin_name_abbrev}] Waiting for Daemon to be ready, attempt #{attempt}")
             Process.sleep(1000)
             {:cont, {:error, :wrong_response}}
           else
@@ -607,7 +607,7 @@ defmodule Boxwallet.Coins.ReddCoin do
 
               {:error, reason} ->
                 # Handle the error
-                Logger.error("Failed to parse: #{inspect(reason)}")
+                Logger.error("[#{@coin_name_abbrev}] Failed to parse: #{inspect(reason)}")
                 {:halt, {:error, reason}}
             end
           end
@@ -635,7 +635,7 @@ defmodule Boxwallet.Coins.ReddCoin do
       {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
     ]
 
-    Logger.info("Attempting to ListTransactions")
+    Logger.info("[#{@coin_name_abbrev}] Attempting to ListTransactions")
 
     case HTTPoison.post(url, body, headers) do
       {:ok, %{body: response_body}} ->
@@ -644,7 +644,7 @@ defmodule Boxwallet.Coins.ReddCoin do
             {:ok, response}
 
           {:error, reason} ->
-            Logger.error("Failed to parse ListTransactions: #{inspect(reason)}")
+            Logger.error("[#{@coin_name_abbrev}] Failed to parse ListTransactions: #{inspect(reason)}")
             {:error, reason}
         end
 
@@ -669,7 +669,7 @@ defmodule Boxwallet.Coins.ReddCoin do
       {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
     ]
 
-    Logger.info("Attempting to GetStakingInfo")
+    Logger.info("[#{@coin_name_abbrev}] Attempting to GetStakingInfo")
 
     case HTTPoison.post(url, body, headers) do
       {:ok, %{body: response_body}} ->
@@ -680,7 +680,7 @@ defmodule Boxwallet.Coins.ReddCoin do
             {:ok, response}
 
           {:error, reason} ->
-            Logger.error("Failed to parse GetStakingInfo: #{inspect(reason)}")
+            Logger.error("[#{@coin_name_abbrev}] Failed to parse GetStakingInfo: #{inspect(reason)}")
             {:error, reason}
         end
 
@@ -710,7 +710,7 @@ defmodule Boxwallet.Coins.ReddCoin do
 
   defp tidy_downloaded_files(downloaded_file) do
     File.rm_rf!(Path.join(BoxWallet.App.home_folder(), @extracted_dir_linux))
-    Logger.info("Removing file: #{downloaded_file}")
+    Logger.info("[#{@coin_name_abbrev}] Removing file: #{downloaded_file}")
     File.rm_rf!(downloaded_file)
   end
 
@@ -743,7 +743,7 @@ defmodule Boxwallet.Coins.ReddCoin do
           name
 
         {:error, reason} ->
-          Logger.error("Error: #{reason}")
+          Logger.error("[#{@coin_name_abbrev}] Error: #{reason}")
           ""
       end
 
@@ -780,14 +780,14 @@ defmodule Boxwallet.Coins.ReddCoin do
   defp daemon_port_loop(port) do
     receive do
       {^port, {:data, data}} ->
-        Logger.info("reddcoind: #{String.trim(data)}")
+        Logger.info("[#{@coin_name_abbrev}] reddcoind: #{String.trim(data)}")
         daemon_port_loop(port)
 
       {^port, {:exit_status, 0}} ->
-        Logger.info("reddcoind exited normally")
+        Logger.info("[#{@coin_name_abbrev}] reddcoind exited normally")
 
       {^port, {:exit_status, code}} ->
-        Logger.error("reddcoind exited with status #{code}")
+        Logger.error("[#{@coin_name_abbrev}] reddcoind exited with status #{code}")
     end
   end
 
@@ -808,13 +808,13 @@ defmodule Boxwallet.Coins.ReddCoin do
     ]
 
     Enum.reduce_while(1..@daemon_stop_attempts, {:error, :no_attempts}, fn attempt, _acc ->
-      Logger.info("Attempting to stop daemon (attempt #{attempt}/#{@daemon_stop_attempts})")
+      Logger.info("[#{@coin_name_abbrev}] Attempting to stop daemon (attempt #{attempt}/#{@daemon_stop_attempts})")
 
       case HTTPoison.post(url, body, headers) do
         {:ok, %{body: response_body}} ->
           case Jason.decode(response_body) do
             {:ok, %{"error" => nil}} ->
-              Logger.info("Successfully stopped daemon on attempt #{attempt}")
+              Logger.info("[#{@coin_name_abbrev}] Successfully stopped daemon on attempt #{attempt}")
               {:halt, {:ok, response_body}}
 
             _ ->
@@ -867,7 +867,7 @@ defmodule Boxwallet.Coins.ReddCoin do
 
     url = url <> "/wallet/BoxWallet"
 
-    Logger.info("Attempting to Encrypt wallet")
+    Logger.info("[#{@coin_name_abbrev}] Attempting to Encrypt wallet")
 
     case HTTPoison.post(url, body, headers) do
       {:ok, %{body: response_body}} ->
@@ -908,7 +908,7 @@ defmodule Boxwallet.Coins.ReddCoin do
 
     url = url <> "/wallet/BoxWallet"
 
-    Logger.info("Attempting to Unlock wallet")
+    Logger.info("[#{@coin_name_abbrev}] Attempting to Unlock wallet")
 
     case HTTPoison.post(url, body, headers) do
       {:ok, %{body: response_body}} ->
@@ -947,7 +947,7 @@ defmodule Boxwallet.Coins.ReddCoin do
       {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
     ]
 
-    Logger.info("Attempting to Unlock wallet for staking")
+    Logger.info("[#{@coin_name_abbrev}] Attempting to Unlock wallet for staking")
 
     case HTTPoison.post(url, body, headers) do
       {:ok, %{body: response_body}} ->
@@ -989,7 +989,7 @@ defmodule Boxwallet.Coins.ReddCoin do
       {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
     ]
 
-    Logger.info("Attempting to set wallet staking to #{enable}")
+    Logger.info("[#{@coin_name_abbrev}] Attempting to set wallet staking to #{enable}")
 
     case HTTPoison.post(url, body, headers) do
       {:ok, %{body: response_body}} ->
@@ -998,11 +998,11 @@ defmodule Boxwallet.Coins.ReddCoin do
             :ok
 
           {:ok, %{"error" => %{"message" => message}}} ->
-            Logger.error("setstaking failed: #{message}")
+            Logger.error("[#{@coin_name_abbrev}] setstaking failed: #{message}")
             {:error, message}
 
           {:ok, %{"error" => error}} ->
-            Logger.error("setstaking failed: #{inspect(error)}")
+            Logger.error("[#{@coin_name_abbrev}] setstaking failed: #{inspect(error)}")
             {:error, inspect(error)}
 
           {:error, _} ->
@@ -1043,7 +1043,7 @@ defmodule Boxwallet.Coins.ReddCoin do
       {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
     ]
 
-    Logger.info("Attempting to SendToAddress #{address} amount #{amount}")
+    Logger.info("[#{@coin_name_abbrev}] Attempting to SendToAddress #{address} amount #{amount}")
 
     case HTTPoison.post(url, body, headers) do
       {:ok, %{body: response_body}} ->
@@ -1052,11 +1052,11 @@ defmodule Boxwallet.Coins.ReddCoin do
             {:ok, txid}
 
           {:ok, %{"error" => %{"message" => message}}} ->
-            Logger.error("sendtoaddress failed: #{message}")
+            Logger.error("[#{@coin_name_abbrev}] sendtoaddress failed: #{message}")
             {:error, message}
 
           {:ok, %{"error" => error}} ->
-            Logger.error("sendtoaddress failed: #{inspect(error)}")
+            Logger.error("[#{@coin_name_abbrev}] sendtoaddress failed: #{inspect(error)}")
             {:error, inspect(error)}
 
           {:error, _} ->
@@ -1084,7 +1084,7 @@ defmodule Boxwallet.Coins.ReddCoin do
       {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
     ]
 
-    Logger.info("Attempting to SetTxFee to #{fee}")
+    Logger.info("[#{@coin_name_abbrev}] Attempting to SetTxFee to #{fee}")
 
     case HTTPoison.post(url, body, headers) do
       {:ok, %{body: response_body}} ->
@@ -1093,11 +1093,11 @@ defmodule Boxwallet.Coins.ReddCoin do
             :ok
 
           {:ok, %{"error" => %{"message" => message}}} ->
-            Logger.error("settxfee failed: #{message}")
+            Logger.error("[#{@coin_name_abbrev}] settxfee failed: #{message}")
             {:error, message}
 
           {:ok, %{"error" => error}} ->
-            Logger.error("settxfee failed: #{inspect(error)}")
+            Logger.error("[#{@coin_name_abbrev}] settxfee failed: #{inspect(error)}")
             {:error, inspect(error)}
 
           {:error, _} ->
@@ -1125,7 +1125,7 @@ defmodule Boxwallet.Coins.ReddCoin do
       {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
     ]
 
-    Logger.info("Attempting to set global staking to #{enable}")
+    Logger.info("[#{@coin_name_abbrev}] Attempting to set global staking to #{enable}")
 
     case HTTPoison.post(url, body, headers) do
       {:ok, %{body: response_body}} ->
@@ -1134,11 +1134,11 @@ defmodule Boxwallet.Coins.ReddCoin do
             :ok
 
           {:ok, %{"error" => %{"message" => message}}} ->
-            Logger.error("staking failed: #{message}")
+            Logger.error("[#{@coin_name_abbrev}] staking failed: #{message}")
             {:error, message}
 
           {:ok, %{"error" => error}} ->
-            Logger.error("staking failed: #{inspect(error)}")
+            Logger.error("[#{@coin_name_abbrev}] staking failed: #{inspect(error)}")
             {:error, inspect(error)}
 
           {:error, _} ->

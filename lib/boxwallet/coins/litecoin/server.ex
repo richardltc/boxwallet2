@@ -101,7 +101,7 @@ defmodule Boxwallet.Coins.Litecoin.Server do
       case coin_auth do
         {:ok, auth} ->
           if Litecoin.daemon_is_running(auth) do
-            Logger.info("Litecoin daemon already running on init")
+            Logger.info("[LTC] Litecoin daemon already running on init")
             schedule_polls()
             %{state | daemon_status: :running}
           else
@@ -136,7 +136,7 @@ defmodule Boxwallet.Coins.Litecoin.Server do
   def handle_cast(:start_daemon, state) do
     case Litecoin.start_daemon() do
       {:ok} ->
-        Logger.info("Litecoin daemon starting...")
+        Logger.info("[LTC] Litecoin daemon starting...")
         state = %{state | daemon_status: :starting, wallet_loaded: false}
         broadcast(state)
         # Start blockchain polling — wallet polling starts after wallet is loaded
@@ -146,7 +146,7 @@ defmodule Boxwallet.Coins.Litecoin.Server do
         {:noreply, state}
 
       {:error, reason} ->
-        Logger.error("Failed to start Litecoin daemon: #{inspect(reason)}")
+        Logger.error("[LTC] Failed to start Litecoin daemon: #{inspect(reason)}")
         broadcast(state)
         {:noreply, state}
     end
@@ -202,7 +202,7 @@ defmodule Boxwallet.Coins.Litecoin.Server do
   end
 
   def handle_cast(:pause_polling, state) do
-    Logger.info("Litecoin polling paused")
+    Logger.info("[LTC] Litecoin polling paused")
     {:noreply, %{state | polling_paused: true}}
   end
 
@@ -210,7 +210,7 @@ defmodule Boxwallet.Coins.Litecoin.Server do
     state = %{state | polling_paused: false}
 
     if state.daemon_status in [:starting, :running] do
-      Logger.info("Litecoin polling resumed")
+      Logger.info("[LTC] Litecoin polling resumed")
       schedule_polls()
 
       if state.wallet_loaded do
@@ -366,7 +366,7 @@ defmodule Boxwallet.Coins.Litecoin.Server do
   end
 
   def handle_info({:blockchain_info_result, {:error, _reason}}, state) do
-    Logger.warning("Litecoin blockchain info poll failed, retrying...")
+    Logger.warning("[LTC] Litecoin blockchain info poll failed, retrying...")
     maybe_reschedule(state, :poll_blockchain_info, 2_000)
     {:noreply, state}
   end
@@ -394,7 +394,7 @@ defmodule Boxwallet.Coins.Litecoin.Server do
   end
 
   def handle_info({:wallet_info_result, {:error, _reason}}, state) do
-    Logger.warning("Litecoin wallet info poll failed, retrying...")
+    Logger.warning("[LTC] Litecoin wallet info poll failed, retrying...")
     maybe_reschedule(state, :poll_wallet_info, 2_000)
     {:noreply, state}
   end
@@ -407,7 +407,7 @@ defmodule Boxwallet.Coins.Litecoin.Server do
   end
 
   def handle_info({:block_height_result, {:error, reason}}, state) do
-    Logger.warning("Unable to get block height: #{inspect(reason)}, retrying in 65s")
+    Logger.warning("[LTC] Unable to get block height: #{inspect(reason)}, retrying in 65s")
     maybe_reschedule(state, :poll_block_height, 65_000)
     {:noreply, state}
   end
@@ -421,7 +421,7 @@ defmodule Boxwallet.Coins.Litecoin.Server do
   end
 
   def handle_info({:peer_info_result, {:error, reason}}, state) do
-    Logger.warning("Litecoin peer info poll failed: #{inspect(reason)}, retrying...")
+    Logger.warning("[LTC] Litecoin peer info poll failed: #{inspect(reason)}, retrying...")
     maybe_reschedule(state, :poll_peer_info, @peer_info_interval)
     {:noreply, state}
   end
@@ -440,7 +440,7 @@ defmodule Boxwallet.Coins.Litecoin.Server do
   end
 
   def handle_info({:transactions_result, {:error, reason}}, state) do
-    Logger.warning("Litecoin transactions poll failed: #{inspect(reason)}, retrying...")
+    Logger.warning("[LTC] Litecoin transactions poll failed: #{inspect(reason)}, retrying...")
     state = schedule_transactions_poll(state, @transactions_interval_slow)
     {:noreply, state}
   end
@@ -466,7 +466,7 @@ defmodule Boxwallet.Coins.Litecoin.Server do
   end
 
   def handle_info({:load_wallet_result, :ok}, state) do
-    Logger.info("Litecoin wallet loaded successfully")
+    Logger.info("[LTC] Litecoin wallet loaded successfully")
     state = %{state | wallet_loaded: true}
     maybe_reschedule(state, :poll_wallet_info, 1_000)
 
@@ -476,14 +476,14 @@ defmodule Boxwallet.Coins.Litecoin.Server do
 
   def handle_info({:load_wallet_result, {:error, message}}, state) do
     if is_binary(message) and String.contains?(message, "already loaded") do
-      Logger.info("Litecoin wallet already loaded")
+      Logger.info("[LTC] Litecoin wallet already loaded")
       state = %{state | wallet_loaded: true}
       maybe_reschedule(state, :poll_wallet_info, 1_000)
   
       state = schedule_transactions_poll(state, 3_000)
       {:noreply, state}
     else
-      Logger.warning("Failed to load wallet: #{inspect(message)}, attempting to create...")
+      Logger.warning("[LTC] Failed to load wallet: #{inspect(message)}, attempting to create...")
 
       case state.coin_auth do
         {:ok, auth} ->
@@ -503,7 +503,7 @@ defmodule Boxwallet.Coins.Litecoin.Server do
   end
 
   def handle_info({:create_wallet_result, :ok}, state) do
-    Logger.info("Litecoin wallet created successfully")
+    Logger.info("[LTC] Litecoin wallet created successfully")
     state = %{state | wallet_loaded: true}
     maybe_reschedule(state, :poll_wallet_info, 1_000)
 
@@ -512,12 +512,12 @@ defmodule Boxwallet.Coins.Litecoin.Server do
   end
 
   def handle_info({:create_wallet_result, {:error, reason}}, state) do
-    Logger.error("Failed to create wallet: #{inspect(reason)}")
+    Logger.error("[LTC] Failed to create wallet: #{inspect(reason)}")
     {:noreply, state}
   end
 
   def handle_info({:daemon_stop_result, {:ok, _response}}, state) do
-    Logger.info("Litecoin daemon stopped successfully")
+    Logger.info("[LTC] Litecoin daemon stopped successfully")
 
     state = %{
       state
@@ -540,14 +540,14 @@ defmodule Boxwallet.Coins.Litecoin.Server do
   end
 
   def handle_info({:daemon_stop_result, {:error, reason}}, state) do
-    Logger.error("Failed to stop Litecoin daemon: #{inspect(reason)}")
+    Logger.error("[LTC] Failed to stop Litecoin daemon: #{inspect(reason)}")
     state = %{state | daemon_status: :running}
     broadcast(state)
     {:noreply, state}
   end
 
   def handle_info({:download_result, {:ok}}, state) do
-    Logger.info("Litecoin download completed successfully")
+    Logger.info("[LTC] Litecoin download completed successfully")
     coin_auth = Litecoin.get_auth_values()
 
     state = %{
@@ -565,7 +565,7 @@ defmodule Boxwallet.Coins.Litecoin.Server do
   end
 
   def handle_info({:download_result, {:error, reason}}, state) do
-    Logger.error("Litecoin download failed: #{inspect(reason)}")
+    Logger.error("[LTC] Litecoin download failed: #{inspect(reason)}")
 
     state = %{
       state

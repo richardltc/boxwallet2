@@ -70,7 +70,7 @@ defmodule Boxwallet.Coins.Litecoin do
           name
 
         {:error, reason} ->
-          Logger.error("Error: #{reason}")
+          Logger.error("[#{@coin_name_abbrev}] Error: #{reason}")
           ""
       end
 
@@ -80,7 +80,7 @@ defmodule Boxwallet.Coins.Litecoin do
           name
 
         {:error, reason} ->
-          Logger.error("Error: #{reason}")
+          Logger.error("[#{@coin_name_abbrev}] Error: #{reason}")
           ""
       end
 
@@ -96,15 +96,15 @@ defmodule Boxwallet.Coins.Litecoin do
     dest_path_daemon =
       Path.join([BoxWallet.App.home_folder(), daemon_filename])
 
-    Logger.info("Copying from #{full_path_cli} to #{dest_path_cli}")
+    Logger.info("[#{@coin_name_abbrev}] Copying from #{full_path_cli} to #{dest_path_cli}")
     File.cp!(full_path_cli, dest_path_cli)
-    Logger.info("Copying from #{full_path_daemon} to #{dest_path_daemon}")
+    Logger.info("[#{@coin_name_abbrev}] Copying from #{full_path_daemon} to #{dest_path_daemon}")
     File.cp!(full_path_daemon, dest_path_daemon)
 
     File.chmod!(dest_path_cli, 0o755)
     File.chmod!(dest_path_daemon, 0o755)
 
-    Logger.info("Files copied and permissions set successfully.")
+    Logger.info("[#{@coin_name_abbrev}] Files copied and permissions set successfully.")
   end
 
   def daemon_is_running(auth) do
@@ -123,7 +123,7 @@ defmodule Boxwallet.Coins.Litecoin do
       {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
     ]
 
-    Logger.info("Attempting to call GetInfo to see if Daemon is running")
+    Logger.info("[#{@coin_name_abbrev}] Attempting to call GetInfo to see if Daemon is running")
 
     case HTTPoison.post(url, body, headers) do
       {:ok, %{body: response_body}} ->
@@ -151,7 +151,7 @@ defmodule Boxwallet.Coins.Litecoin do
           name
 
         {:error, reason} ->
-          Logger.error("Error: #{reason}")
+          Logger.error("[#{@coin_name_abbrev}] Error: #{reason}")
           # Keep empty string or use some default
           ""
       end
@@ -159,7 +159,7 @@ defmodule Boxwallet.Coins.Litecoin do
     full_file_dl_url = @download_url <> file_name
 
     full_file_path = Path.join(app_home_dir, file_name)
-    Logger.info("Downloading file to: #{full_file_path}")
+    Logger.info("[#{@coin_name_abbrev}] Downloading file to: #{full_file_path}")
 
     case Req.get(full_file_dl_url, into: File.stream!(full_file_path)) do
       {:ok, %Req.Response{status: 200}} ->
@@ -167,14 +167,14 @@ defmodule Boxwallet.Coins.Litecoin do
 
         case BoxWallet.Coins.CoinHelper.unarchive(full_file_path, app_home_dir) do
           :ok ->
-            Logger.info("Extraction completed successfully")
+            Logger.info("[#{@coin_name_abbrev}] Extraction completed successfully")
             copy_extracted_files()
             tidy_downloaded_files(full_file_path)
             populate_conf_file()
             {:ok}
 
           {:error, reason} ->
-            Logger.error("Extraction failed: #{inspect(reason)}")
+            Logger.error("[#{@coin_name_abbrev}] Extraction failed: #{inspect(reason)}")
             {:error, "Extraction failed: #{reason}"}
         end
 
@@ -193,12 +193,12 @@ defmodule Boxwallet.Coins.Litecoin do
           name
 
         {:error, reason} ->
-          Logger.error("Error: #{reason}")
+          Logger.error("[#{@coin_name_abbrev}] Error: #{reason}")
           ""
       end
 
     s = Path.join(BoxWallet.App.home_folder(), daemon_filename)
-    Logger.info("Checking for file: #{s}")
+    Logger.info("[#{@coin_name_abbrev}] Checking for file: #{s}")
     File.exists?(Path.join(BoxWallet.App.home_folder(), daemon_filename))
   end
 
@@ -227,7 +227,7 @@ defmodule Boxwallet.Coins.Litecoin do
 
     case Req.get(url) do
       {:ok, %{status: 200, body: body}} when is_integer(body) ->
-        Logger.info("Litecoin block height: #{body}")
+        Logger.info("[#{@coin_name_abbrev}] Block height: #{body}")
         {:ok, body}
 
       {:ok, %{status: 200, body: body}} when is_binary(body) ->
@@ -262,7 +262,7 @@ defmodule Boxwallet.Coins.Litecoin do
         Path.join([user_home_dir, "AppData", "Roaming", @home_dir_win])
 
       _ ->
-        Logger.error("get_coin_home_dir: Running on an unknown OS!")
+        Logger.error("[#{@coin_name_abbrev}] get_coin_home_dir: Running on an unknown OS!")
     end
   end
 
@@ -402,21 +402,21 @@ defmodule Boxwallet.Coins.Litecoin do
       {:ok, %{body: response_body}} ->
         cond do
           String.contains?(response_body, "Rewinding") ->
-            Logger.info("Daemon is rewinding blocks")
+            Logger.info("[#{@coin_name_abbrev}] Daemon is rewinding blocks")
             {:warming_up, :rewinding}
 
           String.contains?(response_body, "Loading") or
           String.contains?(response_body, "Preparing databases") or
           String.contains?(response_body, "RPC server started") or
           String.contains?(response_body, "Verifying") ->
-            Logger.info("Daemon is loading")
+            Logger.info("[#{@coin_name_abbrev}] Daemon is loading")
             {:warming_up, :loading}
 
           true ->
             case Boxwallet.Coins.Litecoin.GetBlockchainInfo.from_json(response_body) do
               {:ok, response} -> {:ok, response}
               {:error, reason} ->
-                Logger.error("Failed to parse getblockchaininfo: #{inspect(reason)}")
+                Logger.error("[#{@coin_name_abbrev}] Failed to parse getblockchaininfo: #{inspect(reason)}")
                 {:error, reason}
             end
         end
@@ -442,7 +442,7 @@ defmodule Boxwallet.Coins.Litecoin do
       {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
     ]
 
-    Logger.info("Attempting to GetPeerInfo")
+    Logger.info("[#{@coin_name_abbrev}] Attempting to GetPeerInfo")
 
     case HTTPoison.post(url, body, headers) do
       {:ok, %{body: response_body}} ->
@@ -451,7 +451,7 @@ defmodule Boxwallet.Coins.Litecoin do
             {:ok, response}
 
           {:error, reason} ->
-            Logger.error("Failed to parse GetPeerInfo: #{inspect(reason)}")
+            Logger.error("[#{@coin_name_abbrev}] Failed to parse GetPeerInfo: #{inspect(reason)}")
             {:error, reason}
         end
 
@@ -476,7 +476,7 @@ defmodule Boxwallet.Coins.Litecoin do
       {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
     ]
 
-    Logger.info("Attempting to GetNewAddress")
+    Logger.info("[#{@coin_name_abbrev}] Attempting to GetNewAddress")
 
     case HTTPoison.post(url, body, headers) do
       {:ok, %{body: response_body}} ->
@@ -485,7 +485,7 @@ defmodule Boxwallet.Coins.Litecoin do
             {:ok, response}
 
           {:error, reason} ->
-            Logger.error("Failed to parse GetNewAddress: #{inspect(reason)}")
+            Logger.error("[#{@coin_name_abbrev}] Failed to parse GetNewAddress: #{inspect(reason)}")
             {:error, reason}
         end
 
@@ -511,7 +511,7 @@ defmodule Boxwallet.Coins.Litecoin do
     ]
 
     Enum.reduce_while(1..@daemon_rpc_attempts, {:error, :no_attempts}, fn attempt, _acc ->
-      Logger.info("Attempting to GetWalletInfo (attempt #{attempt}/#{@daemon_rpc_attempts})")
+      Logger.info("[#{@coin_name_abbrev}] Attempting to GetWalletInfo (attempt #{attempt}/#{@daemon_rpc_attempts})")
 
       case HTTPoison.post(url, body, headers) do
         {:ok, %{body: response_body}} ->
@@ -522,7 +522,7 @@ defmodule Boxwallet.Coins.Litecoin do
                String.contains?(response_body, "Rewinding") ||
                String.contains?(response_body, "RPC server started") ||
                String.contains?(response_body, "Verifying") do
-            Logger.info("Waiting for Daemon to be ready, attempt #{attempt}")
+            Logger.info("[#{@coin_name_abbrev}] Waiting for Daemon to be ready, attempt #{attempt}")
             Process.sleep(1000)
             {:cont, {:error, :wrong_response}}
           else
@@ -534,7 +534,7 @@ defmodule Boxwallet.Coins.Litecoin do
 
               {:error, reason} ->
                 # Handle the error
-                Logger.error("Failed to parse: #{inspect(reason)}")
+                Logger.error("[#{@coin_name_abbrev}] Failed to parse: #{inspect(reason)}")
                 {:halt, {:error, reason}}
             end
           end
@@ -562,7 +562,7 @@ defmodule Boxwallet.Coins.Litecoin do
       {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
     ]
 
-    Logger.info("Attempting to ListTransactions")
+    Logger.info("[#{@coin_name_abbrev}] Attempting to ListTransactions")
 
     case HTTPoison.post(url, body, headers) do
       {:ok, %{body: response_body}} ->
@@ -571,7 +571,7 @@ defmodule Boxwallet.Coins.Litecoin do
             {:ok, response}
 
           {:error, reason} ->
-            Logger.error("Failed to parse ListTransactions: #{inspect(reason)}")
+            Logger.error("[#{@coin_name_abbrev}] Failed to parse ListTransactions: #{inspect(reason)}")
             {:error, reason}
         end
 
@@ -597,7 +597,7 @@ defmodule Boxwallet.Coins.Litecoin do
       {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
     ]
 
-    Logger.info("Attempting to load wallet")
+    Logger.info("[#{@coin_name_abbrev}] Attempting to load wallet")
 
     case HTTPoison.post(url, body, headers) do
       {:ok, %{body: response_body}} ->
@@ -633,7 +633,7 @@ defmodule Boxwallet.Coins.Litecoin do
       {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
     ]
 
-    Logger.info("Attempting to create wallet")
+    Logger.info("[#{@coin_name_abbrev}] Attempting to create wallet")
 
     case HTTPoison.post(url, body, headers) do
       {:ok, %{body: response_body}} ->
@@ -667,7 +667,7 @@ defmodule Boxwallet.Coins.Litecoin do
 
   defp tidy_downloaded_files(downloaded_file) do
     File.rm_rf!(Path.join(BoxWallet.App.home_folder(), @extracted_dir_linux))
-    Logger.info("Removing file: #{downloaded_file}")
+    Logger.info("[#{@coin_name_abbrev}] Removing file: #{downloaded_file}")
     File.rm_rf!(downloaded_file)
   end
 
@@ -700,7 +700,7 @@ defmodule Boxwallet.Coins.Litecoin do
           name
 
         {:error, reason} ->
-          Logger.error("Error: #{reason}")
+          Logger.error("[#{@coin_name_abbrev}] Error: #{reason}")
           ""
       end
 
@@ -735,13 +735,13 @@ defmodule Boxwallet.Coins.Litecoin do
     ]
 
     Enum.reduce_while(1..@daemon_stop_attempts, {:error, :no_attempts}, fn attempt, _acc ->
-      Logger.info("Attempting to stop daemon (attempt #{attempt}/#{@daemon_stop_attempts})")
+      Logger.info("[#{@coin_name_abbrev}] Attempting to stop daemon (attempt #{attempt}/#{@daemon_stop_attempts})")
 
       case HTTPoison.post(url, body, headers) do
         {:ok, %{body: response_body}} ->
           case Jason.decode(response_body) do
             {:ok, %{"error" => nil}} ->
-              Logger.info("Successfully stopped daemon on attempt #{attempt}")
+              Logger.info("[#{@coin_name_abbrev}] Successfully stopped daemon on attempt #{attempt}")
               {:halt, {:ok, response_body}}
 
             _ ->
@@ -794,7 +794,7 @@ defmodule Boxwallet.Coins.Litecoin do
 
     url = url <> "/wallet/BoxWallet"
 
-    Logger.info("Attempting to Encrypt wallet")
+    Logger.info("[#{@coin_name_abbrev}] Attempting to Encrypt wallet")
 
     case HTTPoison.post(url, body, headers) do
       {:ok, %{body: response_body}} ->
@@ -835,7 +835,7 @@ defmodule Boxwallet.Coins.Litecoin do
 
     url = url <> "/wallet/BoxWallet"
 
-    Logger.info("Attempting to Unlock wallet")
+    Logger.info("[#{@coin_name_abbrev}] Attempting to Unlock wallet")
 
     case HTTPoison.post(url, body, headers) do
       {:ok, %{body: response_body}} ->
@@ -889,7 +889,7 @@ defmodule Boxwallet.Coins.Litecoin do
       {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
     ]
 
-    Logger.info("Attempting to SendToAddress #{address} amount #{amount}")
+    Logger.info("[#{@coin_name_abbrev}] Attempting to SendToAddress #{address} amount #{amount}")
 
     case HTTPoison.post(url, body, headers) do
       {:ok, %{body: response_body}} ->
@@ -898,11 +898,11 @@ defmodule Boxwallet.Coins.Litecoin do
             {:ok, txid}
 
           {:ok, %{"error" => %{"message" => message}}} ->
-            Logger.error("sendtoaddress failed: #{message}")
+            Logger.error("[#{@coin_name_abbrev}] sendtoaddress failed: #{message}")
             {:error, message}
 
           {:ok, %{"error" => error}} ->
-            Logger.error("sendtoaddress failed: #{inspect(error)}")
+            Logger.error("[#{@coin_name_abbrev}] sendtoaddress failed: #{inspect(error)}")
             {:error, inspect(error)}
 
           {:error, _} ->
