@@ -76,7 +76,7 @@ defmodule Boxwallet.Coins.Zano do
           name
 
         {:error, reason} ->
-          Logger.error("Error: #{reason}")
+          Logger.error("[#{@coin_name_abbrev}] Error: #{reason}")
           ""
       end
 
@@ -86,7 +86,7 @@ defmodule Boxwallet.Coins.Zano do
           name
 
         {:error, reason} ->
-          Logger.error("Error: #{reason}")
+          Logger.error("[#{@coin_name_abbrev}] Error: #{reason}")
           ""
       end
 
@@ -102,15 +102,15 @@ defmodule Boxwallet.Coins.Zano do
     dest_path_daemon =
       Path.join([BoxWallet.App.home_folder(), daemon_filename])
 
-    Logger.info("Copying from #{full_path_cli} to #{dest_path_cli}")
+    Logger.info("[#{@coin_name_abbrev}] Copying from #{full_path_cli} to #{dest_path_cli}")
     File.cp!(full_path_cli, dest_path_cli)
-    Logger.info("Copying from #{full_path_daemon} to #{dest_path_daemon}")
+    Logger.info("[#{@coin_name_abbrev}] Copying from #{full_path_daemon} to #{dest_path_daemon}")
     File.cp!(full_path_daemon, dest_path_daemon)
 
     File.chmod!(dest_path_cli, 0o755)
     File.chmod!(dest_path_daemon, 0o755)
 
-    Logger.info("Files copied and permissions set successfully.")
+    Logger.info("[#{@coin_name_abbrev}] Files copied and permissions set successfully.")
   end
 
   def daemon_is_running(auth) do
@@ -126,7 +126,7 @@ defmodule Boxwallet.Coins.Zano do
 
     headers = [{"Content-Type", "application/json"}]
 
-    Logger.info("Attempting to call GetInfo to see if Zano Daemon is running")
+    Logger.info("[#{@coin_name_abbrev}] Attempting to call GetInfo to see if Daemon is running")
 
     case HTTPoison.post(url, body, headers) do
       {:ok, %{status_code: 200}} ->
@@ -152,7 +152,7 @@ defmodule Boxwallet.Coins.Zano do
           name
 
         {:error, reason} ->
-          Logger.error("Error: #{reason}")
+          Logger.error("[#{@coin_name_abbrev}] Error: #{reason}")
           # Keep empty string or use some default
           ""
       end
@@ -160,7 +160,7 @@ defmodule Boxwallet.Coins.Zano do
     full_file_dl_url = @download_url <> file_name
 
     full_file_path = Path.join(app_home_dir, file_name)
-    Logger.info("Downloading file to: #{full_file_path}")
+    Logger.info("[#{@coin_name_abbrev}] Downloading file to: #{full_file_path}")
 
     case Req.get(full_file_dl_url, into: File.stream!(full_file_path)) do
       {:ok, %Req.Response{status: 200}} ->
@@ -168,14 +168,14 @@ defmodule Boxwallet.Coins.Zano do
 
         case unarchive_file(full_file_path, app_home_dir) do
           {:ok} ->
-            Logger.info("Extraction completed successfully")
+            Logger.info("[#{@coin_name_abbrev}] Extraction completed successfully")
             copy_extracted_files()
             tidy_downloaded_files(full_file_path)
             populate_conf_file()
             {:ok}
 
           {:error, reason} ->
-            Logger.error("Extraction failed: #{inspect(reason)}")
+            Logger.error("[#{@coin_name_abbrev}] Extraction failed: #{inspect(reason)}")
             {:error, "Extraction failed: #{reason}"}
         end
 
@@ -194,12 +194,12 @@ defmodule Boxwallet.Coins.Zano do
           name
 
         {:error, reason} ->
-          Logger.error("Error: #{reason}")
+          Logger.error("[#{@coin_name_abbrev}] Error: #{reason}")
           ""
       end
 
     s = Path.join(BoxWallet.App.home_folder(), daemon_filename)
-    Logger.info("Checking for file: #{s}")
+    Logger.info("[#{@coin_name_abbrev}] Checking for file: #{s}")
     File.exists?(Path.join(BoxWallet.App.home_folder(), daemon_filename))
   end
 
@@ -230,7 +230,7 @@ defmodule Boxwallet.Coins.Zano do
       {:ok, %{status: 200, body: body}} ->
         # The body is a string (e.g., "3908174"), so we convert it to an integer
         {count, _} = Integer.parse(body)
-        Logger.info("Blockheight found: #{count}")
+        Logger.info("[#{@coin_name_abbrev}] Blockheight found: #{count}")
         {:ok, count}
 
       {:ok, %{status: status}} ->
@@ -259,7 +259,7 @@ defmodule Boxwallet.Coins.Zano do
         Path.join([user_home_dir, "AppData", "Roaming", @home_dir_win])
 
       _ ->
-        Logger.error("get_coin_home_dir: Running on an unknown OS!")
+        Logger.error("[#{@coin_name_abbrev}] get_coin_home_dir: Running on an unknown OS!")
     end
   end
 
@@ -393,7 +393,7 @@ defmodule Boxwallet.Coins.Zano do
     headers = [{"Content-Type", "application/json"}]
 
     Enum.reduce_while(1..@daemon_rpc_attempts, {:error, :no_attempts}, fn attempt, _acc ->
-      Logger.info("Attempting to GetInfo (attempt #{attempt}/#{@daemon_rpc_attempts})")
+      Logger.info("[#{@coin_name_abbrev}] Attempting to GetInfo (attempt #{attempt}/#{@daemon_rpc_attempts})")
 
       case HTTPoison.post(url, body, headers) do
         {:ok, %{body: response_body}} ->
@@ -402,7 +402,7 @@ defmodule Boxwallet.Coins.Zano do
               {:halt, {:ok, response}}
 
             {:error, reason} ->
-              Logger.error("Failed to parse GetInfo: #{inspect(reason)}")
+              Logger.error("[#{@coin_name_abbrev}] Failed to parse GetInfo: #{inspect(reason)}")
               {:halt, {:error, reason}}
           end
 
@@ -430,7 +430,7 @@ defmodule Boxwallet.Coins.Zano do
     ]
 
     Enum.reduce_while(1..@daemon_rpc_attempts, {:error, :no_attempts}, fn attempt, _acc ->
-      Logger.info("Attempting to GetBlockchainInfo (attempt #{attempt}/#{@daemon_rpc_attempts})")
+      Logger.info("[#{@coin_name_abbrev}] Attempting to GetBlockchainInfo (attempt #{attempt}/#{@daemon_rpc_attempts})")
 
       case HTTPoison.post(url, body, headers) do
         {:ok, %{body: response_body}} ->
@@ -441,7 +441,7 @@ defmodule Boxwallet.Coins.Zano do
                String.contains?(response_body, "Rewinding") ||
                String.contains?(response_body, "RPC server started") ||
                String.contains?(response_body, "Verifying") do
-            Logger.info("Waiting for Daemon to be ready, attempt #{attempt}")
+            Logger.info("[#{@coin_name_abbrev}] Waiting for Daemon to be ready, attempt #{attempt}")
             Process.sleep(1000)
             {:cont, {:error, :wrong_response}}
           else
@@ -453,7 +453,7 @@ defmodule Boxwallet.Coins.Zano do
 
               {:error, reason} ->
                 # Handle the error
-                Logger.error("Failed to parse: #{inspect(reason)}")
+                Logger.error("[#{@coin_name_abbrev}] Failed to parse: #{inspect(reason)}")
                 {:halt, {:error, reason}}
             end
           end
@@ -482,7 +482,7 @@ defmodule Boxwallet.Coins.Zano do
     ]
 
     Enum.reduce_while(1..@daemon_rpc_attempts, {:error, :no_attempts}, fn attempt, _acc ->
-      Logger.info("Attempting to GetMNSyncStatus (attempt #{attempt}/#{@daemon_rpc_attempts})")
+      Logger.info("[#{@coin_name_abbrev}] Attempting to GetMNSyncStatus (attempt #{attempt}/#{@daemon_rpc_attempts})")
 
       case HTTPoison.post(url, body, headers) do
         {:ok, %{body: response_body}} ->
@@ -493,7 +493,7 @@ defmodule Boxwallet.Coins.Zano do
                String.contains?(response_body, "Rewinding") ||
                String.contains?(response_body, "RPC server started") ||
                String.contains?(response_body, "Verifying") do
-            Logger.info("Waiting for Daemon to be ready, attempt #{attempt}")
+            Logger.info("[#{@coin_name_abbrev}] Waiting for Daemon to be ready, attempt #{attempt}")
             Process.sleep(1000)
             {:cont, {:error, :wrong_response}}
           else
@@ -505,7 +505,7 @@ defmodule Boxwallet.Coins.Zano do
 
               {:error, reason} ->
                 # Handle the error
-                Logger.error("Failed to parse: #{inspect(reason)}")
+                Logger.error("[#{@coin_name_abbrev}] Failed to parse: #{inspect(reason)}")
                 {:halt, {:error, reason}}
             end
           end
@@ -533,7 +533,7 @@ defmodule Boxwallet.Coins.Zano do
       {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
     ]
 
-    Logger.info("Attempting to ListTransactions")
+    Logger.info("[#{@coin_name_abbrev}] Attempting to ListTransactions")
 
     case HTTPoison.post(url, body, headers) do
       {:ok, %{body: response_body}} ->
@@ -542,7 +542,7 @@ defmodule Boxwallet.Coins.Zano do
             {:ok, response}
 
           {:error, reason} ->
-            Logger.error("Failed to parse ListTransactions: #{inspect(reason)}")
+            Logger.error("[#{@coin_name_abbrev}] Failed to parse ListTransactions: #{inspect(reason)}")
             {:error, reason}
         end
 
@@ -568,7 +568,7 @@ defmodule Boxwallet.Coins.Zano do
     ]
 
     Enum.reduce_while(1..@daemon_rpc_attempts, {:error, :no_attempts}, fn attempt, _acc ->
-      Logger.info("Attempting to GetPeerInfo (attempt #{attempt}/#{@daemon_rpc_attempts})")
+      Logger.info("[#{@coin_name_abbrev}] Attempting to GetPeerInfo (attempt #{attempt}/#{@daemon_rpc_attempts})")
 
       case HTTPoison.post(url, body, headers) do
         {:ok, %{body: response_body}} ->
@@ -577,7 +577,7 @@ defmodule Boxwallet.Coins.Zano do
                String.contains?(response_body, "Rewinding") ||
                String.contains?(response_body, "RPC server started") ||
                String.contains?(response_body, "Verifying") do
-            Logger.info("Waiting for Daemon to be ready, attempt #{attempt}")
+            Logger.info("[#{@coin_name_abbrev}] Waiting for Daemon to be ready, attempt #{attempt}")
             Process.sleep(1000)
             {:cont, {:error, :wrong_response}}
           else
@@ -587,15 +587,15 @@ defmodule Boxwallet.Coins.Zano do
                   peers |> Enum.map(& &1.synced_headers) |> Enum.max(fn -> 0 end)
 
                 max_synced_blocks = peers |> Enum.map(& &1.synced_blocks) |> Enum.max(fn -> 0 end)
-                Logger.info("max_synced_blocks = #{max_synced_blocks}")
-                Logger.info("max_synced_headers = #{max_synced_headers}")
+                Logger.info("[#{@coin_name_abbrev}] max_synced_blocks = #{max_synced_blocks}")
+                Logger.info("[#{@coin_name_abbrev}] max_synced_headers = #{max_synced_headers}")
 
                 {:halt,
                  {:ok,
                   %{max_synced_headers: max_synced_headers, max_synced_blocks: max_synced_blocks}}}
 
               {:error, reason} ->
-                Logger.error("Failed to parse: #{inspect(reason)}")
+                Logger.error("[#{@coin_name_abbrev}] Failed to parse: #{inspect(reason)}")
                 {:halt, {:error, reason}}
             end
           end
@@ -624,7 +624,7 @@ defmodule Boxwallet.Coins.Zano do
     ]
 
     Enum.reduce_while(1..@daemon_rpc_attempts, {:error, :no_attempts}, fn attempt, _acc ->
-      Logger.info("Attempting to GetWalletInfo (attempt #{attempt}/#{@daemon_rpc_attempts})")
+      Logger.info("[#{@coin_name_abbrev}] Attempting to GetWalletInfo (attempt #{attempt}/#{@daemon_rpc_attempts})")
 
       case HTTPoison.post(url, body, headers) do
         {:ok, %{body: response_body}} ->
@@ -635,7 +635,7 @@ defmodule Boxwallet.Coins.Zano do
                String.contains?(response_body, "Rewinding") ||
                String.contains?(response_body, "RPC server started") ||
                String.contains?(response_body, "Verifying") do
-            Logger.info("Waiting for Daemon to be ready, attempt #{attempt}")
+            Logger.info("[#{@coin_name_abbrev}] Waiting for Daemon to be ready, attempt #{attempt}")
             Process.sleep(1000)
             {:cont, {:error, :wrong_response}}
           else
@@ -647,7 +647,7 @@ defmodule Boxwallet.Coins.Zano do
 
               {:error, reason} ->
                 # Handle the error
-                Logger.error("Failed to parse: #{inspect(reason)}")
+                Logger.error("[#{@coin_name_abbrev}] Failed to parse: #{inspect(reason)}")
                 {:halt, {:error, reason}}
             end
           end
@@ -673,7 +673,7 @@ defmodule Boxwallet.Coins.Zano do
 
   defp tidy_downloaded_files(downloaded_file) do
     File.rm_rf!(Path.join(BoxWallet.App.home_folder(), @extracted_dir_linux))
-    Logger.info("Removing file: #{downloaded_file}")
+    Logger.info("[#{@coin_name_abbrev}] Removing file: #{downloaded_file}")
     File.rm_rf!(downloaded_file)
   end
 
@@ -699,7 +699,7 @@ defmodule Boxwallet.Coins.Zano do
           :ok
       end
 
-      Logger.info("AppImage extraction completed successfully")
+      Logger.info("[#{@coin_name_abbrev}] AppImage extraction completed successfully")
       {:ok}
     else
       {:error, reason} ->
@@ -739,7 +739,7 @@ defmodule Boxwallet.Coins.Zano do
           name
 
         {:error, reason} ->
-          Logger.error("Error: #{reason}")
+          Logger.error("[#{@coin_name_abbrev}] Error: #{reason}")
           ""
       end
 
@@ -764,7 +764,7 @@ defmodule Boxwallet.Coins.Zano do
   end
 
   def stop_daemon(_auth) do
-    Logger.info("Sending SIGINT to #{@coin_name} daemon...")
+    Logger.info("[#{@coin_name_abbrev}] Sending SIGINT to #{@coin_name} daemon...")
 
     case :os.type() do
       {:win32, _} ->
@@ -797,7 +797,7 @@ defmodule Boxwallet.Coins.Zano do
       {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
     ]
 
-    Logger.info("Attempting to Encrypt wallet")
+    Logger.info("[#{@coin_name_abbrev}] Attempting to Encrypt wallet")
 
     case HTTPoison.post(url, body, headers) do
       {:ok, %{body: response_body}} ->
@@ -836,7 +836,7 @@ defmodule Boxwallet.Coins.Zano do
       {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
     ]
 
-    Logger.info("Attempting to Unlock wallet")
+    Logger.info("[#{@coin_name_abbrev}] Attempting to Unlock wallet")
 
     case HTTPoison.post(url, body, headers) do
       {:ok, %{body: response_body}} ->
@@ -875,7 +875,7 @@ defmodule Boxwallet.Coins.Zano do
       {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
     ]
 
-    Logger.info("Attempting to Unlock wallet for staking")
+    Logger.info("[#{@coin_name_abbrev}] Attempting to Unlock wallet for staking")
 
     case HTTPoison.post(url, body, headers) do
       {:ok, %{body: response_body}} ->
