@@ -1,8 +1,8 @@
 # lib/my_app/coins/privatedivi.ex
 defmodule Boxwallet.Coins.PrivateDivi do
   require Logger
-  @behaviour BoxWallet.CoinDaemon
-  import BoxWallet.App
+  # @behaviour BoxWallet.CoinDaemon
+  # import BoxWallet.App
 
   @coin_name "PrivateDivi"
   @coin_name_abbrev "PDIVI"
@@ -235,7 +235,7 @@ defmodule Boxwallet.Coins.PrivateDivi do
         rpc_password: rpcpassword
       }
 
-      IO.inspect(auth, label: "Auth values")
+      # IO.inspect(auth, label: "Auth values")
       {:ok, auth}
     else
       {:error, reason} -> {:error, reason}
