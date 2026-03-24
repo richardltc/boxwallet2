@@ -216,7 +216,7 @@ defmodule Boxwallet.Coins.Zano do
         rpc_password: rpcpassword
       }
 
-      IO.inspect(auth, label: "Auth values")
+      # IO.inspect(auth, label: "Auth values")
       {:ok, auth}
     else
       {:error, reason} -> {:error, reason}
@@ -393,11 +393,13 @@ defmodule Boxwallet.Coins.Zano do
     headers = [{"Content-Type", "application/json"}]
 
     Enum.reduce_while(1..@daemon_rpc_attempts, {:error, :no_attempts}, fn attempt, _acc ->
-      Logger.info("[#{@coin_name_abbrev}] Attempting to GetInfo (attempt #{attempt}/#{@daemon_rpc_attempts})")
+      Logger.info(
+        "[#{@coin_name_abbrev}] Attempting to GetInfo (attempt #{attempt}/#{@daemon_rpc_attempts})"
+      )
 
       case HTTPoison.post(url, body, headers) do
         {:ok, %{body: response_body}} ->
-            case BoxWallet.Coins.Zano.GetInfo.from_json(response_body) do
+          case BoxWallet.Coins.Zano.GetInfo.from_json(response_body) do
             {:ok, response} ->
               {:halt, {:ok, response}}
 
@@ -430,7 +432,9 @@ defmodule Boxwallet.Coins.Zano do
     ]
 
     Enum.reduce_while(1..@daemon_rpc_attempts, {:error, :no_attempts}, fn attempt, _acc ->
-      Logger.info("[#{@coin_name_abbrev}] Attempting to GetBlockchainInfo (attempt #{attempt}/#{@daemon_rpc_attempts})")
+      Logger.info(
+        "[#{@coin_name_abbrev}] Attempting to GetBlockchainInfo (attempt #{attempt}/#{@daemon_rpc_attempts})"
+      )
 
       case HTTPoison.post(url, body, headers) do
         {:ok, %{body: response_body}} ->
@@ -441,7 +445,10 @@ defmodule Boxwallet.Coins.Zano do
                String.contains?(response_body, "Rewinding") ||
                String.contains?(response_body, "RPC server started") ||
                String.contains?(response_body, "Verifying") do
-            Logger.info("[#{@coin_name_abbrev}] Waiting for Daemon to be ready, attempt #{attempt}")
+            Logger.info(
+              "[#{@coin_name_abbrev}] Waiting for Daemon to be ready, attempt #{attempt}"
+            )
+
             Process.sleep(1000)
             {:cont, {:error, :wrong_response}}
           else
@@ -482,7 +489,9 @@ defmodule Boxwallet.Coins.Zano do
     ]
 
     Enum.reduce_while(1..@daemon_rpc_attempts, {:error, :no_attempts}, fn attempt, _acc ->
-      Logger.info("[#{@coin_name_abbrev}] Attempting to GetMNSyncStatus (attempt #{attempt}/#{@daemon_rpc_attempts})")
+      Logger.info(
+        "[#{@coin_name_abbrev}] Attempting to GetMNSyncStatus (attempt #{attempt}/#{@daemon_rpc_attempts})"
+      )
 
       case HTTPoison.post(url, body, headers) do
         {:ok, %{body: response_body}} ->
@@ -493,7 +502,10 @@ defmodule Boxwallet.Coins.Zano do
                String.contains?(response_body, "Rewinding") ||
                String.contains?(response_body, "RPC server started") ||
                String.contains?(response_body, "Verifying") do
-            Logger.info("[#{@coin_name_abbrev}] Waiting for Daemon to be ready, attempt #{attempt}")
+            Logger.info(
+              "[#{@coin_name_abbrev}] Waiting for Daemon to be ready, attempt #{attempt}"
+            )
+
             Process.sleep(1000)
             {:cont, {:error, :wrong_response}}
           else
@@ -542,7 +554,10 @@ defmodule Boxwallet.Coins.Zano do
             {:ok, response}
 
           {:error, reason} ->
-            Logger.error("[#{@coin_name_abbrev}] Failed to parse ListTransactions: #{inspect(reason)}")
+            Logger.error(
+              "[#{@coin_name_abbrev}] Failed to parse ListTransactions: #{inspect(reason)}"
+            )
+
             {:error, reason}
         end
 
@@ -568,7 +583,9 @@ defmodule Boxwallet.Coins.Zano do
     ]
 
     Enum.reduce_while(1..@daemon_rpc_attempts, {:error, :no_attempts}, fn attempt, _acc ->
-      Logger.info("[#{@coin_name_abbrev}] Attempting to GetPeerInfo (attempt #{attempt}/#{@daemon_rpc_attempts})")
+      Logger.info(
+        "[#{@coin_name_abbrev}] Attempting to GetPeerInfo (attempt #{attempt}/#{@daemon_rpc_attempts})"
+      )
 
       case HTTPoison.post(url, body, headers) do
         {:ok, %{body: response_body}} ->
@@ -577,7 +594,10 @@ defmodule Boxwallet.Coins.Zano do
                String.contains?(response_body, "Rewinding") ||
                String.contains?(response_body, "RPC server started") ||
                String.contains?(response_body, "Verifying") do
-            Logger.info("[#{@coin_name_abbrev}] Waiting for Daemon to be ready, attempt #{attempt}")
+            Logger.info(
+              "[#{@coin_name_abbrev}] Waiting for Daemon to be ready, attempt #{attempt}"
+            )
+
             Process.sleep(1000)
             {:cont, {:error, :wrong_response}}
           else
@@ -624,7 +644,9 @@ defmodule Boxwallet.Coins.Zano do
     ]
 
     Enum.reduce_while(1..@daemon_rpc_attempts, {:error, :no_attempts}, fn attempt, _acc ->
-      Logger.info("[#{@coin_name_abbrev}] Attempting to GetWalletInfo (attempt #{attempt}/#{@daemon_rpc_attempts})")
+      Logger.info(
+        "[#{@coin_name_abbrev}] Attempting to GetWalletInfo (attempt #{attempt}/#{@daemon_rpc_attempts})"
+      )
 
       case HTTPoison.post(url, body, headers) do
         {:ok, %{body: response_body}} ->
@@ -635,7 +657,10 @@ defmodule Boxwallet.Coins.Zano do
                String.contains?(response_body, "Rewinding") ||
                String.contains?(response_body, "RPC server started") ||
                String.contains?(response_body, "Verifying") do
-            Logger.info("[#{@coin_name_abbrev}] Waiting for Daemon to be ready, attempt #{attempt}")
+            Logger.info(
+              "[#{@coin_name_abbrev}] Waiting for Daemon to be ready, attempt #{attempt}"
+            )
+
             Process.sleep(1000)
             {:cont, {:error, :wrong_response}}
           else
