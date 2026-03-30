@@ -7,6 +7,7 @@ defmodule BoxwalletWeb.ZanoLive do
   import BoxwalletWeb.CoinSidebar
   import BoxwalletWeb.CoinHomeSection
   import BoxwalletWeb.CoinTransactions
+  import BoxwalletWeb.CoinReceive
   import BoxwalletWeb.CoinSend
   import BoxwalletWeb.ReceiveAddressModal
   use Number
@@ -421,12 +422,14 @@ defmodule BoxwalletWeb.ZanoLive do
                 disk_used_bytes={@disk_used_bytes}
                 disk_total_bytes={@disk_total_bytes}
               />
+            <% :transactions -> %>
+              <.coin_transactions color="text-zanoblue" coin_daemon_started={@coin_daemon_started} transactions={@transactions} />
             <% :receive -> %>
-              <.coin_transactions color="text-zanoblue" coin_daemon_started={@coin_daemon_started} transactions={@transactions} receive_coming_soon={true} />
+              <.coin_receive color="text-zanoblue" coin_daemon_started={@coin_daemon_started} receive_coming_soon={true} />
             <% :send -> %>
               <.coin_send color="text-zanoblue" coin_daemon_started={@coin_daemon_started} coming_soon={true} coin_name_abbrev={@coin_name_abbrev} />
             <% _ -> %>
-              <.coin_transactions color="text-zanoblue" coin_daemon_started={@coin_daemon_started} transactions={@transactions} receive_coming_soon={true} />
+              <.coin_transactions color="text-zanoblue" coin_daemon_started={@coin_daemon_started} transactions={@transactions} />
           <% end %>
         </div>
       </div>
