@@ -538,6 +538,47 @@ defmodule Boxwallet.Coins.ReddCoin do
     end
   end
 
+  def get_receive_address(auth) do
+    case list_received_by_address(auth) do
+      {:ok, [%{"address" => address} | _]} ->
+        {:ok, %{result: address}}
+
+      _ ->
+        get_new_address(auth)
+    end
+  end
+
+  defp list_received_by_address(auth) do
+    body =
+      Jason.encode!(%{
+        jsonrpc: "1.0",
+        id: "curltest",
+        method: "listreceivedbyaddress",
+        params: [0, true]
+      })
+
+    url = "http://127.0.0.1:#{auth.rpc_port}/wallet/BoxWallet"
+
+    headers = [
+      {"Content-Type", "text/plain"},
+      {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
+    ]
+
+    case HTTPoison.post(url, body, headers) do
+      {:ok, %{body: response_body}} ->
+        case Jason.decode(response_body) do
+          {:ok, %{"result" => result}} when is_list(result) and result != [] ->
+            {:ok, result}
+
+          _ ->
+            {:ok, []}
+        end
+
+      {:error, %HTTPoison.Error{reason: reason}} ->
+        {:error, reason}
+    end
+  end
+
   def get_new_address(auth) do
     body =
       Jason.encode!(%{

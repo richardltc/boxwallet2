@@ -4,45 +4,29 @@ defmodule BoxWallet.Coins.Divi.GetWalletInfo do
   """
 
   defmodule Result do
-    @enforce_keys [
-      :active_wallet,
-      :walletversion,
-      :balance,
-      :unconfirmed_balance,
-      :immature_balance,
-      :spendable_balance,
-      :vaulted_balance,
-      :txcount,
-      :keypoolsize,
-      :unlocked_until,
-      :encryption_status
-    ]
-
-    defstruct [
-      :active_wallet,
-      :walletversion,
-      :balance,
-      :unconfirmed_balance,
-      :immature_balance,
-      :spendable_balance,
-      :vaulted_balance,
-      :txcount,
-      :keypoolsize,
-      :unlocked_until,
-      :encryption_status
-    ]
+    defstruct active_wallet: nil,
+              walletversion: nil,
+              balance: 0.0,
+              unconfirmed_balance: 0.0,
+              immature_balance: 0.0,
+              spendable_balance: 0.0,
+              vaulted_balance: 0.0,
+              txcount: 0,
+              keypoolsize: 0,
+              unlocked_until: nil,
+              encryption_status: "unencrypted"
 
     @type t :: %__MODULE__{
-            active_wallet: String.t(),
-            walletversion: integer(),
+            active_wallet: String.t() | nil,
+            walletversion: integer() | nil,
             balance: float(),
             unconfirmed_balance: float(),
             immature_balance: float(),
             spendable_balance: float(),
             vaulted_balance: float(),
             txcount: integer(),
-            keypoolsize: boolean(),
-            unlocked_until: integer(),
+            keypoolsize: integer(),
+            unlocked_until: integer() | nil,
             encryption_status: String.t()
           }
   end
@@ -84,15 +68,15 @@ defmodule BoxWallet.Coins.Divi.GetWalletInfo do
     %Result{
       active_wallet: result["active_wallet"],
       walletversion: result["walletversion"],
-      balance: result["balance"],
-      unconfirmed_balance: result["unconfirmed_balance"],
-      immature_balance: result["immature_balance"],
-      spendable_balance: result["spendable_balance"],
-      vaulted_balance: result["vaulted_balance"],
-      txcount: result["txcount"],
-      keypoolsize: result["keypoolsize"],
+      balance: result["balance"] || 0.0,
+      unconfirmed_balance: result["unconfirmed_balance"] || 0.0,
+      immature_balance: result["immature_balance"] || 0.0,
+      spendable_balance: result["spendable_balance"] || 0.0,
+      vaulted_balance: result["vaulted_balance"] || 0.0,
+      txcount: result["txcount"] || 0,
+      keypoolsize: result["keypoolsize"] || 0,
       unlocked_until: result["unlocked_until"],
-      encryption_status: result["encryption_status"]
+      encryption_status: result["encryption_status"] || "unencrypted"
     }
   end
 end

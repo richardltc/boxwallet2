@@ -18,6 +18,15 @@ defmodule BoxwalletWeb.CoinSidebar do
         <span class="text-[10px] font-semibold uppercase tracking-wide">Home</span>
       </button>
       <button
+        class={"btn btn-ghost btn-square flex flex-col items-center h-auto py-2 gap-0.5 transition-all duration-200 hover:scale-110 hover:opacity-100" <> if(@active_tab == :transactions, do: "", else: " opacity-40")}
+        title="Transactions"
+        phx-click="switch_tab"
+        phx-value-tab="transactions"
+      >
+        <.icon name="hero-list-bullet" class={"w-6 h-6 " <> @color} />
+        <span class="text-[10px] font-semibold uppercase tracking-wide">Trans</span>
+      </button>
+      <button
         class={"btn btn-ghost btn-square flex flex-col items-center h-auto py-2 gap-0.5 transition-all duration-200 hover:scale-110 hover:opacity-100" <> if(@active_tab == :receive, do: "", else: " opacity-40")}
         title="Receive"
         phx-click="switch_tab"

@@ -7,6 +7,7 @@ defmodule BoxwalletWeb.DiviLive do
   import BoxwalletWeb.CoinSidebar
   import BoxwalletWeb.CoinHomeSection
   import BoxwalletWeb.CoinTransactions
+  import BoxwalletWeb.CoinReceive
   import BoxwalletWeb.CoinSend
   import BoxwalletWeb.CoinSettings
   use Number
@@ -65,6 +66,7 @@ defmodule BoxwalletWeb.DiviLive do
         testnet_enabled: testnet_enabled?(Divi),
         disk_used_bytes: server_state.disk_used_bytes,
         disk_total_bytes: server_state.disk_total_bytes,
+        receive_address: "",
         send_address: "",
         address_valid: :empty,
         pending_send_address: nil,
@@ -93,6 +95,38 @@ defmodule BoxwalletWeb.DiviLive do
 
   def handle_info(:clear_flash, socket) do
     {:noreply, clear_flash(socket)}
+  end
+
+  def handle_info(:fetch_receive_address, socket) do
+    fetch_address(socket, &Divi.get_receive_address/1)
+  end
+
+  def handle_info(:new_receive_address, socket) do
+    fetch_address(socket, &Divi.get_new_address/1)
+  end
+
+  defp fetch_address(socket, address_fn) do
+    case socket.assigns.coin_auth do
+      {:ok, auth} ->
+        case address_fn.(auth) do
+          {:ok, %{result: address}} when is_binary(address) ->
+            {:noreply, assign(socket, :receive_address, address)}
+
+          {:error, reason} ->
+            Logger.error("Failed to get address: #{inspect(reason)}")
+
+            {:noreply,
+             socket
+             |> put_flash(:error, "Failed to get a receive address.")
+             |> then(fn s ->
+               Process.send_after(self(), :clear_flash, 4_000)
+               s
+             end)}
+        end
+
+      _ ->
+        {:noreply, put_flash(socket, :error, "Daemon not available.")}
+    end
   end
 
   # --- UI Event Handlers ---
@@ -157,7 +191,23 @@ defmodule BoxwalletWeb.DiviLive do
   def handle_event("switch_tab", %{"tab" => tab}, socket) do
     tab = String.to_existing_atom(tab)
     Divi.Server.set_active_tab(tab)
-    {:noreply, assign(socket, :active_tab, tab)}
+    socket = assign(socket, :active_tab, tab)
+
+    socket =
+      if tab == :receive and socket.assigns.receive_address == "" and
+           socket.assigns.coin_daemon_started do
+        send(self(), :fetch_receive_address)
+        socket
+      else
+        socket
+      end
+
+    {:noreply, socket}
+  end
+
+  def handle_event("new_receive_address", _params, socket) do
+    send(self(), :new_receive_address)
+    {:noreply, socket}
   end
 
   def handle_event("show_encrypt_prompt", _params, socket) do
@@ -674,8 +724,10 @@ defmodule BoxwalletWeb.DiviLive do
                 download_error={@download_error}
                 on_update="download_coin"
               />
-            <% :receive -> %>
+            <% :transactions -> %>
               <.coin_transactions color="text-divired" coin_daemon_started={@coin_daemon_started} transactions={@transactions} />
+            <% :receive -> %>
+              <.coin_receive color="text-divired" coin_daemon_started={@coin_daemon_started} receive_address={@receive_address} />
             <% :send -> %>
               <.coin_send color="text-divired" coin_daemon_started={@coin_daemon_started} address_valid={@address_valid} send_address={@send_address} coin_name_abbrev={@coin_name_abbrev} />
             <% _ -> %>

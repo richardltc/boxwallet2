@@ -7,9 +7,10 @@ defmodule BoxwalletWeb.LitecoinLive do
   import BoxwalletWeb.CoinSidebar
   import BoxwalletWeb.CoinHomeSection
   import BoxwalletWeb.CoinTransactions
+  import BoxwalletWeb.CoinReceive
   import BoxwalletWeb.CoinSend
   import BoxwalletWeb.CoinSettings
-  import BoxwalletWeb.ReceiveAddressModal
+
   use Number
   use BoxwalletWeb, :live_view
   require Logger
@@ -70,7 +71,6 @@ defmodule BoxwalletWeb.LitecoinLive do
         testnet_enabled: testnet_enabled?(Litecoin),
         pruning_enabled: pruning_enabled?(Litecoin),
         prune_size: get_prune_size(Litecoin),
-        show_receive_modal: false,
         receive_address: "",
         send_address: "",
         address_valid: :empty,
@@ -100,6 +100,38 @@ defmodule BoxwalletWeb.LitecoinLive do
 
   def handle_info(:clear_flash, socket) do
     {:noreply, clear_flash(socket)}
+  end
+
+  def handle_info(:fetch_receive_address, socket) do
+    fetch_address(socket, &Litecoin.get_receive_address/1)
+  end
+
+  def handle_info(:new_receive_address, socket) do
+    fetch_address(socket, &Litecoin.get_new_address/1)
+  end
+
+  defp fetch_address(socket, address_fn) do
+    case socket.assigns.coin_auth do
+      {:ok, auth} ->
+        case address_fn.(auth) do
+          {:ok, %{result: address}} when is_binary(address) ->
+            {:noreply, assign(socket, :receive_address, address)}
+
+          {:error, reason} ->
+            Logger.error("Failed to get address: #{inspect(reason)}")
+
+            {:noreply,
+             socket
+             |> put_flash(:error, "Failed to get a receive address.")
+             |> then(fn s ->
+               Process.send_after(self(), :clear_flash, 4_000)
+               s
+             end)}
+        end
+
+      _ ->
+        {:noreply, put_flash(socket, :error, "Daemon not available.")}
+    end
   end
 
   # --- UI Event Handlers ---
@@ -164,7 +196,18 @@ defmodule BoxwalletWeb.LitecoinLive do
   def handle_event("switch_tab", %{"tab" => tab}, socket) do
     tab = String.to_existing_atom(tab)
     Litecoin.Server.set_active_tab(tab)
-    {:noreply, assign(socket, :active_tab, tab)}
+    socket = assign(socket, :active_tab, tab)
+
+    socket =
+      if tab == :receive and socket.assigns.receive_address == "" and
+           socket.assigns.coin_daemon_started do
+        send(self(), :fetch_receive_address)
+        socket
+      else
+        socket
+      end
+
+    {:noreply, socket}
   end
 
   def handle_event("show_encrypt_prompt", _params, socket) do
@@ -243,32 +286,9 @@ defmodule BoxwalletWeb.LitecoinLive do
     {:noreply, assign(socket, show_prompt: false, prompt_action: nil)}
   end
 
-  def handle_event("receive_address", _params, socket) do
-    case socket.assigns.coin_auth do
-      {:ok, auth} ->
-        case Litecoin.get_new_address(auth) do
-          {:ok, %{result: address}} when is_binary(address) ->
-            {:noreply, assign(socket, show_receive_modal: true, receive_address: address)}
-
-          {:error, reason} ->
-            Logger.error("Failed to get new address: #{inspect(reason)}")
-
-            {:noreply,
-             socket
-             |> put_flash(:error, "Failed to get a new receive address.")
-             |> then(fn s ->
-               Process.send_after(self(), :clear_flash, 4_000)
-               s
-             end)}
-        end
-
-      _ ->
-        {:noreply, put_flash(socket, :error, "Daemon not available.")}
-    end
-  end
-
-  def handle_event("close_receive_modal", _params, socket) do
-    {:noreply, assign(socket, show_receive_modal: false)}
+  def handle_event("new_receive_address", _params, socket) do
+    send(self(), :new_receive_address)
+    {:noreply, socket}
   end
 
   def handle_event("prompt_cancelled", _params, socket) do
@@ -601,13 +621,6 @@ defmodule BoxwalletWeb.LitecoinLive do
 
     ~H"""
     <Layouts.app flash={@flash}>
-      <.receive_address_modal
-        id="receive-address"
-        show={@show_receive_modal}
-        address={@receive_address}
-        on_close="close_receive_modal"
-        color="text-litecoinblue"
-      />
       <.prompt_modal
         id="wallet-password"
         question={
@@ -760,8 +773,10 @@ defmodule BoxwalletWeb.LitecoinLive do
                 prune_size={@prune_size}
                 on_prune_toggle="confirm_toggle_pruning"
               />
-            <% :receive -> %>
+            <% :transactions -> %>
               <.coin_transactions color="text-litecoinblue" coin_daemon_started={@coin_daemon_started} transactions={@transactions} />
+            <% :receive -> %>
+              <.coin_receive color="text-litecoinblue" coin_daemon_started={@coin_daemon_started} receive_address={@receive_address} />
             <% :send -> %>
               <.coin_send color="text-litecoinblue" coin_daemon_started={@coin_daemon_started} coin_name_abbrev={@coin_name_abbrev} address_valid={@address_valid} send_address={@send_address} />
             <% _ -> %>
