@@ -1,6 +1,5 @@
 defmodule BoxwalletWeb.CoinSend do
   use Phoenix.Component
-  import BoxwalletWeb.CoreComponents
 
   attr :color, :string, required: true
   attr :coin_daemon_started, :boolean, default: false
