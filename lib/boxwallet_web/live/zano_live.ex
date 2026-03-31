@@ -1,9 +1,7 @@
 defmodule BoxwalletWeb.ZanoLive do
   import BoxwalletWeb.CoreWalletToolbar
-  import BoxwalletWeb.CoreWalletBalance
   import BoxwalletWeb.WalletBalanceDisplay
   import BoxwalletWeb.PromptModal
-  import BoxwalletWeb.SyncProgress
   import BoxwalletWeb.CoinSidebar
   import BoxwalletWeb.CoinHomeSection
   import BoxwalletWeb.CoinTransactions

@@ -135,20 +135,13 @@ defmodule Boxwallet.Coins.Divi.Server do
 
   @impl true
   def handle_cast(:start_daemon, state) do
-    case Divi.start_daemon() do
-      {:ok} ->
-        Logger.info("Divi daemon starting...")
-        state = %{state | daemon_status: :starting}
-        broadcast(state)
-        Process.send_after(self(), :poll_get_info, 2_000)
-        Process.send_after(self(), :poll_block_height, 5_000)
-        {:noreply, state}
-
-      {:error, reason} ->
-        Logger.error("Failed to start Divi daemon: #{inspect(reason)}")
-        broadcast(state)
-        {:noreply, state}
-    end
+    Divi.start_daemon()
+    Logger.info("Divi daemon starting...")
+    state = %{state | daemon_status: :starting}
+    broadcast(state)
+    Process.send_after(self(), :poll_get_info, 2_000)
+    Process.send_after(self(), :poll_block_height, 5_000)
+    {:noreply, state}
   end
 
   def handle_cast(:stop_daemon, state) do

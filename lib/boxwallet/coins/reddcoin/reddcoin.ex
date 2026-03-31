@@ -908,12 +908,6 @@ defmodule Boxwallet.Coins.ReddCoin do
   #   end
   # end
 
-  defp wallet_exists? do
-    wallet_dir = Path.join(get_coin_home_dir(), "BoxWallet")
-
-    File.dir?(wallet_dir)
-  end
-
   def wallet_encrypt(auth, password) do
     body =
       Jason.encode!(%{

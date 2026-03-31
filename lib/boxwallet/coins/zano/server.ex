@@ -107,19 +107,12 @@ defmodule Boxwallet.Coins.Zano.Server do
 
   @impl true
   def handle_cast(:start_daemon, state) do
-    case Zano.start_daemon() do
-      {:ok} ->
-        Logger.info("Zano daemon starting...")
-        state = %{state | daemon_status: :starting}
-        broadcast(state)
-        Process.send_after(self(), :poll_get_info, 2_000)
-        {:noreply, state}
-
-      {:error, reason} ->
-        Logger.error("Failed to start Zano daemon: #{inspect(reason)}")
-        broadcast(state)
-        {:noreply, state}
-    end
+    Zano.start_daemon()
+    Logger.info("Zano daemon starting...")
+    state = %{state | daemon_status: :starting}
+    broadcast(state)
+    Process.send_after(self(), :poll_get_info, 2_000)
+    {:noreply, state}
   end
 
   def handle_cast(:stop_daemon, state) do
