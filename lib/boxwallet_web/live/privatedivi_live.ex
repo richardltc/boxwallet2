@@ -1,9 +1,7 @@
 defmodule BoxwalletWeb.PrivateDiviLive do
   import BoxwalletWeb.CoreWalletToolbar
-  import BoxwalletWeb.CoreWalletBalance
   import BoxwalletWeb.WalletBalanceDisplay
   import BoxwalletWeb.PromptModal
-  import BoxwalletWeb.SyncProgress
   import BoxwalletWeb.CoinSidebar
   import BoxwalletWeb.CoinHomeSection
   import BoxwalletWeb.CoinTransactions
@@ -399,32 +397,19 @@ defmodule BoxwalletWeb.PrivateDiviLive do
   def handle_event("start_coin_daemon", _, socket) do
     IO.puts("Attempting to start #{socket.assigns.coin_name} Daemon...")
 
+    PrivateDivi.start_daemon()
+    IO.puts("#{socket.assigns.coin_name} Starting...")
+
     socket =
-      case PrivateDivi.start_daemon() do
-        {:ok} ->
-          IO.puts("#{socket.assigns.coin_name} Starting...")
+      socket
+      |> assign(:coin_daemon_starting, true)
+      |> assign(:coin_daemon_started, false)
+      |> assign(:coin_daemon_stopped, false)
 
-          socket =
-            socket
-            |> assign(:coin_daemon_starting, true)
-            |> assign(:coin_daemon_started, false)
-            |> assign(:coin_daemon_stopped, false)
+    IO.puts("Calling getinfo...")
+    Process.send_after(self(), :check_get_info_status, 2000)
 
-          IO.puts("Calling getinfo...")
-          Process.send_after(self(), :check_get_info_status, 2000)
-
-          {:noreply, socket}
-
-        {:error, reason} ->
-          Logger.error("Failed to start #{reason}")
-
-          socket =
-            socket
-            |> put_flash(:error, "Could not start daemon: #{inspect(reason)}")
-            |> assign(:coin_daemon_started, false)
-
-          {:noreply, socket}
-      end
+    {:noreply, socket}
   end
 
   def handle_event("stop_coin_daemon", _, socket) do
