@@ -333,8 +333,7 @@ defmodule Boxwallet.Coins.Divi do
     sys_info = to_string(:erlang.system_info(:system_architecture))
 
     # Determine the file path and URL based on OS and architecture
-    result =
-      case :os.type() do
+    case :os.type() do
         {:unix, :linux} ->
           cond do
             String.contains?(sys_info, "arm71") ->
