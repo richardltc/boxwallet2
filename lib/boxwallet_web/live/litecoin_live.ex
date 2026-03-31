@@ -1,9 +1,7 @@
 defmodule BoxwalletWeb.LitecoinLive do
   import BoxwalletWeb.CoreWalletToolbar
-  import BoxwalletWeb.CoreWalletBalance
   import BoxwalletWeb.WalletBalanceDisplay
   import BoxwalletWeb.PromptModal
-  import BoxwalletWeb.SyncProgress
   import BoxwalletWeb.CoinSidebar
   import BoxwalletWeb.CoinHomeSection
   import BoxwalletWeb.CoinTransactions
@@ -167,29 +165,6 @@ defmodule BoxwalletWeb.LitecoinLive do
        )}
     else
       do_send(socket, address, amount_str)
-    end
-  end
-
-  defp do_send(socket, address, amount_str) do
-    Process.send_after(self(), :clear_flash, 4_000)
-
-    with true <- Litecoin.validate_address(address),
-         {amount, _} <- Float.parse(amount_str),
-         {:ok, coin_auth} <- socket.assigns.coin_auth,
-         {:ok, txid} <- Litecoin.send_to_address(coin_auth, address, amount) do
-      {:noreply,
-       socket
-       |> put_flash(:info, "Sent #{amount_str} #{socket.assigns.coin_name_abbrev} successfully. TX: #{txid}")
-       |> assign(send_address: "", address_valid: :empty)}
-    else
-      false ->
-        {:noreply, put_flash(socket, :error, "Invalid address.")}
-
-      :error ->
-        {:noreply, put_flash(socket, :error, "Invalid amount.")}
-
-      {:error, reason} ->
-        {:noreply, put_flash(socket, :error, "Send failed: #{reason}")}
     end
   end
 
@@ -403,6 +378,29 @@ defmodule BoxwalletWeb.LitecoinLive do
     else
       {:noreply,
        put_flash(socket, :info, "Prune size set to #{socket.assigns.prune_size} MB. Restart the daemon for changes to take effect.")}
+    end
+  end
+
+  defp do_send(socket, address, amount_str) do
+    Process.send_after(self(), :clear_flash, 4_000)
+
+    with true <- Litecoin.validate_address(address),
+         {amount, _} <- Float.parse(amount_str),
+         {:ok, coin_auth} <- socket.assigns.coin_auth,
+         {:ok, txid} <- Litecoin.send_to_address(coin_auth, address, amount) do
+      {:noreply,
+       socket
+       |> put_flash(:info, "Sent #{amount_str} #{socket.assigns.coin_name_abbrev} successfully. TX: #{txid}")
+       |> assign(send_address: "", address_valid: :empty)}
+    else
+      false ->
+        {:noreply, put_flash(socket, :error, "Invalid address.")}
+
+      :error ->
+        {:noreply, put_flash(socket, :error, "Invalid amount.")}
+
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, "Send failed: #{reason}")}
     end
   end
 

@@ -3,7 +3,6 @@ defmodule Boxwallet.Coins.Litecoin do
   require Logger
 
   # @behaviour BoxWallet.CoinDaemon
-  import BoxWallet.App
 
   @coin_name "Litecoin"
   @coin_name_abbrev "LTC"
@@ -141,8 +140,6 @@ defmodule Boxwallet.Coins.Litecoin do
     # File.mkdir_p!(app_home_dir)
     IO.puts("#{BoxWallet.App.name()} is downloading to: #{app_home_dir}")
     IO.puts("System detected as: #{:erlang.system_info(:system_architecture)}")
-    sys_info = to_string(:erlang.system_info(:system_architecture))
-
     # The result will contain, :ok, the download_to and download_from
 
     file_name =
@@ -336,8 +333,7 @@ defmodule Boxwallet.Coins.Litecoin do
     sys_info = to_string(:erlang.system_info(:system_architecture))
 
     # Determine the file path and URL based on OS and architecture
-    result =
-      case :os.type() do
+    case :os.type() do
         {:unix, :linux} ->
           cond do
             String.contains?(sys_info, "arm71") ->
@@ -830,12 +826,6 @@ defmodule Boxwallet.Coins.Litecoin do
   #     end
   #   end
   # end
-
-  defp wallet_exists? do
-    wallet_dir = Path.join(get_coin_home_dir(), "BoxWallet")
-
-    File.dir?(wallet_dir)
-  end
 
   def wallet_encrypt(auth, password) do
     body =

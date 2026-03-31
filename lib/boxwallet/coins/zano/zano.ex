@@ -43,7 +43,6 @@ defmodule Boxwallet.Coins.Zano do
 
   # @tip_address "DM5XJbB6kpyDXpbnYcb1ZidrNpubf2gmSN"
 
-  @daemon_stop_attempts 25
   @daemon_rpc_attempts 25
   @daemon_rpc_sleep_interval 1000
 
@@ -333,8 +332,7 @@ defmodule Boxwallet.Coins.Zano do
     sys_info = to_string(:erlang.system_info(:system_architecture))
 
     # Determine the file path and URL based on OS and architecture
-    result =
-      case :os.type() do
+    case :os.type() do
         {:unix, :linux} ->
           cond do
             String.contains?(sys_info, "arm71") ->

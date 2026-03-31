@@ -134,22 +134,15 @@ defmodule Boxwallet.Coins.Litecoin.Server do
 
   @impl true
   def handle_cast(:start_daemon, state) do
-    case Litecoin.start_daemon() do
-      {:ok} ->
-        Logger.info("[LTC] Litecoin daemon starting...")
-        state = %{state | daemon_status: :starting, wallet_loaded: false}
-        broadcast(state)
-        # Start blockchain polling — wallet polling starts after wallet is loaded
-        Process.send_after(self(), :poll_blockchain_info, 2_000)
-        Process.send_after(self(), :poll_block_height, 5_000)
-        Process.send_after(self(), :poll_peer_info, 10_000)
-        {:noreply, state}
-
-      {:error, reason} ->
-        Logger.error("[LTC] Failed to start Litecoin daemon: #{inspect(reason)}")
-        broadcast(state)
-        {:noreply, state}
-    end
+    Litecoin.start_daemon()
+    Logger.info("[LTC] Litecoin daemon starting...")
+    state = %{state | daemon_status: :starting, wallet_loaded: false}
+    broadcast(state)
+    # Start blockchain polling — wallet polling starts after wallet is loaded
+    Process.send_after(self(), :poll_blockchain_info, 2_000)
+    Process.send_after(self(), :poll_block_height, 5_000)
+    Process.send_after(self(), :poll_peer_info, 10_000)
+    {:noreply, state}
   end
 
   def handle_cast(:stop_daemon, state) do
