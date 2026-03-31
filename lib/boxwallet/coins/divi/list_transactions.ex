@@ -77,6 +77,15 @@ defmodule BoxWallet.Coins.Divi.ListTransactions do
     end
   end
 
+  defp parse(%{"result" => nil, "error" => error, "id" => id}) do
+    {:ok,
+     %__MODULE__{
+       result: [],
+       error: error,
+       id: id
+     }}
+  end
+
   defp parse(%{"result" => result, "error" => error, "id" => id}) do
     {:ok,
      %__MODULE__{
