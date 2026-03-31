@@ -1,9 +1,7 @@
 defmodule BoxwalletWeb.ReddCoinLive do
   import BoxwalletWeb.CoreWalletToolbar
-  import BoxwalletWeb.CoreWalletBalance
   import BoxwalletWeb.WalletBalanceDisplay
   import BoxwalletWeb.PromptModal
-  import BoxwalletWeb.SyncProgress
   import BoxwalletWeb.CoinSidebar
   import BoxwalletWeb.CoinHomeSection
   import BoxwalletWeb.CoinTransactions
@@ -167,29 +165,6 @@ defmodule BoxwalletWeb.ReddCoinLive do
     end
   end
 
-  defp do_send(socket, address, amount_str) do
-    Process.send_after(self(), :clear_flash, 4_000)
-
-    with true <- ReddCoin.validate_address(address),
-         {amount, _} <- Float.parse(amount_str),
-         {:ok, coin_auth} <- socket.assigns.coin_auth,
-         {:ok, txid} <- ReddCoin.send_to_address(coin_auth, address, amount) do
-      {:noreply,
-       socket
-       |> put_flash(:info, "Sent #{amount_str} #{socket.assigns.coin_name_abbrev} successfully. TX: #{txid}")
-       |> assign(send_address: "", address_valid: :empty)}
-    else
-      false ->
-        {:noreply, put_flash(socket, :error, "Invalid address.")}
-
-      :error ->
-        {:noreply, put_flash(socket, :error, "Invalid amount.")}
-
-      {:error, reason} ->
-        {:noreply, put_flash(socket, :error, "Send failed: #{reason}")}
-    end
-  end
-
   def handle_event("switch_tab", %{"tab" => tab}, socket) do
     tab = String.to_existing_atom(tab)
     ReddCoin.Server.set_active_tab(tab)
@@ -237,7 +212,7 @@ defmodule BoxwalletWeb.ReddCoinLive do
   end
 
   def handle_event("lock_wallet", _params, socket) do
-    {:ok, coin_auth} = socket.assigns.coin_auth
+    {:ok, _coin_auth} = socket.assigns.coin_auth
     # TODO: ReddCoin.lock_wallet(coin_auth)
     {:noreply, socket}
   end
@@ -364,6 +339,29 @@ defmodule BoxwalletWeb.ReddCoinLive do
        socket
        |> assign(testnet_enabled: new_value)
        |> put_flash(:info, "Testnet #{if new_value, do: "enabled", else: "disabled"}. Restart the daemon for changes to take effect.")}
+    end
+  end
+
+  defp do_send(socket, address, amount_str) do
+    Process.send_after(self(), :clear_flash, 4_000)
+
+    with true <- ReddCoin.validate_address(address),
+         {amount, _} <- Float.parse(amount_str),
+         {:ok, coin_auth} <- socket.assigns.coin_auth,
+         {:ok, txid} <- ReddCoin.send_to_address(coin_auth, address, amount) do
+      {:noreply,
+       socket
+       |> put_flash(:info, "Sent #{amount_str} #{socket.assigns.coin_name_abbrev} successfully. TX: #{txid}")
+       |> assign(send_address: "", address_valid: :empty)}
+    else
+      false ->
+        {:noreply, put_flash(socket, :error, "Invalid address.")}
+
+      :error ->
+        {:noreply, put_flash(socket, :error, "Invalid amount.")}
+
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, "Send failed: #{reason}")}
     end
   end
 
