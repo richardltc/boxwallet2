@@ -29,7 +29,33 @@ defmodule Boxwallet.Application do
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Boxwallet.Supervisor]
-    Supervisor.start_link(children, opts)
+    result = Supervisor.start_link(children, opts)
+
+    case result do
+      {:ok, _pid} -> maybe_open_browser()
+      _ -> :ok
+    end
+
+    result
+  end
+
+  defp maybe_open_browser do
+    # Only open browser when running as a release
+    if System.get_env("RELEASE_NAME") do
+      port = Application.get_env(:boxwallet, BoxwalletWeb.Endpoint)[:http][:port] || 4000
+      url = "http://localhost:#{port}"
+
+      Task.start(fn ->
+        # Small delay to ensure endpoint is fully ready
+        Process.sleep(1000)
+
+        case :os.type() do
+          {:unix, :darwin} -> System.cmd("open", [url])
+          {:unix, _} -> System.cmd("xdg-open", [url])
+          {:win32, :nt} -> System.cmd("cmd", ["/c", "start", url])
+        end
+      end)
+    end
   end
 
   # Tell Phoenix to update the endpoint configuration

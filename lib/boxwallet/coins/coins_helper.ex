@@ -8,8 +8,12 @@ defmodule BoxWallet.Coins.CoinHelper do
   """
   def disk_free do
     case :os.type() do
-      {:unix, _} ->
-        path = if File.exists?("/home"), do: "/home", else: "/"
+      {:unix, os_name} ->
+        path =
+          case os_name do
+            :darwin -> "/"
+            _ -> if File.exists?("/home"), do: "/home", else: "/"
+          end
 
         case System.cmd("df", ["-Pk", path]) do
           {output, 0} -> parse_df_output(output)
@@ -17,16 +21,13 @@ defmodule BoxWallet.Coins.CoinHelper do
         end
 
       {:win32, :nt} ->
-        case System.cmd("wmic", [
-               "logicaldisk",
-               "where",
-               "caption=\"C:\"",
-               "get",
-               "size,freespace",
-               "/format:list"
+        case System.cmd("powershell", [
+               "-NoProfile",
+               "-Command",
+               "Get-CimInstance -ClassName Win32_LogicalDisk -Filter \"DeviceID='C:'\" | Select-Object Size,FreeSpace | ForEach-Object { \"Size=$($_.Size)\"; \"FreeSpace=$($_.FreeSpace)\" }"
              ]) do
           {output, 0} -> parse_wmic_output(output)
-          {_, code} -> {:error, "wmic failed with exit code #{code}"}
+          {_, code} -> {:error, "powershell disk query failed with exit code #{code}"}
         end
 
       _ ->
