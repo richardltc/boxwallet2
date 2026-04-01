@@ -11,7 +11,8 @@ defmodule Boxwallet.MixProject do
       aliases: aliases(),
       deps: deps(),
       compilers: [:phoenix_live_view] ++ Mix.compilers(),
-      listeners: [Phoenix.CodeReloader]
+      listeners: [Phoenix.CodeReloader],
+      releases: releases()
     ]
   end
 
@@ -21,13 +22,30 @@ defmodule Boxwallet.MixProject do
   def application do
     [
       mod: {Boxwallet.Application, []},
-      extra_applications: [:logger, :runtime_tools]
+      extra_applications: [:logger, :runtime_tools, :ssl]
     ]
   end
 
   def cli do
     [
       preferred_envs: [precommit: :test]
+    ]
+  end
+
+  defp releases do
+    [
+      boxwallet: [
+        steps: [:assemble, &Burrito.wrap/1],
+        burrito: [
+          targets: [
+            linux: [os: :linux, cpu: :x86_64],
+            linux_aarch64: [os: :linux, cpu: :aarch64],
+            macos: [os: :darwin, cpu: :x86_64],
+            macos_aarch64: [os: :darwin, cpu: :aarch64],
+            windows: [os: :windows, cpu: :x86_64]
+          ]
+        ]
+      ]
     ]
   end
 
@@ -66,7 +84,8 @@ defmodule Boxwallet.MixProject do
       {:dns_cluster, "~> 0.2.0"},
       {:httpoison, "~> 2.2"},
       {:eqrcode, "~> 0.2.1"},
-      {:bandit, "~> 1.5"}
+      {:bandit, "~> 1.5"},
+      {:burrito, "~> 1.0"}
     ]
   end
 
