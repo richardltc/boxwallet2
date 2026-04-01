@@ -1,6 +1,6 @@
 # What is BoxWallet 2?
 
-BoxWallet 2 is a browser based,  multi-coin wallet, that can get your coin-of-choice up and running fast and securely staking with just a few clicks.
+BoxWallet 2 is a browser based, multi-coin wallet, that gets your coin-of-choice up and running fast and securely staking with just a few clicks. Pre-built binaries are available for Linux (x64, ARM64), macOS (Intel, Apple Silicon), and Windows — just download and run from the [releases page](https://github.com/richardltc/boxwallet2/releases/latest).
 <img src="docs/images/home.png" alt="Home">
 
 Starting the Divi wallet.
@@ -13,92 +13,10 @@ The Divi dashboard, nearly fully synced ready for staking:
 The ReddCoin dashboard, displaying recent transactions:
 <img src="docs/images/rdd_transactions.png" alt="ReddCoin dashboard">
 
-
-# Getting started with BoxWallet 2
-
-The easiest way to get started with BoxWallet is through the **BoxWallet Manager**.
-
-It’s a simple, lightweight CLI app that handles the entire installation and update process for you. You can find the latest version here:
-
-https://github.com/richardltc/bw_manager/releases/latest
-
-Just download and run—it’ll take care of the rest! :)
-
-However, if you prefer to do things manually, you can do so by following the instructions below...
+If you prefer to do things manually, you can do so by following the instructions below...
 
 <details>
-<summary>Download Pre-built Releases</summary>
 
-## Download Pre-built Releases
-
-Pre-built releases are available for all major platforms. Download the latest release from:
-
-https://github.com/richardltc/boxwallet2/releases
-
-### Linux (x64)
-
-```bash
-# Download and extract
-curl -LO https://github.com/richardltc/boxwallet2/releases/latest/download/boxwallet-VERSION-linux-x64.tar.gz
-tar -xzf boxwallet-VERSION-linux-x64.tar.gz
-
-# Run BoxWallet
-./boxwallet/bin/boxwallet start
-```
-
-### Linux (ARM64 / Raspberry Pi)
-
-```bash
-# Download and extract
-curl -LO https://github.com/richardltc/boxwallet2/releases/latest/download/boxwallet-VERSION-linux-arm64.tar.gz
-tar -xzf boxwallet-VERSION-linux-arm64.tar.gz
-
-# Run BoxWallet
-./boxwallet/bin/boxwallet start
-```
-
-### macOS (Apple Silicon)
-
-```bash
-# Download and extract
-curl -LO https://github.com/richardltc/boxwallet2/releases/latest/download/boxwallet-VERSION-macos-arm64.tar.gz
-tar -xzf boxwallet-VERSION-macos-arm64.tar.gz
-
-# Remove the quarantine attribute (required for downloaded apps)
-xattr -rd com.apple.quarantine boxwallet
-
-# Run BoxWallet
-./boxwallet/bin/boxwallet start
-```
-
-### macOS (Intel)
-
-```bash
-# Download and extract
-curl -LO https://github.com/richardltc/boxwallet2/releases/latest/download/boxwallet-VERSION-macos-x64.tar.gz
-tar -xzf boxwallet-VERSION-macos-x64.tar.gz
-
-# Remove the quarantine attribute (required for downloaded apps)
-xattr -rd com.apple.quarantine boxwallet
-
-# Run BoxWallet
-./boxwallet/bin/boxwallet start
-```
-
-### Windows
-
-1. Download `boxwallet-VERSION-windows-x64.zip` from the releases page
-2. Extract the zip file
-3. Open PowerShell or Command Prompt and navigate to the extracted folder
-4. Run: `.\boxwallet\bin\boxwallet.bat start`
-
-### Accessing BoxWallet
-
-Once started, open your browser and navigate to `http://localhost:4000`
-
-</details>
-
-<details>
 <summary>Building from Source</summary>
 
 ## Building from Source
