@@ -23,6 +23,7 @@ defmodule BoxwalletWeb.Router do
     live "/reddcoin", ReddCoinLive
     live "/privatedivi", PrivateDiviLive
     live "/zano", ZanoLive
+    live "/bitcoinz", BitcoinzLive
   end
 
   # Other scopes may use custom stacks.

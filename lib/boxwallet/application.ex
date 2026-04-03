@@ -22,6 +22,7 @@ defmodule Boxwallet.Application do
       Boxwallet.Coins.Divi.Server,
       Boxwallet.Coins.Litecoin.Server,
       Boxwallet.Coins.Zano.Server,
+      Boxwallet.Coins.Bitcoinz.Server,
       # Start to serve requests, typically the last entry
       BoxwalletWeb.Endpoint
     ]
