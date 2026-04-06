@@ -109,32 +109,23 @@ defmodule Boxwallet.Coins.Divi do
     Logger.info("[#{@coin_name_abbrev}] Files copied and permissions set successfully.")
   end
 
-  def daemon_is_running(auth) do
-    body =
-      Jason.encode!(%{
-        jsonrpc: "1.0",
-        id: "curltext",
-        method: "getinfo",
-        params: []
-      })
+  def daemon_is_running(_auth) do
+    Logger.info("[#{@coin_name_abbrev}] Checking if #{@daemon_file_lin} process is running")
 
-    url = "http://127.0.0.1:#{auth.rpc_port}"
+    case :os.type() do
+      {:win32, _} ->
+        case System.cmd("tasklist", ["/FI", "IMAGENAME eq #{@daemon_file_win}"],
+               stderr_to_stdout: true
+             ) do
+          {output, 0} -> String.contains?(output, @daemon_file_win)
+          _ -> false
+        end
 
-    headers = [
-      {"Content-Type", "text/plain"},
-      {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
-    ]
-
-    Logger.info("[#{@coin_name_abbrev}] Attempting to call GetInfo to see if Daemon is running")
-
-    case HTTPoison.post(url, body, headers) do
-      {:ok, %{body: _}} ->
-        # IO.inspect(response_body).
-        IO.puts("We think the Daemon is running...")
-        true
-
-      {:error, %HTTPoison.Error{reason: _reason}} ->
-        false
+      _ ->
+        case System.cmd("pgrep", ["-x", @daemon_file_lin], stderr_to_stdout: true) do
+          {_, 0} -> true
+          _ -> false
+        end
     end
   end
 
