@@ -48,7 +48,7 @@ defmodule BoxwalletWeb.Layouts do
             <a href="https://phoenixframework.org/" class="btn btn-ghost">Website</a>
           </li> --%>
           <li>
-            <a href="https://github.com/phoenixframework/phoenix" class="btn btn-ghost">GitHub</a>
+            <a href="https://github.com/richardltc/boxwallet2" class="btn btn-ghost">GitHub</a>
           </li>
           <li>
             <.theme_toggle />
