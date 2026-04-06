@@ -24,6 +24,7 @@ defmodule Boxwallet.Application do
       Boxwallet.Coins.Zano.Server,
       Boxwallet.Coins.Bitcoinz.Server,
       Boxwallet.Coins.Nexa.Server,
+      Boxwallet.Coins.Pivx.Server,
       # Start to serve requests, typically the last entry
       BoxwalletWeb.Endpoint
     ]
