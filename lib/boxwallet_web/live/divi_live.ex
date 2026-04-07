@@ -8,6 +8,7 @@ defmodule BoxwalletWeb.DiviLive do
   import BoxwalletWeb.CoinReceive
   import BoxwalletWeb.CoinSend
   import BoxwalletWeb.CoinSettings
+  import BoxwalletWeb.CoinLottery
   use Number
   use BoxwalletWeb, :live_view
   require Logger
@@ -667,15 +668,8 @@ defmodule BoxwalletWeb.DiviLive do
               class="h-30 w-30 rounded-xl object-contain p-2"
             />
             <div class="flex-1">
-              <div class="text-left">
-                <h2 class="card-title text-3xl font-bold items-baseline flex justify-between">
-                  <div class="flex items-baseline">
-                    {@coin_name}
-                    <small class="badge badge-sm ml-1 font-mono border-0">
-                      v{@version}
-                    </small>
-                  </div>
-
+              <div class="text-left relative">
+                <div class="absolute top-0 right-0 flex flex-col items-start">
                   <.balance_display
                     balance={@balance}
                     unconfirmed_balance={@unconfirmed_balance}
@@ -683,6 +677,20 @@ defmodule BoxwalletWeb.DiviLive do
                     hide_balance={@hide_balance}
                     color="text-divired"
                   />
+                  <.coin_lottery
+                    color="text-divired"
+                    coin_daemon_started={@coin_daemon_started}
+                    blockchain_is_synced={@blockchain_is_synced}
+                    blocks_synced={@blocks_synced}
+                    balance={@balance}
+                    transactions={@transactions}
+                  />
+                </div>
+                <h2 class="card-title text-3xl font-bold items-baseline">
+                  {@coin_name}
+                  <small class="badge badge-sm ml-1 font-mono border-0">
+                    v{@version}
+                  </small>
                 </h2>
                 <p class="text-lg mt-2 mb-4">{@coin_title}</p>
 
