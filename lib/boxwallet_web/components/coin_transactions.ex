@@ -37,7 +37,7 @@ defmodule BoxwalletWeb.CoinTransactions do
           <% @transaction.category == "stake_reward" -> %>
             <.icon name="hero-bolt" class={"w-5 h-5 " <> @color} />
           <% @transaction.category == "receive" -> %>
-            <.icon name="hero-arrow-down" class={"w-5 h-5 " <> @color} />
+            <.icon name="hero-arrow-down" class="w-5 h-5 text-[#7ca071]" />
           <% true -> %>
             <.icon name="hero-arrow-up" class="w-5 h-5 text-red-500" />
         <% end %>
