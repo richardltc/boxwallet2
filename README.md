@@ -1,19 +1,53 @@
-# What is BoxWallet 2?
+# BoxWallet
 
-BoxWallet 2 is a browser based, multi-coin wallet, that gets your coin-of-choice up and running fast and securely staking with just a few clicks. Pre-built binaries are available for Linux (x64, ARM64), macOS (Intel, Apple Silicon), and Windows — just download and run from the [releases page](https://github.com/richardltc/boxwallet2/releases/latest).
-<img src="docs/images/home.png" alt="Home">
+**A self-hosted, non-custodial web dashboard that acts as an automated node manager.**
 
-Starting the Divi wallet.
+BoxWallet removes the complexity of running a cryptocurrency node. It automatically downloads and installs official coin binaries, manages the daemon for you, and gives you a clean browser-based dashboard to monitor and control everything — all while keeping 100% control of your private keys.
+
+Pre-built binaries are available for Linux (x64, ARM64), macOS (Intel, Apple Silicon), and Windows — just download and run from the [releases page](https://github.com/richardltc/boxwallet2/releases/latest).
+
+---
+
+## Why BoxWallet?
+
+**One-Click Onboarding**
+No manual downloads, no config file editing, no command line required. BoxWallet automatically downloads and installs the official node binaries and gets you staking in a few clicks.
+
+**Runs Anywhere**
+BoxWallet is multi-platform. Install it on a Raspberry Pi, a spare laptop you want to put to good use, or your daily Windows, Mac, or Linux machine.
+
+**Mobile-Friendly**
+Monitor your node health and staking rewards from a phone or tablet browser anywhere on your local network — no app install needed.
+
+**Non-Custodial**
+Your keys never leave your machine. BoxWallet talks directly to your local node daemon; there is no cloud, no third party, and no account required.
+
+---
+
+## Screenshots
+
+Starting the Divi wallet:
+
 <img src="docs/images/divi_start.gif" alt="Divi start">
 
+The Divi dashboard, nearly fully synced and ready for staking:
 
-The Divi dashboard, nearly fully synced ready for staking:
 <img src="docs/images/divi.png" alt="Divi dashboard">
 
 The ReddCoin dashboard, displaying recent transactions:
+
 <img src="docs/images/rdd_transactions.png" alt="ReddCoin dashboard">
 
-If you prefer to do things manually, you can do so by following the instructions below...
+---
+
+## Getting Started
+
+Download the latest release for your platform from the [releases page](https://github.com/richardltc/boxwallet2/releases/latest) and run it. Then open your browser at `http://localhost:4000`.
+
+> **Running on a Raspberry Pi or separate machine?**
+> See the network access note in the *Building from Source* section below.
+
+---
 
 <details>
 
@@ -35,48 +69,44 @@ Copy and paste and run these lines one after the other, making sure you put your
 
 `echo "eval \"\$(/home/your_user_name/.local/bin/mise activate bash)\"" >> ~/.bashrc`
 
-Now, re-start you shell and let's check we're OK so far and run `mise docter` which should report No problems found
+Now, re-start your shell and let's check we're OK so far and run `mise doctor` which should report No problems found.
 
-`mise use erlang@26.2.5.15` this could take some time...
+`mise use erlang@26.2.5.15` — this could take some time...
 
 `mise use elixir@1.15.8-otp-26`
 
-Please continue to *Installing BoxWallet2* below.
+Please continue to *Installing BoxWallet* below.
 
-## Installing on Debian 13 (trixie) and Raspberry Pi OS (64 bit only)
+## Installing on Debian 13 (Trixie) and Raspberry Pi OS (64-bit only)
 
-`sudo update` - To update your local package dbase
+`sudo apt update` — update your local package database
 
-`sudo apt install libc6:armhf libgcc-s1:armhf libstdc++6:armhf` - To install packages that Divi requires
+`sudo apt install libc6:armhf libgcc-s1:armhf libstdc++6:armhf` — packages required by Divi
 
-`sudo apt install elixir erlang-dev erlang-xmerl erlang-syntax-tools git` - To install packages that BoxWallet requires.
+`sudo apt install elixir erlang-dev erlang-xmerl erlang-syntax-tools git` — packages required by BoxWallet
 
-Please continue to ***Installing BoxWallet2*** below.
+Please continue to *Installing BoxWallet* below.
 
-## Install on Windows (WSL)
+## Installing on Windows (WSL)
 
-To install Ubuntu using WSL, open PowerShell as an administrator and run the command `wsl --install`, then restart your computer when prompted.
-This command installs the Windows Subsystem for Linux and automatically downloads and installs the default Ubuntu distribution.
+Open PowerShell as an administrator and run `wsl --install`, then restart your computer when prompted. This installs the Windows Subsystem for Linux with Ubuntu.
 
-Now, please follow the ***Installing on Ubuntu 24.04*** instructions above, and then continue below.
+Then follow the *Installing on Ubuntu 24.04* instructions above.
 
-## Installing BoxWallet2
+## Installing BoxWallet
 
-Now that you have everything you need, change to a directory that you'd like to install BoxWallet, then run:
+Change to the directory where you'd like to install BoxWallet, then run:
 
-`git clone https://github.com/richardltc/boxwallet2.git`
+```bash
+git clone https://github.com/richardltc/boxwallet2.git
+cd boxwallet2
+mix deps.get
+mix phx.server
+```
 
-Then, change into the directory:
+Then open your browser at `http://localhost:4000`.
 
-`cd boxwallet2`
-
-We're nearly there. :)
-We now need to get all the last remaining dependencies, which we do by running `mix deps.get`
-
-After this step is complete, you're now ready to run BoxWallet. Running the command `mix phx.server` will start the web server which enables you to point your browser to `http://localhost:4000`
-
-By default, you'll only be able to access on your local box. If you'd like to run the server on a separate box, such as a Raspberry Pi, please change the ip address in the file: `config\dev.exs` from `127, 0, 0, 1` to `0.0.0.0` and re-start the `mix phx.server`
-
-Congratulations, and thank you for using BoxWallet :)
+**Accessing from another device on your network** (e.g. a Raspberry Pi or spare machine):
+Edit `config/dev.exs` and change `127, 0, 0, 1` to `0, 0, 0, 0`, then restart `mix phx.server`. You can then access the dashboard from any browser on your local network.
 
 </details>
