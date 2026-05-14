@@ -28,8 +28,7 @@ defmodule BoxwalletWeb.LitecoinLive do
         blockchain_is_synced: server_state.blockchain_is_synced,
         coin_name: "Litecoin",
         coin_name_abbrev: Litecoin.coin_name_abbrev(),
-        coin_title:
-          "Litecoin (LTC) — a peer-to-peer cryptocurrency for fast, low-cost payments.",
+        coin_title: "Litecoin (LTC) — a peer-to-peer cryptocurrency for fast, low-cost payments.",
         coin_description:
           "Launched in 2011 by Charlie Lee, Litecoin is one of the earliest Bitcoin alternatives. It uses a Scrypt proof-of-work algorithm, enabling faster block generation times of approximately 2.5 minutes compared to Bitcoin's 10 minutes. Designed for everyday transactions, Litecoin offers lower fees and quicker confirmations, making it well-suited for point-of-sale payments and smaller transfers.",
         show_install_alert: false,
@@ -249,7 +248,14 @@ defmodule BoxwalletWeb.LitecoinLive do
             :ok ->
               address = socket.assigns.pending_send_address
               amount_str = socket.assigns.pending_send_amount
-              socket = assign(socket, wallet_encryption_status: :wes_unlocked, pending_send_address: nil, pending_send_amount: nil)
+
+              socket =
+                assign(socket,
+                  wallet_encryption_status: :wes_unlocked,
+                  pending_send_address: nil,
+                  pending_send_amount: nil
+                )
+
               {:noreply, send_socket} = do_send(socket, address, amount_str)
               send_socket
 
@@ -319,12 +325,18 @@ defmodule BoxwalletWeb.LitecoinLive do
       {:noreply,
        socket
        |> assign(testnet_enabled: new_value, coin_daemon_stopping: true)
-       |> put_flash(:info, "Testnet #{if new_value, do: "enabled", else: "disabled"}. Stopping #{socket.assigns.coin_name} Daemon...")}
+       |> put_flash(
+         :info,
+         "Testnet #{if new_value, do: "enabled", else: "disabled"}. Stopping #{socket.assigns.coin_name} Daemon..."
+       )}
     else
       {:noreply,
        socket
        |> assign(testnet_enabled: new_value)
-       |> put_flash(:info, "Testnet #{if new_value, do: "enabled", else: "disabled"}. Restart the daemon for changes to take effect.")}
+       |> put_flash(
+         :info,
+         "Testnet #{if new_value, do: "enabled", else: "disabled"}. Restart the daemon for changes to take effect."
+       )}
     end
   end
 
@@ -353,12 +365,18 @@ defmodule BoxwalletWeb.LitecoinLive do
       {:noreply,
        socket
        |> assign(pruning_enabled: new_enabled, coin_daemon_stopping: true)
-       |> put_flash(:info, "Pruning #{if new_enabled, do: "enabled", else: "disabled"}. Stopping #{socket.assigns.coin_name} Daemon...")}
+       |> put_flash(
+         :info,
+         "Pruning #{if new_enabled, do: "enabled", else: "disabled"}. Stopping #{socket.assigns.coin_name} Daemon..."
+       )}
     else
       {:noreply,
        socket
        |> assign(pruning_enabled: new_enabled)
-       |> put_flash(:info, "Pruning #{if new_enabled, do: "enabled", else: "disabled"}. Restart the daemon for changes to take effect.")}
+       |> put_flash(
+         :info,
+         "Pruning #{if new_enabled, do: "enabled", else: "disabled"}. Restart the daemon for changes to take effect."
+       )}
     end
   end
 
@@ -374,10 +392,17 @@ defmodule BoxwalletWeb.LitecoinLive do
       {:noreply,
        socket
        |> assign(coin_daemon_stopping: true)
-       |> put_flash(:info, "Prune size set to #{socket.assigns.prune_size} MB. Stopping #{socket.assigns.coin_name} Daemon...")}
+       |> put_flash(
+         :info,
+         "Prune size set to #{socket.assigns.prune_size} MB. Stopping #{socket.assigns.coin_name} Daemon..."
+       )}
     else
       {:noreply,
-       put_flash(socket, :info, "Prune size set to #{socket.assigns.prune_size} MB. Restart the daemon for changes to take effect.")}
+       put_flash(
+         socket,
+         :info,
+         "Prune size set to #{socket.assigns.prune_size} MB. Restart the daemon for changes to take effect."
+       )}
     end
   end
 
@@ -390,7 +415,10 @@ defmodule BoxwalletWeb.LitecoinLive do
          {:ok, txid} <- Litecoin.send_to_address(coin_auth, address, amount) do
       {:noreply,
        socket
-       |> put_flash(:info, "Sent #{amount_str} #{socket.assigns.coin_name_abbrev} successfully. TX: #{txid}")
+       |> put_flash(
+         :info,
+         "Sent #{amount_str} #{socket.assigns.coin_name_abbrev} successfully. TX: #{txid}"
+       )
        |> assign(send_address: "", address_valid: :empty)}
     else
       false ->
@@ -405,31 +433,44 @@ defmodule BoxwalletWeb.LitecoinLive do
   end
 
   defp testnet_enabled?(coin_module) do
-    case BoxWallet.Coins.ConfigManager.get_label_value(coin_module.get_conf_file_location(), "testnet") do
+    case BoxWallet.Coins.ConfigManager.get_label_value(
+           coin_module.get_conf_file_location(),
+           "testnet"
+         ) do
       {:ok, "1"} -> true
       _ -> false
     end
   end
 
   defp pruning_enabled?(coin_module) do
-    case BoxWallet.Coins.ConfigManager.get_label_value(coin_module.get_conf_file_location(), "prune") do
+    case BoxWallet.Coins.ConfigManager.get_label_value(
+           coin_module.get_conf_file_location(),
+           "prune"
+         ) do
       {:ok, value} ->
         case Integer.parse(value) do
           {n, _} -> n > 0
           _ -> false
         end
-      _ -> false
+
+      _ ->
+        false
     end
   end
 
   defp get_prune_size(coin_module) do
-    case BoxWallet.Coins.ConfigManager.get_label_value(coin_module.get_conf_file_location(), "prune") do
+    case BoxWallet.Coins.ConfigManager.get_label_value(
+           coin_module.get_conf_file_location(),
+           "prune"
+         ) do
       {:ok, value} ->
         case Integer.parse(value) do
           {n, _} when n >= 600 -> n
           _ -> 600
         end
-      _ -> 600
+
+      _ ->
+        600
     end
   end
 
@@ -453,10 +494,17 @@ defmodule BoxwalletWeb.LitecoinLive do
             assigns.coin_daemon_starting and assigns.daemon_warmup_status == :rewinding ->
               :pulsing_rotating_ccw
 
-            assigns.coin_daemon_starting -> :pulsing
-            assigns.coin_daemon_started -> :enabled
-            assigns.coin_daemon_stopped -> :disabled
-            true -> :disabled
+            assigns.coin_daemon_starting ->
+              :pulsing
+
+            assigns.coin_daemon_started ->
+              :enabled
+
+            assigns.coin_daemon_stopped ->
+              :disabled
+
+            true ->
+              :disabled
           end
 
         hint =
@@ -464,10 +512,17 @@ defmodule BoxwalletWeb.LitecoinLive do
             assigns.coin_daemon_starting and assigns.daemon_warmup_status == :rewinding ->
               "Rewinding blocks..."
 
-            assigns.coin_daemon_starting -> "Daemon loading..."
-            assigns.coin_daemon_started -> "Daemon running"
-            assigns.coin_daemon_stopped -> "Daemon stopped"
-            true -> "Idle"
+            assigns.coin_daemon_starting ->
+              "Daemon loading..."
+
+            assigns.coin_daemon_started ->
+              "Daemon running"
+
+            assigns.coin_daemon_stopped ->
+              "Daemon stopped"
+
+            true ->
+              "Idle"
           end
 
         %{name: "hero-face-smile", hint: hint, color: "text-litecoinblue", state: state}
@@ -601,7 +656,12 @@ defmodule BoxwalletWeb.LitecoinLive do
         }
 
       :staking ->
-        %{name: "hero-bolt", hint: "Staking not supported", color: "text-litecoinblue", state: :disabled}
+        %{
+          name: "hero-bolt",
+          hint: "Staking not supported",
+          color: "text-litecoinblue",
+          state: :disabled
+        }
     end
   end
 
@@ -660,7 +720,7 @@ defmodule BoxwalletWeb.LitecoinLive do
           <span>Downloading and installing Litecoin... Please wait.</span>
         </div>
       <% end %>
-
+      
     <!-- Success alert -->
       <%= if @download_complete do %>
         <div role="alert" class="alert alert-success mb-4">
@@ -680,7 +740,7 @@ defmodule BoxwalletWeb.LitecoinLive do
           <span>Download and installation completed successfully!</span>
         </div>
       <% end %>
-
+      
     <!-- Error alert -->
       <%= if @download_error do %>
         <div role="alert" class="alert alert-error mb-4">
@@ -772,13 +832,31 @@ defmodule BoxwalletWeb.LitecoinLive do
                 on_prune_toggle="confirm_toggle_pruning"
               />
             <% :transactions -> %>
-              <.coin_transactions color="text-litecoinblue" coin_daemon_started={@coin_daemon_started} transactions={@transactions} />
+              <.coin_transactions
+                color="text-litecoinblue"
+                coin_daemon_started={@coin_daemon_started}
+                transactions={@transactions}
+              />
             <% :receive -> %>
-              <.coin_receive color="text-litecoinblue" coin_daemon_started={@coin_daemon_started} receive_address={@receive_address} />
+              <.coin_receive
+                color="text-litecoinblue"
+                coin_daemon_started={@coin_daemon_started}
+                receive_address={@receive_address}
+              />
             <% :send -> %>
-              <.coin_send color="text-litecoinblue" coin_daemon_started={@coin_daemon_started} coin_name_abbrev={@coin_name_abbrev} address_valid={@address_valid} send_address={@send_address} />
+              <.coin_send
+                color="text-litecoinblue"
+                coin_daemon_started={@coin_daemon_started}
+                coin_name_abbrev={@coin_name_abbrev}
+                address_valid={@address_valid}
+                send_address={@send_address}
+              />
             <% _ -> %>
-              <.coin_transactions color="text-litecoinblue" coin_daemon_started={@coin_daemon_started} transactions={@transactions} />
+              <.coin_transactions
+                color="text-litecoinblue"
+                coin_daemon_started={@coin_daemon_started}
+                transactions={@transactions}
+              />
           <% end %>
         </div>
       </div>

@@ -40,7 +40,11 @@ defmodule BoxWallet.Coins.CoinHelper do
       [_header | [data | _]] ->
         case String.split(data, ~r/\s+/, trim: true) do
           [_fs, total_kb, _used, free_kb | _] ->
-            {:ok, %{total: div(String.to_integer(total_kb), 1024), free: div(String.to_integer(free_kb), 1024)}}
+            {:ok,
+             %{
+               total: div(String.to_integer(total_kb), 1024),
+               free: div(String.to_integer(free_kb), 1024)
+             }}
 
           _ ->
             {:error, "Unexpected df output columns"}

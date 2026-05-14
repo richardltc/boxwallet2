@@ -43,7 +43,9 @@ defmodule Boxwallet.Coins.Bitcoinz do
   defp copy_extracted_files() do
     cli_filename =
       case get_cli_filename() do
-        {:ok, name} -> name
+        {:ok, name} ->
+          name
+
         {:error, reason} ->
           Logger.error("[#{@coin_name_abbrev}] Error: #{reason}")
           ""
@@ -51,7 +53,9 @@ defmodule Boxwallet.Coins.Bitcoinz do
 
     daemon_filename =
       case get_daemon_filename() do
-        {:ok, name} -> name
+        {:ok, name} ->
+          name
+
         {:error, reason} ->
           Logger.error("[#{@coin_name_abbrev}] Error: #{reason}")
           ""
@@ -108,7 +112,9 @@ defmodule Boxwallet.Coins.Bitcoinz do
       Logger.warning("[#{@coin_name_abbrev}] #{@fetch_params} not found, skipping")
       {:error, "fetch-params.sh not found"}
     else
-      Logger.info("[#{@coin_name_abbrev}] Running #{@fetch_params} to download proving parameters (~911MB)...")
+      Logger.info(
+        "[#{@coin_name_abbrev}] Running #{@fetch_params} to download proving parameters (~911MB)..."
+      )
 
       {cmd, args} =
         case :os.type() do
@@ -166,7 +172,9 @@ defmodule Boxwallet.Coins.Bitcoinz do
 
     file_name =
       case get_download_filename() do
-        {:ok, name} -> name
+        {:ok, name} ->
+          name
+
         {:error, reason} ->
           Logger.error("[#{@coin_name_abbrev}] Error: #{reason}")
           ""
@@ -205,7 +213,9 @@ defmodule Boxwallet.Coins.Bitcoinz do
   def files_exist() do
     daemon_filename =
       case get_daemon_filename() do
-        {:ok, name} -> name
+        {:ok, name} ->
+          name
+
         {:error, reason} ->
           Logger.error("[#{@coin_name_abbrev}] Error: #{reason}")
           ""
@@ -378,7 +388,7 @@ defmodule Boxwallet.Coins.Bitcoinz do
           String.contains?(response_body, "Loading") or
             String.contains?(response_body, "Rescanning") or
             String.contains?(response_body, "Verifying") or
-            String.contains?(response_body, "Calculating money supply") ->
+              String.contains?(response_body, "Calculating money supply") ->
             Logger.info("[#{@coin_name_abbrev}] Daemon is loading")
             {:warming_up, :loading}
 
@@ -480,7 +490,9 @@ defmodule Boxwallet.Coins.Bitcoinz do
   def start_daemon do
     daemon_filename =
       case get_daemon_filename() do
-        {:ok, name} -> name
+        {:ok, name} ->
+          name
+
         {:error, reason} ->
           Logger.error("[#{@coin_name_abbrev}] Error: #{reason}")
           ""

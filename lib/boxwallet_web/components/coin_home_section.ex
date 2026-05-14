@@ -29,7 +29,12 @@ defmodule BoxwalletWeb.CoinHomeSection do
         {@coin_description}
       </p>
       <div class="stats shadow mt-3 flex flex-row gap-8 p-6 justify-center items-center">
-        <.radial_progress label="Headers" synced={@headers_synced} total={@block_height} color={@color} />
+        <.radial_progress
+          label="Headers"
+          synced={@headers_synced}
+          total={@block_height}
+          color={@color}
+        />
         <.radial_progress
           label="Blocks"
           synced={@blocks_synced}

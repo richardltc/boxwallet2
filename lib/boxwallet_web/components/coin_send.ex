@@ -15,13 +15,21 @@ defmodule BoxwalletWeb.CoinSend do
 
       <%= if @coming_soon do %>
         <div class="flex justify-center mt-6">
-          <button class="btn btn-outline btn-boxwalletgreen px-8 cursor-not-allowed" disabled title="Coming soon">
+          <button
+            class="btn btn-outline btn-boxwalletgreen px-8 cursor-not-allowed"
+            disabled
+            title="Coming soon"
+          >
             <span class="hero-paper-airplane h-6 w-6" /> Send
             <span class="badge badge-sm ml-1">Coming soon</span>
           </button>
         </div>
       <% else %>
-        <form phx-submit="send_coin" phx-change="validate_send_address" class="mt-6 max-w-lg mx-auto space-y-4">
+        <form
+          phx-submit="send_coin"
+          phx-change="validate_send_address"
+          class="mt-6 max-w-lg mx-auto space-y-4"
+        >
           <div>
             <label class="label text-sm font-medium">Address</label>
             <input

@@ -46,9 +46,7 @@ defmodule BoxwalletWeb.ReceiveAddressModal do
                 type="button"
                 class="btn btn-square btn-outline"
                 title="Copy to clipboard"
-                phx-click={
-                  JS.dispatch("phx:copy", to: "##{@id}-address")
-                }
+                phx-click={JS.dispatch("phx:copy", to: "##{@id}-address")}
               >
                 <span class="hero-clipboard-document w-5 h-5" />
               </button>

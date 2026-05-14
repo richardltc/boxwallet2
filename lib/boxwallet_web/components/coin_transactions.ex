@@ -13,7 +13,12 @@ defmodule BoxwalletWeb.CoinTransactions do
       <p class={"text-lg font-semibold text-center " <> @color}>Transactions</p>
 
       <div :if={@transactions != []} class="mt-4 divide-y divide-base-300">
-        <.transaction :for={tx <- Enum.reverse(@transactions)} transaction={tx} confirmed_after={@confirmed_after} color={@color} />
+        <.transaction
+          :for={tx <- Enum.reverse(@transactions)}
+          transaction={tx}
+          confirmed_after={@confirmed_after}
+          color={@color}
+        />
       </div>
 
       <p :if={@transactions == []} class="text-gray-400 mt-4 text-center">
@@ -59,14 +64,18 @@ defmodule BoxwalletWeb.CoinTransactions do
         <%= if @transaction.confirmations >= @confirmed_after do %>
           <span class="badge badge-success badge-sm">Confirmed</span>
         <% else %>
-          <span class="badge badge-warning badge-sm">Confirming ({@transaction.confirmations}/{@confirmed_after})</span>
+          <span class="badge badge-warning badge-sm">
+            Confirming ({@transaction.confirmations}/{@confirmed_after})
+          </span>
         <% end %>
       </div>
     </div>
     """
   end
 
-  defp format_amount(amount) when amount >= 0, do: "+#{:erlang.float_to_binary(amount, decimals: 2)}"
+  defp format_amount(amount) when amount >= 0,
+    do: "+#{:erlang.float_to_binary(amount, decimals: 2)}"
+
   defp format_amount(amount), do: :erlang.float_to_binary(amount, decimals: 2)
 
   defp format_blocktime(nil), do: "Pending"

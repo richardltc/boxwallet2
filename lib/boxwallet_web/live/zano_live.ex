@@ -220,11 +220,17 @@ defmodule BoxwalletWeb.ZanoLive do
 
         state =
           cond do
-            assigns.coin_daemon_starting -> :disabled
+            assigns.coin_daemon_starting ->
+              :disabled
+
             assigns.coin_daemon_started ->
               if connections > 0 and !assigns.blockchain_is_synced, do: :rotating, else: :enabled
-            assigns.coin_daemon_stopped -> :disabled
-            true -> :disabled
+
+            assigns.coin_daemon_stopped ->
+              :disabled
+
+            true ->
+              :disabled
           end
 
         %{name: "hero-arrow-path", hint: hint, color: "text-zanoblue", state: state}
@@ -232,11 +238,20 @@ defmodule BoxwalletWeb.ZanoLive do
       :encryption ->
         hint =
           cond do
-            assigns.wallet_encryption_status == :wes_unencrypted -> "Wallet unencrypted! Please encrypt NOW!"
-            assigns.wallet_encryption_status == :wes_unlocked -> "Wallet unlocked!"
-            assigns.wallet_encryption_status == :wes_locked -> "Wallet locked"
-            assigns.wallet_encryption_status == :wes_unlocked_for_staking -> "Wallet unlocked for staking :)"
-            assigns.wallet_encryption_status == :wes_unknown -> "Wallet encryption unknown."
+            assigns.wallet_encryption_status == :wes_unencrypted ->
+              "Wallet unencrypted! Please encrypt NOW!"
+
+            assigns.wallet_encryption_status == :wes_unlocked ->
+              "Wallet unlocked!"
+
+            assigns.wallet_encryption_status == :wes_locked ->
+              "Wallet locked"
+
+            assigns.wallet_encryption_status == :wes_unlocked_for_staking ->
+              "Wallet unlocked for staking :)"
+
+            assigns.wallet_encryption_status == :wes_unknown ->
+              "Wallet encryption unknown."
           end
 
         state =
@@ -324,8 +339,8 @@ defmodule BoxwalletWeb.ZanoLive do
           <span>Downloading and installing Zano... Please wait.</span>
         </div>
       <% end %>
-
-      <!-- Success alert -->
+      
+    <!-- Success alert -->
       <%= if @download_complete do %>
         <div role="alert" class="alert alert-success mb-4">
           <svg
@@ -344,8 +359,8 @@ defmodule BoxwalletWeb.ZanoLive do
           <span>Download and installation completed successfully!</span>
         </div>
       <% end %>
-
-      <!-- Error alert -->
+      
+    <!-- Error alert -->
       <%= if @download_error do %>
         <div role="alert" class="alert alert-error mb-4">
           <svg
@@ -421,13 +436,30 @@ defmodule BoxwalletWeb.ZanoLive do
                 disk_total_bytes={@disk_total_bytes}
               />
             <% :transactions -> %>
-              <.coin_transactions color="text-zanoblue" coin_daemon_started={@coin_daemon_started} transactions={@transactions} />
+              <.coin_transactions
+                color="text-zanoblue"
+                coin_daemon_started={@coin_daemon_started}
+                transactions={@transactions}
+              />
             <% :receive -> %>
-              <.coin_receive color="text-zanoblue" coin_daemon_started={@coin_daemon_started} receive_coming_soon={true} />
+              <.coin_receive
+                color="text-zanoblue"
+                coin_daemon_started={@coin_daemon_started}
+                receive_coming_soon={true}
+              />
             <% :send -> %>
-              <.coin_send color="text-zanoblue" coin_daemon_started={@coin_daemon_started} coming_soon={true} coin_name_abbrev={@coin_name_abbrev} />
+              <.coin_send
+                color="text-zanoblue"
+                coin_daemon_started={@coin_daemon_started}
+                coming_soon={true}
+                coin_name_abbrev={@coin_name_abbrev}
+              />
             <% _ -> %>
-              <.coin_transactions color="text-zanoblue" coin_daemon_started={@coin_daemon_started} transactions={@transactions} />
+              <.coin_transactions
+                color="text-zanoblue"
+                coin_daemon_started={@coin_daemon_started}
+                transactions={@transactions}
+              />
           <% end %>
         </div>
       </div>

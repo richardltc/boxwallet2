@@ -196,7 +196,11 @@ defmodule Boxwallet.Coins.Zano.Server do
 
     state = %{
       state
-      | daemon_status: if(state.daemon_status in [:starting, :running], do: :running, else: state.daemon_status),
+      | daemon_status:
+          if(state.daemon_status in [:starting, :running],
+            do: :running,
+            else: state.daemon_status
+          ),
         connections: connections,
         blocks_synced: blocks_synced,
         headers_synced: blocks_synced,
@@ -218,7 +222,17 @@ defmodule Boxwallet.Coins.Zano.Server do
   @impl true
   def handle_info({:daemon_stop_result, {:ok, _response}}, state) do
     Logger.info("Zano daemon stopped successfully")
-    state = %{state | daemon_status: :stopped, connections: 0, blocks_synced: 0, headers_synced: 0, block_height: 0, blockchain_is_synced: false}
+
+    state = %{
+      state
+      | daemon_status: :stopped,
+        connections: 0,
+        blocks_synced: 0,
+        headers_synced: 0,
+        block_height: 0,
+        blockchain_is_synced: false
+    }
+
     broadcast(state)
     {:noreply, state}
   end
