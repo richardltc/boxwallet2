@@ -7,7 +7,7 @@ defmodule BoxwalletWeb.ZanoLive do
   import BoxwalletWeb.CoinTransactions
   import BoxwalletWeb.CoinReceive
   import BoxwalletWeb.CoinSend
-  import BoxwalletWeb.ReceiveAddressModal
+  import BoxwalletWeb.CoinSettings
   use Number
   use BoxwalletWeb, :live_view
   require Logger
@@ -39,21 +39,18 @@ defmodule BoxwalletWeb.ZanoLive do
         coin_daemon_started: server_state.daemon_status == :running,
         coin_daemon_stopping: server_state.daemon_status == :stopping,
         coin_daemon_stopped: server_state.daemon_status == :stopped,
-        balance: 0,
-        unconfirmed_balance: 0,
-        immature_balance: 0,
+        balance: server_state.balance,
+        unconfirmed_balance: server_state.unconfirmed_balance,
+        immature_balance: server_state.immature_balance,
         block_height: server_state.block_height,
         blocks_synced: server_state.blocks_synced,
         headers_synced: server_state.headers_synced,
-        blocks: 0,
         connections: server_state.connections,
-        difficulty: 0,
-        headers: 0,
         blockchain_is_synced: server_state.blockchain_is_synced,
         version: Zano.core_version(),
         coin_auth: server_state.coin_auth,
-        staking: false,
-        wallet_encryption_status: :wes_unknown,
+        staking: server_state.staking,
+        wallet_encryption_status: server_state.wallet_encryption_status,
         hide_balance: BoxWallet.Settings.get(:hide_balance),
         show_prompt: false,
         prompt_action: nil,
@@ -61,9 +58,13 @@ defmodule BoxwalletWeb.ZanoLive do
         prompt_confirm: "",
         passwords_match: false,
         active_tab: :home,
-        transactions: [],
-        show_receive_modal: false,
-        receive_address: "",
+        transactions: server_state.transactions,
+        receive_address: server_state.receive_address,
+        send_address: "",
+        address_valid: :empty,
+        pending_send_address: nil,
+        pending_send_amount: nil,
+        testnet_enabled: testnet_enabled?(),
         disk_used_bytes: server_state.disk_used_bytes,
         disk_total_bytes: server_state.disk_total_bytes
       )
@@ -92,6 +93,24 @@ defmodule BoxwalletWeb.ZanoLive do
     {:noreply, clear_flash(socket)}
   end
 
+  def handle_info(:fetch_receive_address, socket) do
+    case socket.assigns.coin_auth do
+      {:ok, auth} ->
+        case Zano.get_receive_address(auth) do
+          {:ok, %{result: address}} when is_binary(address) ->
+            {:noreply, assign(socket, :receive_address, address)}
+
+          {:error, reason} ->
+            Logger.error("Failed to get Zano receive address: #{inspect(reason)}")
+            Process.send_after(self(), :clear_flash, 4_000)
+            {:noreply, put_flash(socket, :error, "Failed to get a receive address.")}
+        end
+
+      _ ->
+        {:noreply, put_flash(socket, :error, "Daemon not available.")}
+    end
+  end
+
   # --- UI Event Handlers ---
 
   def handle_event("toggle_hide_balance", _params, socket) do
@@ -100,9 +119,159 @@ defmodule BoxwalletWeb.ZanoLive do
     {:noreply, assign(socket, :hide_balance, new_value)}
   end
 
+  def handle_event("validate_send_address", %{"address" => address}, socket) do
+    validity =
+      cond do
+        address == "" -> :empty
+        Zano.validate_address(address) -> :valid
+        true -> :invalid
+      end
+
+    {:noreply, assign(socket, send_address: address, address_valid: validity)}
+  end
+
+  def handle_event("send_coin", %{"address" => address, "amount" => amount_str}, socket) do
+    wes = socket.assigns.wallet_encryption_status
+
+    if wes in [:wes_locked, :wes_unlocked_for_staking, :wes_unknown, :wes_unencrypted] do
+      {:noreply,
+       assign(socket,
+         show_prompt: true,
+         prompt_action: :unlock_for_send,
+         prompt_answer: "",
+         pending_send_address: address,
+         pending_send_amount: amount_str
+       )}
+    else
+      do_send(socket, address, amount_str)
+    end
+  end
+
   def handle_event("switch_tab", %{"tab" => tab}, socket) do
     tab = String.to_existing_atom(tab)
-    {:noreply, assign(socket, :active_tab, tab)}
+    ZanoServer.set_active_tab(tab)
+    socket = assign(socket, :active_tab, tab)
+
+    socket =
+      if tab == :receive and socket.assigns.receive_address == "" and
+           socket.assigns.coin_daemon_started do
+        send(self(), :fetch_receive_address)
+        socket
+      else
+        socket
+      end
+
+    {:noreply, socket}
+  end
+
+  def handle_event("show_encrypt_prompt", _params, socket) do
+    {:noreply,
+     assign(socket,
+       show_prompt: true,
+       prompt_action: :encrypt,
+       prompt_answer: "",
+       prompt_confirm: "",
+       passwords_match: false
+     )}
+  end
+
+  def handle_event("show_unlock_prompt", _params, socket) do
+    {:noreply, assign(socket, show_prompt: true, prompt_action: :unlock, prompt_answer: "")}
+  end
+
+  def handle_event("show_unlock_staking_prompt", _params, socket) do
+    {:noreply,
+     assign(socket, show_prompt: true, prompt_action: :unlock_for_staking, prompt_answer: "")}
+  end
+
+  def handle_event("validate_passwords", %{"answer" => p1, "answer_confirm" => p2}, socket) do
+    {:noreply,
+     assign(socket,
+       prompt_answer: p1,
+       prompt_confirm: p2,
+       passwords_match: p1 != "" and p2 != "" and p1 == p2
+     )}
+  end
+
+  def handle_event("lock_wallet", _params, socket) do
+    ZanoServer.stop_walletd()
+    Process.send_after(self(), :clear_flash, 4_000)
+    {:noreply, put_flash(socket, :info, "Locking wallet...")}
+  end
+
+  def handle_event("prompt_submitted", %{"answer" => password}, socket) do
+    Process.send_after(self(), :clear_flash, 4_000)
+
+    {:ok, coin_auth} = socket.assigns.coin_auth
+
+    socket =
+      case socket.assigns.prompt_action do
+        :encrypt ->
+          case Zano.wallet_encrypt(coin_auth, password) do
+            :ok ->
+              socket
+              |> put_flash(:info, "Wallet created and unlocked successfully.")
+              |> assign(wallet_encryption_status: :wes_unlocked)
+
+            {:error, reason} ->
+              put_flash(socket, :error, "Wallet creation failed: #{inspect(reason)}")
+          end
+
+        :unlock ->
+          case Zano.wallet_unlock(coin_auth, password) do
+            :ok ->
+              socket
+              |> put_flash(:info, "Wallet unlocked successfully.")
+              |> assign(wallet_encryption_status: :wes_unlocked)
+
+            {:error, reason} ->
+              put_flash(socket, :error, "Unable to unlock wallet: #{inspect(reason)}")
+          end
+
+        :unlock_for_staking ->
+          case Zano.wallet_unlock_fs(coin_auth, password) do
+            :ok ->
+              socket
+              |> put_flash(:info, "Wallet unlocked for staking successfully.")
+              |> assign(wallet_encryption_status: :wes_unlocked_for_staking)
+
+            {:error, reason} ->
+              put_flash(socket, :error, "Unable to unlock wallet: #{inspect(reason)}")
+          end
+
+        :unlock_for_send ->
+          case Zano.wallet_unlock(coin_auth, password) do
+            :ok ->
+              address = socket.assigns.pending_send_address
+              amount_str = socket.assigns.pending_send_amount
+
+              socket =
+                assign(socket,
+                  wallet_encryption_status: :wes_unlocked,
+                  pending_send_address: nil,
+                  pending_send_amount: nil
+                )
+
+              {:noreply, send_socket} = do_send(socket, address, amount_str)
+              send_socket
+
+            {:error, reason} ->
+              put_flash(socket, :error, "Unable to unlock wallet: #{inspect(reason)}")
+          end
+      end
+
+    {:noreply, assign(socket, show_prompt: false, prompt_action: nil)}
+  end
+
+  def handle_event("prompt_cancelled", _params, socket) do
+    {:noreply,
+     assign(socket,
+       show_prompt: false,
+       prompt_action: nil,
+       prompt_answer: "",
+       prompt_confirm: "",
+       passwords_match: true
+     )}
   end
 
   def handle_event("download_coin", _, socket) do
@@ -117,7 +286,6 @@ defmodule BoxwalletWeb.ZanoLive do
 
   def handle_event("stop_coin_daemon", _, socket) do
     ZanoServer.stop_daemon()
-
     Process.send_after(self(), :clear_flash, 4_000)
 
     {:noreply,
@@ -127,15 +295,74 @@ defmodule BoxwalletWeb.ZanoLive do
      |> assign(wallet_encryption_status: :wes_unknown)}
   end
 
-  def handle_event("show_encrypt_prompt", _params, socket), do: {:noreply, socket}
-  def handle_event("show_unlock_prompt", _params, socket), do: {:noreply, socket}
-  def handle_event("show_unlock_staking_prompt", _params, socket), do: {:noreply, socket}
-  def handle_event("lock_wallet", _params, socket), do: {:noreply, socket}
-  def handle_event("validate_passwords", _params, socket), do: {:noreply, socket}
-  def handle_event("prompt_submitted", _params, socket), do: {:noreply, socket}
-  def handle_event("prompt_cancelled", _params, socket), do: {:noreply, socket}
-  def handle_event("receive_address", _params, socket), do: {:noreply, socket}
-  def handle_event("close_receive_modal", _params, socket), do: {:noreply, socket}
+  def handle_event("confirm_toggle_testnet", _params, socket) do
+    new_value = !socket.assigns.testnet_enabled
+    conf_file = Zano.get_conf_file_location()
+
+    if new_value do
+      BoxWallet.Coins.ConfigManager.enable_testnet(conf_file)
+    else
+      BoxWallet.Coins.ConfigManager.disable_testnet(conf_file)
+    end
+
+    Process.send_after(self(), :clear_flash, 4_000)
+
+    if socket.assigns.coin_daemon_started do
+      ZanoServer.stop_daemon()
+
+      {:noreply,
+       socket
+       |> assign(testnet_enabled: new_value, coin_daemon_stopping: true)
+       |> put_flash(
+         :info,
+         "Testnet #{if new_value, do: "enabled", else: "disabled"}. Stopping #{socket.assigns.coin_name} Daemon..."
+       )}
+    else
+      {:noreply,
+       socket
+       |> assign(testnet_enabled: new_value)
+       |> put_flash(
+         :info,
+         "Testnet #{if new_value, do: "enabled", else: "disabled"}. Restart the daemon for changes to take effect."
+       )}
+    end
+  end
+
+  defp do_send(socket, address, amount_str) do
+    Process.send_after(self(), :clear_flash, 4_000)
+
+    with true <- Zano.validate_address(address),
+         {amount, _} <- Float.parse(amount_str),
+         {:ok, coin_auth} <- socket.assigns.coin_auth,
+         {:ok, txid} <- Zano.send_to_address(coin_auth, address, amount) do
+      {:noreply,
+       socket
+       |> put_flash(
+         :info,
+         "Sent #{amount_str} #{socket.assigns.coin_name_abbrev} successfully. TX: #{txid}"
+       )
+       |> assign(send_address: "", address_valid: :empty)}
+    else
+      false ->
+        {:noreply, put_flash(socket, :error, "Invalid address.")}
+
+      :error ->
+        {:noreply, put_flash(socket, :error, "Invalid amount.")}
+
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, "Send failed: #{inspect(reason)}")}
+    end
+  end
+
+  defp testnet_enabled? do
+    case BoxWallet.Coins.ConfigManager.get_label_value(
+           Zano.get_conf_file_location(),
+           "testnet"
+         ) do
+      {:ok, "1"} -> true
+      _ -> false
+    end
+  end
 
   defp get_icon_state(name, assigns) do
     case name do
@@ -176,11 +403,7 @@ defmodule BoxwalletWeb.ZanoLive do
         hint =
           case connections do
             0 ->
-              if !assigns.coin_daemon_stopped do
-                "Searching for connections..."
-              else
-                "Idle"
-              end
+              if !assigns.coin_daemon_stopped, do: "Searching for connections...", else: "Idle"
 
             _ when connections > 0 ->
               "#{connections} connections"
@@ -191,14 +414,9 @@ defmodule BoxwalletWeb.ZanoLive do
 
         state =
           case connections do
-            0 ->
-              if assigns.coin_daemon_started, do: :pulsing, else: :disabled
-
-            _ when connections > 0 ->
-              :enabled
-
-            _ ->
-              :disabled
+            0 -> if assigns.coin_daemon_started, do: :pulsing, else: :disabled
+            _ when connections > 0 -> :enabled
+            _ -> :disabled
           end
 
         %{name: "hero-signal", hint: hint, color: "text-zanoblue", state: state}
@@ -237,30 +455,21 @@ defmodule BoxwalletWeb.ZanoLive do
 
       :encryption ->
         hint =
-          cond do
-            assigns.wallet_encryption_status == :wes_unencrypted ->
-              "Wallet unencrypted! Please encrypt NOW!"
-
-            assigns.wallet_encryption_status == :wes_unlocked ->
-              "Wallet unlocked!"
-
-            assigns.wallet_encryption_status == :wes_locked ->
-              "Wallet locked"
-
-            assigns.wallet_encryption_status == :wes_unlocked_for_staking ->
-              "Wallet unlocked for staking :)"
-
-            assigns.wallet_encryption_status == :wes_unknown ->
-              "Wallet encryption unknown."
+          case assigns.wallet_encryption_status do
+            :wes_unencrypted -> "Wallet unencrypted! Please encrypt NOW!"
+            :wes_unlocked -> "Wallet unlocked!"
+            :wes_locked -> "Wallet locked"
+            :wes_unlocked_for_staking -> "Wallet unlocked for staking :)"
+            _ -> "Wallet encryption unknown."
           end
 
         state =
-          cond do
-            assigns.wallet_encryption_status == :wes_unencrypted -> :pulsing
-            assigns.wallet_encryption_status == :wes_unlocked -> :enabled
-            assigns.wallet_encryption_status == :wes_locked -> :enabled
-            assigns.wallet_encryption_status == :wes_unlocked_for_staking -> :enabled
-            assigns.wallet_encryption_status == :wes_unknown -> :disabled
+          case assigns.wallet_encryption_status do
+            :wes_unencrypted -> :pulsing
+            :wes_unlocked -> :enabled
+            :wes_locked -> :enabled
+            :wes_unlocked_for_staking -> :enabled
+            _ -> :disabled
           end
 
         icon_name =
@@ -291,13 +500,6 @@ defmodule BoxwalletWeb.ZanoLive do
 
     ~H"""
     <Layouts.app flash={@flash}>
-      <.receive_address_modal
-        id="receive-address"
-        show={@show_receive_modal}
-        address={@receive_address}
-        on_close="close_receive_modal"
-        color="text-zanoblue"
-      />
       <.prompt_modal
         id="wallet-password"
         question={
@@ -305,6 +507,7 @@ defmodule BoxwalletWeb.ZanoLive do
             :encrypt -> "Enter a new password to encrypt your wallet:"
             :unlock -> "Enter your wallet password to unlock:"
             :unlock_for_staking -> "Enter your wallet password to unlock for staking:"
+            :unlock_for_send -> "Enter your wallet password to unlock and send:"
             _ -> "Enter your wallet password:"
           end
         }
@@ -339,8 +542,7 @@ defmodule BoxwalletWeb.ZanoLive do
           <span>Downloading and installing Zano... Please wait.</span>
         </div>
       <% end %>
-      
-    <!-- Success alert -->
+
       <%= if @download_complete do %>
         <div role="alert" class="alert alert-success mb-4">
           <svg
@@ -359,8 +561,7 @@ defmodule BoxwalletWeb.ZanoLive do
           <span>Download and installation completed successfully!</span>
         </div>
       <% end %>
-      
-    <!-- Error alert -->
+
       <%= if @download_error do %>
         <div role="alert" class="alert alert-error mb-4">
           <svg
@@ -383,7 +584,6 @@ defmodule BoxwalletWeb.ZanoLive do
       <div class="flex justify-center items-start gap-4">
         <.coin_sidebar color="text-zanoblue" active_tab={@active_tab} />
         <div class="card bg-base-200 w-full max-w-6xl shadow-xl shadow-zanoblue/30 p-8">
-          <!-- Logo and title section -->
           <div class="flex flex-col md:flex-row items-start gap-6 mb-6">
             <img
               src={~p"/images/zano_logo.png"}
@@ -435,23 +635,36 @@ defmodule BoxwalletWeb.ZanoLive do
                 disk_used_bytes={@disk_used_bytes}
                 disk_total_bytes={@disk_total_bytes}
               />
+            <% :settings -> %>
+              <.coin_settings
+                coin_name={@coin_name}
+                color="text-zanoblue"
+                testnet_enabled={@testnet_enabled}
+                coin_files_exist={@coin_files_exist}
+                downloading={@downloading}
+                download_complete={@download_complete}
+                download_error={@download_error}
+                on_update="download_coin"
+              />
             <% :transactions -> %>
               <.coin_transactions
                 color="text-zanoblue"
                 coin_daemon_started={@coin_daemon_started}
                 transactions={@transactions}
+                confirmed_after={10}
               />
             <% :receive -> %>
               <.coin_receive
                 color="text-zanoblue"
                 coin_daemon_started={@coin_daemon_started}
-                receive_coming_soon={true}
+                receive_address={@receive_address}
               />
             <% :send -> %>
               <.coin_send
                 color="text-zanoblue"
                 coin_daemon_started={@coin_daemon_started}
-                coming_soon={true}
+                address_valid={@address_valid}
+                send_address={@send_address}
                 coin_name_abbrev={@coin_name_abbrev}
               />
             <% _ -> %>

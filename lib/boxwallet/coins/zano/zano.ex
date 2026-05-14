@@ -1,8 +1,31 @@
-# lib/my_app/coins/divi.ex
 defmodule Boxwallet.Coins.Zano do
+  @moduledoc """
+  Zano coin integration. Zano is a CryptoNote-based privacy coin (Boolberry lineage),
+  so it does **not** speak the Bitcoin-Core RPC dialect that most other coins in this
+  app use. Two separate daemons ship in the AppImage / Windows zip:
+
+    * `zanod`         — node daemon. JSON-RPC at `:11211/json_rpc`. Methods like
+                        `getinfo`, `getheight`, `gettransactions`.
+    * `simplewallet`  — wallet daemon. Same binary upstream documents as an
+                        interactive CLI, but runs as a JSON-RPC server when
+                        invoked with `--rpc-bind-port=…`. We use `:11212/json_rpc`.
+                        Methods like `getbalance`, `getaddress`, `transfer`,
+                        `get_recent_txs_and_info`.
+
+  The wallet daemon must be started separately, pointed at a wallet file, with the
+  wallet password supplied on the command line. There is no `encryptwallet` or
+  `walletpassphrase` equivalent — the password is set at wallet creation time and
+  required every time `simplewallet` is started. This maps onto the BoxWallet
+  encryption-status atoms as:
+
+      :wes_unencrypted          — no wallet file on disk
+      :wes_locked               — wallet file exists, simplewallet not running
+      :wes_unlocked             — simplewallet running and answering RPC
+      :wes_unlocked_for_staking — identical to :wes_unlocked for Zano (staking is
+                                  automatic when simplewallet is running unlocked)
+  """
+
   require Logger
-  # @behaviour BoxWallet.CoinDaemon
-  # import BoxWallet.App
 
   @coin_name "Zano"
   @coin_name_abbrev "ZANO"
@@ -13,238 +36,35 @@ defmodule Boxwallet.Coins.Zano do
   @home_dir_win "Zano"
 
   @core_version "2.1.15.457"
-
   def core_version, do: @core_version
-  # @download_file_arm32 "divi-" <> @core_version <> "-RPi2-9e2f76c.tar.gz"
-  # https://build.zano.org/builds/zano-linux-x64-release-v2.1.15.457%5B8621a68%5D.AppImage
-  @download_file_linux "zano-linux-x64-release-v" <> @core_version <> "%5B8621a68%5D.AppImage"
-  # @download_file_mac64 "divi-" <> @core_version <> "-osx64-9e2f76c.tar.gz"
-  @download_file_windows "zano-win-x64-release-v" <> @core_version <> "%5B8621a68%5D.zip"
-  # https://build.zano.org/builds/zano-win-x64-release-v2.1.15.457%5B8621a68%5D.zip
-  # @download_file_bs "primer.zip"
 
-  # <> "/"
+  @download_file_linux "zano-linux-x64-release-v" <> @core_version <> "%5B8621a68%5D.AppImage"
+  @download_file_windows "zano-win-x64-release-v" <> @core_version <> "%5B8621a68%5D.zip"
+
   @extracted_dir_linux "squashfs-root"
-  # <> "\\"
-  # @extracted_dir_windows "divi-" <> @core_version
 
   @download_url "https://build.zano.org/builds/"
-  # @download_url_bs "https://divi-primer-snapshot.s3.us-east-2.amazonaws.com/snapshot/"
 
   @conf_file "zano.conf"
-  @cli_file_lin "simplewallet"
-  @cli_file_win "simplewallet.exe"
   @daemon_file_lin "zanod"
   @daemon_file_win "zanod.exe"
+  @walletd_file_lin "simplewallet"
+  @walletd_file_win "simplewallet.exe"
 
-  # divi.conf file constants
   @rpc_user "zanorpc"
   @rpc_port "11211"
+  @walletd_rpc_port "11212"
 
-  # @tip_address "DM5XJbB6kpyDXpbnYcb1ZidrNpubf2gmSN"
+  @wallet_file_name "boxwallet.zsw"
 
   @daemon_rpc_attempts 25
-  @daemon_rpc_sleep_interval 1000
+  @daemon_rpc_sleep_interval 1_000
+  @walletd_start_attempts 30
+  @walletd_start_sleep 500
 
-  # CWalletESUnlockedForStaking = "unlocked-for-staking"
-  # CWalletESLocked             = "locked"
-  # CWalletESUnlocked           = "unlocked"
-  # CWalletESUnencrypted        = "unencrypted"
+  # --- Filesystem / install ---
 
-  # General CLI command constants
-  # // cCommandGetBCInfo             string = "getblockchaininfo"
-  # cCommandGetInfo string = "getinfo"
-  # // cCommandGetStakingInfo        string = "getstakinginfo"
-  # // cCommandListReceivedByAddress string = "listreceivedbyaddress"
-  # // cCommandListTransactions      string = "listtransactions"
-  # // cCommandGetNetworkInfo        string = "getnetworkinfo"
-  # // cCommandGetNewAddress         string = "getnewaddress"
-  # cCommandGetWalletInfo string = "getwalletinfo"
-  # // cCommandSendToAddress         string = "sendtoaddress"
-  # // cCommandMNSyncStatus1         string = "mnsync"
-  # // cCommandMNSyncStatus2         string = "status"
-  # cCommandDumpHDInfo string = "dumphdinfo" // ./divi-cli dumphdinfo
-
-  # @install_path Path.expand("~/.my_app/bitcoin")
-  # @rpc_credentials [username: "rpcuser", password: "rpcpass"]
-
-  defp copy_extracted_files() do
-    cli_filename =
-      case get_cli_filename() do
-        {:ok, name} ->
-          name
-
-        {:error, reason} ->
-          Logger.error("[#{@coin_name_abbrev}] Error: #{reason}")
-          ""
-      end
-
-    daemon_filename =
-      case get_daemon_filename() do
-        {:ok, name} ->
-          name
-
-        {:error, reason} ->
-          Logger.error("[#{@coin_name_abbrev}] Error: #{reason}")
-          ""
-      end
-
-    full_path_cli =
-      Path.join([BoxWallet.App.home_folder(), @extracted_dir_linux, "usr", "bin", cli_filename])
-
-    full_path_daemon =
-      Path.join([BoxWallet.App.home_folder(), @extracted_dir_linux, "usr", "bin", daemon_filename])
-
-    dest_path_cli =
-      Path.join([BoxWallet.App.home_folder(), cli_filename])
-
-    dest_path_daemon =
-      Path.join([BoxWallet.App.home_folder(), daemon_filename])
-
-    Logger.info("[#{@coin_name_abbrev}] Copying from #{full_path_cli} to #{dest_path_cli}")
-    File.cp!(full_path_cli, dest_path_cli)
-    Logger.info("[#{@coin_name_abbrev}] Copying from #{full_path_daemon} to #{dest_path_daemon}")
-    File.cp!(full_path_daemon, dest_path_daemon)
-
-    File.chmod!(dest_path_cli, 0o755)
-    File.chmod!(dest_path_daemon, 0o755)
-
-    Logger.info("[#{@coin_name_abbrev}] Files copied and permissions set successfully.")
-  end
-
-  def daemon_is_running(auth) do
-    body =
-      Jason.encode!(%{
-        jsonrpc: "2.0",
-        id: 0,
-        method: "getinfo",
-        params: %{flags: 0}
-      })
-
-    url = "http://127.0.0.1:#{auth.rpc_port}/json_rpc"
-
-    headers = [{"Content-Type", "application/json"}]
-
-    Logger.info("[#{@coin_name_abbrev}] Attempting to call GetInfo to see if Daemon is running")
-
-    case HTTPoison.post(url, body, headers) do
-      {:ok, %{status_code: 200}} ->
-        true
-
-      _ ->
-        false
-    end
-  end
-
-  def download_coin() do
-    app_home_dir = BoxWallet.App.home_folder()
-    # File.mkdir_p!(app_home_dir)
-    IO.puts("#{BoxWallet.App.name()} is downloading to: #{app_home_dir}")
-    IO.puts("System detected as: #{:erlang.system_info(:system_architecture)}")
-    # sys_info = to_string(:erlang.system_info(:system_architecture))
-
-    # The result will contain, :ok, the download_to and download_from
-
-    file_name =
-      case get_download_filename() do
-        {:ok, name} ->
-          name
-
-        {:error, reason} ->
-          Logger.error("[#{@coin_name_abbrev}] Error: #{reason}")
-          # Keep empty string or use some default
-          ""
-      end
-
-    full_file_dl_url = @download_url <> file_name
-
-    full_file_path = Path.join(app_home_dir, file_name)
-    Logger.info("[#{@coin_name_abbrev}] Downloading file to: #{full_file_path}")
-
-    case Req.get(full_file_dl_url, into: File.stream!(full_file_path)) do
-      {:ok, %Req.Response{status: 200}} ->
-        IO.puts("Download complete, now extracting...")
-
-        case unarchive_file(full_file_path, app_home_dir) do
-          {:ok} ->
-            Logger.info("[#{@coin_name_abbrev}] Extraction completed successfully")
-            copy_extracted_files()
-            tidy_downloaded_files(full_file_path)
-            populate_conf_file()
-            {:ok}
-
-          {:error, reason} ->
-            Logger.error("[#{@coin_name_abbrev}] Extraction failed: #{inspect(reason)}")
-            {:error, "Extraction failed: #{reason}"}
-        end
-
-      {:ok, %Req.Response{status: status}} ->
-        {:error, "HTTP error: #{status}"}
-
-      {:error, reason} ->
-        {:error, reason}
-    end
-  end
-
-  def files_exist() do
-    daemon_filename =
-      case get_daemon_filename() do
-        {:ok, name} ->
-          name
-
-        {:error, reason} ->
-          Logger.error("[#{@coin_name_abbrev}] Error: #{reason}")
-          ""
-      end
-
-    s = Path.join(BoxWallet.App.home_folder(), daemon_filename)
-    Logger.info("[#{@coin_name_abbrev}] Checking for file: #{s}")
-    File.exists?(Path.join(BoxWallet.App.home_folder(), daemon_filename))
-  end
-
-  def get_auth_values() do
-    conf_file = get_conf_file_location()
-
-    with {:ok, rpcport} <- BoxWallet.Coins.ConfigManager.get_label_value(conf_file, "rpcport"),
-         {:ok, rpcuser} <- BoxWallet.Coins.ConfigManager.get_label_value(conf_file, "rpcuser"),
-         {:ok, rpcpassword} <-
-           BoxWallet.Coins.ConfigManager.get_label_value(conf_file, "rpcpassword") do
-      auth = %BoxWallet.Coins.Auth{
-        rpc_port: rpcport,
-        rpc_user: rpcuser,
-        rpc_password: rpcpassword
-      }
-
-      # IO.inspect(auth, label: "Auth values")
-      {:ok, auth}
-    else
-      {:error, reason} -> {:error, reason}
-    end
-  end
-
-  def get_block_height() do
-    url = "https://chainz.cryptoid.info/divi/api.dws?q=getblockcount"
-
-    case Req.get(url) do
-      {:ok, %{status: 200, body: body}} ->
-        # The body is a string (e.g., "3908174"), so we convert it to an integer
-        {count, _} = Integer.parse(body)
-        Logger.info("[#{@coin_name_abbrev}] Blockheight found: #{count}")
-        {:ok, count}
-
-      {:ok, %{status: status}} ->
-        {:error, "API returned status code: #{status}"}
-
-      {:error, exception} ->
-        {:error, exception}
-    end
-  end
-
-  defp get_conf_file_location() do
-    Path.join(get_coin_home_dir(), @conf_file)
-  end
-
-  def get_coin_home_dir() do
+  def get_coin_home_dir do
     user_home_dir = System.user_home()
 
     case :os.type() do
@@ -259,116 +79,72 @@ defmodule Boxwallet.Coins.Zano do
 
       _ ->
         Logger.error("[#{@coin_name_abbrev}] get_coin_home_dir: Running on an unknown OS!")
+        user_home_dir
     end
   end
 
-  def get_cli_filename() do
-    do_get_cli_filename(:os.type(), to_string(:erlang.system_info(:system_architecture)))
+  def get_conf_file_location do
+    Path.join(get_coin_home_dir(), @conf_file)
   end
 
-  # Function clause for Windows. It ignores the second argument (sys_info).
-  defp do_get_cli_filename({:win32, :nt}, _sys_info) do
-    {:ok, @cli_file_win}
+  def wallet_file_path do
+    Path.join(BoxWallet.App.home_folder(), @wallet_file_name)
   end
 
-  # Function clause for Linux.
-  defp do_get_cli_filename({:unix, :linux}, sys_info) do
-    cond do
-      String.contains?(sys_info, "x86_64") or String.contains?(sys_info, "aarch64") ->
-        {:ok, @cli_file_lin}
-
-      # ... other error conditions for Linux
-      true ->
-        {:error, "Unsupported Linux architecture: #{sys_info}"}
-    end
+  def wallet_file_exists? do
+    File.exists?(wallet_file_path())
   end
 
-  # Function clause for macOS.
-  defp do_get_cli_filename({:unix, :darwin}, sys_info) do
-    cond do
-      String.contains?(sys_info, "aarch64") or String.contains?(sys_info, "x86_64") ->
-        {:ok, @cli_file_lin}
-
-      # ... other error conditions for macOS
-      true ->
-        {:error, "Unsupported macOS architecture: #{sys_info}"}
-    end
-  end
-
-  def get_daemon_filename() do
+  def get_daemon_filename do
     do_get_daemon_filename(:os.type(), to_string(:erlang.system_info(:system_architecture)))
   end
 
-  # Function clause for Windows. It ignores the second argument (sys_info).
-  defp do_get_daemon_filename({:win32, :nt}, _sys_info) do
-    {:ok, @daemon_file_win}
-  end
+  defp do_get_daemon_filename({:win32, :nt}, _sys_info), do: {:ok, @daemon_file_win}
 
-  # Function clause for Linux.
   defp do_get_daemon_filename({:unix, :linux}, sys_info) do
-    cond do
-      String.contains?(sys_info, "x86_64") or String.contains?(sys_info, "aarch64") ->
-        {:ok, @daemon_file_lin}
-
-      # ... other error conditions for Linux
-      true ->
-        {:error, "Unsupported Linux architecture: #{sys_info}"}
+    if String.contains?(sys_info, "x86_64") or String.contains?(sys_info, "aarch64") do
+      {:ok, @daemon_file_lin}
+    else
+      {:error, "Unsupported Linux architecture: #{sys_info}"}
     end
   end
 
-  # Function clause for macOS.
   defp do_get_daemon_filename({:unix, :darwin}, sys_info) do
-    cond do
-      String.contains?(sys_info, "aarch64") or String.contains?(sys_info, "x86_64") ->
-        {:ok, @daemon_file_lin}
-
-      # ... other error conditions for macOS
-      true ->
-        {:error, "Unsupported macOS architecture: #{sys_info}"}
+    if String.contains?(sys_info, "aarch64") or String.contains?(sys_info, "x86_64") do
+      {:ok, @daemon_file_lin}
+    else
+      {:error, "Unsupported macOS architecture: #{sys_info}"}
     end
   end
 
-  defp get_download_filename() do
+  def get_walletd_filename do
+    case :os.type() do
+      {:win32, :nt} -> {:ok, @walletd_file_win}
+      {:unix, _} -> {:ok, @walletd_file_lin}
+      _ -> {:error, "Unsupported operating system"}
+    end
+  end
+
+  defp get_download_filename do
     sys_info = to_string(:erlang.system_info(:system_architecture))
 
-    # Determine the file path and URL based on OS and architecture
     case :os.type() do
       {:unix, :linux} ->
         cond do
-          String.contains?(sys_info, "arm71") ->
-            {:ok, @download_file_arm32}
-
-          String.contains?(sys_info, "aarch64") ->
-            {:ok, @download_file_arm32}
+          String.contains?(sys_info, "x86_64") ->
+            {:ok, @download_file_linux}
 
           String.contains?(sys_info, "i386") ->
             {:error, "linux 386 is not currently supported for: #{@coin_name}"}
 
-          String.contains?(sys_info, "x86_64") ->
-            {:ok, @download_file_linux}
-
           true ->
-            IO.puts("Unsupported system: #{:erlang.system_info(:system_architecture)}")
-            {:error, "Unsupported Linux architecture: #{sys_info}"}
+            {:error,
+             "Unsupported Linux architecture: #{sys_info} — Zano publishes x86_64 Linux builds only."}
         end
 
       {:unix, :darwin} ->
-        cond do
-          String.contains?(sys_info, "aarch64") ->
-            {:ok, @download_file_mac64}
+        {:error, "macOS builds of #{@coin_name} are not currently published by upstream."}
 
-          String.contains?(sys_info, "i386") ->
-            {:error, "mac 386 is not currently supported for: #{@coin_name}"}
-
-          String.contains?(sys_info, "x86_64") ->
-            {:ok, @download_file_mac64}
-
-          true ->
-            IO.puts("Unsupported system: #{:erlang.system_info(:system_architecture)}")
-            {:error, "Unsupported macOS architecture: #{sys_info}"}
-        end
-
-      # Covers Windows
       {:win32, :nt} ->
         {:ok, @download_file_windows}
 
@@ -377,255 +153,42 @@ defmodule Boxwallet.Coins.Zano do
     end
   end
 
-  def get_info(auth) do
-    body =
-      Jason.encode!(%{
-        jsonrpc: "2.0",
-        id: 0,
-        method: "getinfo",
-        params: %{flags: 1_048_575}
-      })
+  def files_exist do
+    daemon_filename =
+      case get_daemon_filename() do
+        {:ok, name} ->
+          name
 
-    url = "http://127.0.0.1:#{auth.rpc_port}/json_rpc"
-
-    headers = [{"Content-Type", "application/json"}]
-
-    Enum.reduce_while(1..@daemon_rpc_attempts, {:error, :no_attempts}, fn attempt, _acc ->
-      Logger.info(
-        "[#{@coin_name_abbrev}] Attempting to GetInfo (attempt #{attempt}/#{@daemon_rpc_attempts})"
-      )
-
-      case HTTPoison.post(url, body, headers) do
-        {:ok, %{body: response_body}} ->
-          case BoxWallet.Coins.Zano.GetInfo.from_json(response_body) do
-            {:ok, response} ->
-              {:halt, {:ok, response}}
-
-            {:error, reason} ->
-              Logger.error("[#{@coin_name_abbrev}] Failed to parse GetInfo: #{inspect(reason)}")
-              {:halt, {:error, reason}}
-          end
-
-        {:error, %HTTPoison.Error{reason: reason}} ->
-          Process.sleep(@daemon_rpc_sleep_interval)
-          {:cont, {:error, reason}}
+        {:error, reason} ->
+          Logger.error("[#{@coin_name_abbrev}] Error: #{reason}")
+          ""
       end
-    end)
+
+    s = Path.join(BoxWallet.App.home_folder(), daemon_filename)
+    Logger.info("[#{@coin_name_abbrev}] Checking for file: #{s}")
+    File.exists?(s)
   end
 
-  def get_blockchain_info(auth) do
-    body =
-      Jason.encode!(%{
-        jsonrpc: "1.0",
-        id: "curltext",
-        method: "getblockchaininfo",
-        params: []
-      })
+  def get_auth_values do
+    conf_file = get_conf_file_location()
 
-    url = "http://127.0.0.1:#{auth.rpc_port}"
+    with {:ok, rpcport} <- BoxWallet.Coins.ConfigManager.get_label_value(conf_file, "rpcport"),
+         {:ok, rpcuser} <- BoxWallet.Coins.ConfigManager.get_label_value(conf_file, "rpcuser"),
+         {:ok, rpcpassword} <-
+           BoxWallet.Coins.ConfigManager.get_label_value(conf_file, "rpcpassword") do
+      auth = %BoxWallet.Coins.Auth{
+        rpc_port: rpcport,
+        rpc_user: rpcuser,
+        rpc_password: rpcpassword
+      }
 
-    headers = [
-      {"Content-Type", "text/plain"},
-      {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
-    ]
-
-    Enum.reduce_while(1..@daemon_rpc_attempts, {:error, :no_attempts}, fn attempt, _acc ->
-      Logger.info(
-        "[#{@coin_name_abbrev}] Attempting to GetBlockchainInfo (attempt #{attempt}/#{@daemon_rpc_attempts})"
-      )
-
-      case HTTPoison.post(url, body, headers) do
-        {:ok, %{body: response_body}} ->
-          # IO.inspect(response_body)
-
-          if String.contains?(response_body, "Loading") ||
-               String.contains?(response_body, "Preparing databases") ||
-               String.contains?(response_body, "Rewinding") ||
-               String.contains?(response_body, "RPC server started") ||
-               String.contains?(response_body, "Verifying") do
-            Logger.info(
-              "[#{@coin_name_abbrev}] Waiting for Daemon to be ready, attempt #{attempt}"
-            )
-
-            Process.sleep(1000)
-            {:cont, {:error, :wrong_response}}
-          else
-            # Now we need to convert into a GetBlockchainInfo before returning it to the UI
-            case BoxWallet.Coins.Divi.GetBlockchainInfo.from_json(response_body) do
-              {:ok, response} ->
-                # Process the successful response - Halt with result
-                {:halt, {:ok, response}}
-
-              {:error, reason} ->
-                # Handle the error
-                Logger.error("[#{@coin_name_abbrev}] Failed to parse: #{inspect(reason)}")
-                {:halt, {:error, reason}}
-            end
-          end
-
-        {:error, %HTTPoison.Error{reason: reason}} ->
-          Process.sleep(3000)
-          {:cont, {:error, reason}}
-      end
-    end)
-  end
-
-  def list_transactions(auth) do
-    body =
-      Jason.encode!(%{
-        jsonrpc: "1.0",
-        id: "curltest",
-        method: "listtransactions",
-        params: ["*", 10]
-      })
-
-    url = "http://127.0.0.1:#{auth.rpc_port}"
-
-    headers = [
-      {"Content-Type", "text/plain"},
-      {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
-    ]
-
-    Logger.info("[#{@coin_name_abbrev}] Attempting to ListTransactions")
-
-    case HTTPoison.post(url, body, headers) do
-      {:ok, %{body: response_body}} ->
-        case BoxWallet.Coins.Divi.ListTransactions.from_json(response_body) do
-          {:ok, response} ->
-            {:ok, response}
-
-          {:error, reason} ->
-            Logger.error(
-              "[#{@coin_name_abbrev}] Failed to parse ListTransactions: #{inspect(reason)}"
-            )
-
-            {:error, reason}
-        end
-
-      {:error, %HTTPoison.Error{reason: reason}} ->
-        {:error, reason}
+      {:ok, auth}
+    else
+      {:error, reason} -> {:error, reason}
     end
   end
 
-  def get_peer_info(auth) do
-    body =
-      Jason.encode!(%{
-        jsonrpc: "1.0",
-        id: "curltest",
-        method: "getpeerinfo",
-        params: []
-      })
-
-    url = "http://127.0.0.1:#{auth.rpc_port}"
-
-    headers = [
-      {"Content-Type", "text/plain"},
-      {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
-    ]
-
-    Enum.reduce_while(1..@daemon_rpc_attempts, {:error, :no_attempts}, fn attempt, _acc ->
-      Logger.info(
-        "[#{@coin_name_abbrev}] Attempting to GetPeerInfo (attempt #{attempt}/#{@daemon_rpc_attempts})"
-      )
-
-      case HTTPoison.post(url, body, headers) do
-        {:ok, %{body: response_body}} ->
-          if String.contains?(response_body, "Loading") ||
-               String.contains?(response_body, "Preparing databases") ||
-               String.contains?(response_body, "Rewinding") ||
-               String.contains?(response_body, "RPC server started") ||
-               String.contains?(response_body, "Verifying") do
-            Logger.info(
-              "[#{@coin_name_abbrev}] Waiting for Daemon to be ready, attempt #{attempt}"
-            )
-
-            Process.sleep(1000)
-            {:cont, {:error, :wrong_response}}
-          else
-            case BoxWallet.Coins.Divi.GetPeerInfo.from_json(response_body) do
-              {:ok, %{result: peers}} ->
-                max_synced_headers =
-                  peers |> Enum.map(& &1.synced_headers) |> Enum.max(fn -> 0 end)
-
-                max_synced_blocks = peers |> Enum.map(& &1.synced_blocks) |> Enum.max(fn -> 0 end)
-                Logger.info("[#{@coin_name_abbrev}] max_synced_blocks = #{max_synced_blocks}")
-                Logger.info("[#{@coin_name_abbrev}] max_synced_headers = #{max_synced_headers}")
-
-                {:halt,
-                 {:ok,
-                  %{max_synced_headers: max_synced_headers, max_synced_blocks: max_synced_blocks}}}
-
-              {:error, reason} ->
-                Logger.error("[#{@coin_name_abbrev}] Failed to parse: #{inspect(reason)}")
-                {:halt, {:error, reason}}
-            end
-          end
-
-        {:error, %HTTPoison.Error{reason: reason}} ->
-          Process.sleep(3000)
-          {:cont, {:error, reason}}
-      end
-    end)
-  end
-
-  def get_wallet_info(auth) do
-    body =
-      Jason.encode!(%{
-        jsonrpc: "1.0",
-        id: "curltext",
-        method: "getwalletinfo",
-        params: []
-      })
-
-    url = "http://127.0.0.1:#{auth.rpc_port}"
-
-    headers = [
-      {"Content-Type", "text/plain"},
-      {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
-    ]
-
-    Enum.reduce_while(1..@daemon_rpc_attempts, {:error, :no_attempts}, fn attempt, _acc ->
-      Logger.info(
-        "[#{@coin_name_abbrev}] Attempting to GetWalletInfo (attempt #{attempt}/#{@daemon_rpc_attempts})"
-      )
-
-      case HTTPoison.post(url, body, headers) do
-        {:ok, %{body: response_body}} ->
-          # IO.inspect(response_body)
-
-          if String.contains?(response_body, "Loading") ||
-               String.contains?(response_body, "Preparing databases") ||
-               String.contains?(response_body, "Rewinding") ||
-               String.contains?(response_body, "RPC server started") ||
-               String.contains?(response_body, "Verifying") do
-            Logger.info(
-              "[#{@coin_name_abbrev}] Waiting for Daemon to be ready, attempt #{attempt}"
-            )
-
-            Process.sleep(1000)
-            {:cont, {:error, :wrong_response}}
-          else
-            # Now we need to convert into a GetBlockchainInfo before returning it to the UI
-            case BoxWallet.Coins.Divi.GetWalletInfo.from_json(response_body) do
-              {:ok, response} ->
-                # Process the successful response - Halt with result
-                {:halt, {:ok, response}}
-
-              {:error, reason} ->
-                # Handle the error
-                Logger.error("[#{@coin_name_abbrev}] Failed to parse: #{inspect(reason)}")
-                {:halt, {:error, reason}}
-            end
-          end
-
-        {:error, %HTTPoison.Error{reason: reason}} ->
-          Process.sleep(3000)
-          {:cont, {:error, reason}}
-      end
-    end)
-  end
-
-  defp populate_conf_file() do
+  defp populate_conf_file do
     File.mkdir_p!(get_coin_home_dir())
     conf_file = get_conf_file_location()
     password = BoxWallet.Coins.ConfigManager.generate_random_string(20)
@@ -635,6 +198,79 @@ defmodule Boxwallet.Coins.Zano do
     BoxWallet.Coins.ConfigManager.add_label_if_missing(conf_file, "daemon", "1")
     BoxWallet.Coins.ConfigManager.add_label_if_missing(conf_file, "server", "1")
     BoxWallet.Coins.ConfigManager.add_label_if_missing(conf_file, "rpcport", @rpc_port)
+  end
+
+  # --- Download / extraction ---
+
+  def download_coin do
+    app_home_dir = BoxWallet.App.home_folder()
+    IO.puts("#{BoxWallet.App.name()} is downloading to: #{app_home_dir}")
+    IO.puts("System detected as: #{:erlang.system_info(:system_architecture)}")
+
+    case get_download_filename() do
+      {:error, reason} ->
+        Logger.error("[#{@coin_name_abbrev}] Error: #{reason}")
+        {:error, reason}
+
+      {:ok, file_name} ->
+        full_file_dl_url = @download_url <> file_name
+        full_file_path = Path.join(app_home_dir, file_name)
+        Logger.info("[#{@coin_name_abbrev}] Downloading file to: #{full_file_path}")
+
+        case Req.get(full_file_dl_url, into: File.stream!(full_file_path)) do
+          {:ok, %Req.Response{status: 200}} ->
+            IO.puts("Download complete, now extracting...")
+
+            case unarchive_file(full_file_path, app_home_dir) do
+              {:ok} ->
+                Logger.info("[#{@coin_name_abbrev}] Extraction completed successfully")
+                copy_extracted_files()
+                tidy_downloaded_files(full_file_path)
+                populate_conf_file()
+                {:ok}
+
+              {:error, reason} ->
+                Logger.error("[#{@coin_name_abbrev}] Extraction failed: #{inspect(reason)}")
+                {:error, "Extraction failed: #{reason}"}
+            end
+
+          {:ok, %Req.Response{status: status}} ->
+            {:error, "HTTP error: #{status}"}
+
+          {:error, reason} ->
+            {:error, reason}
+        end
+    end
+  end
+
+  defp copy_extracted_files do
+    daemon_filename = unwrap_filename(get_daemon_filename())
+    walletd_filename = unwrap_filename(get_walletd_filename())
+
+    base = Path.join([BoxWallet.App.home_folder(), @extracted_dir_linux, "usr", "bin"])
+    dest = BoxWallet.App.home_folder()
+
+    for name <- [daemon_filename, walletd_filename], name != "" do
+      src = Path.join(base, name)
+      dst = Path.join(dest, name)
+      Logger.info("[#{@coin_name_abbrev}] Copying from #{src} to #{dst}")
+
+      if File.exists?(src) do
+        File.cp!(src, dst)
+        File.chmod!(dst, 0o755)
+      else
+        Logger.warning("[#{@coin_name_abbrev}] Expected binary not found in AppImage: #{src}")
+      end
+    end
+
+    Logger.info("[#{@coin_name_abbrev}] Files copied and permissions set successfully.")
+  end
+
+  defp unwrap_filename({:ok, name}), do: name
+
+  defp unwrap_filename({:error, reason}) do
+    Logger.error("[#{@coin_name_abbrev}] Error: #{reason}")
+    ""
   end
 
   defp tidy_downloaded_files(downloaded_file) do
@@ -676,208 +312,384 @@ defmodule Boxwallet.Coins.Zano do
     end
   end
 
-  # def install_daemon do
-  #   try do
-  #     File.mkdir_p!(@install_path)
-  #     {:ok, response} = HTTPoison.get(@daemon_url)
-  #     tarball_path = Path.join(System.tmp_dir!(), "bitcoin.tar.gz")
-  #     File.write!(tarball_path, response.body)
-  #     :ok = :erl_tar.extract(tarball_path, [:compressed, {:cwd, to_charlist(@install_path)}])
-
-  #     extracted_bin =
-  #       if :os.type() in [{:win32, _} | _],
-  #         do: Path.join(@install_path, "bitcoind.exe"),
-  #         else: Path.join(@install_path, "bitcoind")
-
-  #     File.rename(extracted_bin, @daemon_bin)
-  #     File.rm!(tarball_path)
-  #     unless :os.type() in [{:win32, _} | _], do: File.chmod!(@daemon_bin, 0o755)
-  #     :ok
-  #   rescue
-  #     e -> {:error, Exception.message(e)}
-  #   end
-  # end
+  # --- Node daemon (zanod) lifecycle ---
 
   def start_daemon do
-    daemon_filename =
-      case get_daemon_filename() do
-        {:ok, name} ->
-          name
+    case get_daemon_filename() do
+      {:error, reason} ->
+        Logger.error("[#{@coin_name_abbrev}] start_daemon error: #{reason}")
+        {:error, reason}
 
-        {:error, reason} ->
-          Logger.error("[#{@coin_name_abbrev}] Error: #{reason}")
-          ""
-      end
+      {:ok, daemon_filename} ->
+        full_path_daemon = Path.join([BoxWallet.App.home_folder(), daemon_filename])
 
-    full_path_daemon =
-      Path.join([BoxWallet.App.home_folder(), daemon_filename])
+        if File.exists?(full_path_daemon) do
+          spawn(fn ->
+            case :os.type() do
+              {:win32, _} ->
+                System.cmd("cmd.exe", ["/C", "start", "/b", full_path_daemon])
 
-    # Start the daemon and immediately detach
-    spawn(fn ->
-      case :os.type() do
-        {:win32, _} ->
-          System.cmd("cmd.exe", ["/C", "start", "/b", full_path_daemon])
+              _ ->
+                System.cmd(full_path_daemon, ["--no-console", "--no-predownload"])
+            end
+          end)
 
-        _ ->
-          System.cmd(full_path_daemon, ["--no-console", "--no-predownload"])
-      end
-    end)
-
-    # Give it a moment to start, then check if it's running
-    Process.sleep(100)
-    # Check via other means (e.g., port check, pid file, etc.)
-    {:ok}
+          :ok
+        else
+          msg = "Daemon executable not found at #{full_path_daemon}"
+          Logger.error("[#{@coin_name_abbrev}] #{msg}")
+          {:error, msg}
+        end
+    end
   end
 
   def stop_daemon(_auth) do
-    Logger.info("[#{@coin_name_abbrev}] Sending SIGINT to #{@coin_name} daemon...")
+    Logger.info("[#{@coin_name_abbrev}] Sending SIGINT to #{@coin_name} daemons...")
 
     case :os.type() do
       {:win32, _} ->
-        case System.cmd("taskkill", ["/IM", @daemon_file_win], stderr_to_stdout: true) do
-          {_output, 0} -> {:ok, "daemon stopped"}
-          {output, code} -> {:error, "taskkill failed (#{code}): #{output}"}
+        for img <- [@walletd_file_win, @daemon_file_win] do
+          System.cmd("taskkill", ["/IM", img], stderr_to_stdout: true)
         end
+
+        {:ok, "daemons stopped"}
 
       _ ->
-        case System.cmd("pkill", ["-INT", @daemon_file_lin], stderr_to_stdout: true) do
-          {_output, 0} -> {:ok, "daemon stopped"}
-          {output, code} -> {:error, "pkill failed (#{code}): #{output}"}
+        for proc <- [@walletd_file_lin, @daemon_file_lin] do
+          System.cmd("pkill", ["-INT", proc], stderr_to_stdout: true)
+        end
+
+        {:ok, "daemons stopped"}
+    end
+  end
+
+  def daemon_is_running(auth) do
+    body =
+      Jason.encode!(%{
+        jsonrpc: "2.0",
+        id: 0,
+        method: "getinfo",
+        params: %{flags: 0}
+      })
+
+    url = "http://127.0.0.1:#{auth.rpc_port}/json_rpc"
+    headers = [{"Content-Type", "application/json"}]
+
+    Logger.info("[#{@coin_name_abbrev}] Attempting to call GetInfo to see if Daemon is running")
+
+    case HTTPoison.post(url, body, headers) do
+      {:ok, %{status_code: 200}} -> true
+      _ -> false
+    end
+  end
+
+  # --- Wallet daemon (simplewallet) lifecycle ---
+
+  def walletd_is_running do
+    body =
+      Jason.encode!(%{
+        jsonrpc: "2.0",
+        id: 0,
+        method: "getaddress",
+        params: %{}
+      })
+
+    url = "http://127.0.0.1:#{@walletd_rpc_port}/json_rpc"
+    headers = [{"Content-Type", "application/json"}]
+
+    case HTTPoison.post(url, body, headers, timeout: 1_000, recv_timeout: 1_000) do
+      {:ok, %{status_code: 200, body: response_body}} ->
+        not String.contains?(response_body, "WALLET_RPC_NOT_INITIALIZED")
+
+      _ ->
+        false
+    end
+  end
+
+  @doc """
+  Spawns `simplewallet` against an existing wallet file. Returns `:ok` once the
+  walletd RPC starts answering, or `{:error, reason}` if it never comes up in
+  time.
+  """
+  def start_walletd(password) do
+    if wallet_file_exists?() do
+      do_spawn_walletd(password, false)
+    else
+      {:error, "No wallet file found. Encrypt the wallet first to create one."}
+    end
+  end
+
+  @doc """
+  Spawns `simplewallet` and generates a brand-new wallet file with the given
+  password. Returns `:ok` once the walletd RPC starts answering.
+  """
+  def create_wallet(password) do
+    if wallet_file_exists?() do
+      {:error, "A wallet file already exists. Unlock it instead."}
+    else
+      do_spawn_walletd(password, true)
+    end
+  end
+
+  defp do_spawn_walletd(password, generate_new?) do
+    case get_walletd_filename() do
+      {:error, reason} ->
+        {:error, reason}
+
+      {:ok, walletd} ->
+        path = Path.join([BoxWallet.App.home_folder(), walletd])
+
+        if not File.exists?(path) do
+          {:error, "Wallet daemon not found at #{path}. Re-download Zano core files."}
+        else
+          args =
+            [
+              "--rpc-bind-ip=127.0.0.1",
+              "--rpc-bind-port=#{@walletd_rpc_port}",
+              "--daemon-address=127.0.0.1:#{@rpc_port}",
+              "--password=#{password}"
+            ] ++
+              if generate_new? do
+                ["--generate-new-wallet=#{wallet_file_path()}"]
+              else
+                ["--wallet-file=#{wallet_file_path()}"]
+              end
+
+          spawn(fn ->
+            try do
+              System.cmd(path, args, stderr_to_stdout: true)
+            rescue
+              e ->
+                Logger.error("[#{@coin_name_abbrev}] walletd crashed: #{Exception.message(e)}")
+            end
+          end)
+
+          wait_for_walletd_ready(@walletd_start_attempts)
         end
     end
   end
 
-  def wallet_encrypt(auth, password) do
+  defp wait_for_walletd_ready(0), do: {:error, "simplewallet did not respond in time"}
+
+  defp wait_for_walletd_ready(attempts) do
+    Process.sleep(@walletd_start_sleep)
+
+    if walletd_is_running() do
+      :ok
+    else
+      wait_for_walletd_ready(attempts - 1)
+    end
+  end
+
+  def stop_walletd do
+    Logger.info("[#{@coin_name_abbrev}] Stopping #{@walletd_file_lin}")
+
+    case :os.type() do
+      {:win32, _} ->
+        System.cmd("taskkill", ["/IM", @walletd_file_win], stderr_to_stdout: true)
+
+      _ ->
+        System.cmd("pkill", ["-INT", @walletd_file_lin], stderr_to_stdout: true)
+    end
+
+    :ok
+  end
+
+  # --- Wallet encryption API (LiveView-facing) ---
+  #
+  # In Zano semantics there is no encrypt-in-place. These wrappers exist so the
+  # LiveView code path is identical to Divi's:
+  #
+  #   wallet_encrypt(auth, password) — create a new wallet with this password
+  #   wallet_unlock(auth, password)  — start walletd against existing wallet
+  #   wallet_unlock_fs(auth, password) — same as unlock; staking is automatic
+  #     once walletd is running unlocked
+
+  def wallet_encrypt(_auth, password), do: create_wallet(password)
+  def wallet_unlock(_auth, password), do: start_walletd(password)
+  def wallet_unlock_fs(_auth, password), do: start_walletd(password)
+
+  # --- Node RPC calls ---
+
+  def get_info(auth) do
     body =
       Jason.encode!(%{
-        jsonrpc: "1.0",
-        id: "curltext",
-        method: "encryptwallet",
-        params: ["#{password}"]
+        jsonrpc: "2.0",
+        id: 0,
+        method: "getinfo",
+        params: %{flags: 1_048_575}
       })
 
-    url = "http://127.0.0.1:#{auth.rpc_port}"
+    url = "http://127.0.0.1:#{auth.rpc_port}/json_rpc"
+    headers = [{"Content-Type", "application/json"}]
 
-    headers = [
-      {"Content-Type", "text/plain"},
-      {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
-    ]
+    Enum.reduce_while(1..@daemon_rpc_attempts, {:error, :no_attempts}, fn attempt, _acc ->
+      Logger.info(
+        "[#{@coin_name_abbrev}] Attempting to GetInfo (attempt #{attempt}/#{@daemon_rpc_attempts})"
+      )
 
-    Logger.info("[#{@coin_name_abbrev}] Attempting to Encrypt wallet")
+      case HTTPoison.post(url, body, headers) do
+        {:ok, %{body: response_body}} ->
+          case BoxWallet.Coins.Zano.GetInfo.from_json(response_body) do
+            {:ok, response} ->
+              {:halt, {:ok, response}}
 
-    case HTTPoison.post(url, body, headers) do
+            {:error, reason} ->
+              Logger.error("[#{@coin_name_abbrev}] Failed to parse GetInfo: #{inspect(reason)}")
+              {:halt, {:error, reason}}
+          end
+
+        {:error, %HTTPoison.Error{reason: reason}} ->
+          Process.sleep(@daemon_rpc_sleep_interval)
+          {:cont, {:error, reason}}
+      end
+    end)
+  end
+
+  # --- Wallet RPC calls (simplewallet) ---
+
+  defp walletd_rpc(method, params) do
+    body =
+      Jason.encode!(%{
+        jsonrpc: "2.0",
+        id: 0,
+        method: method,
+        params: params
+      })
+
+    url = "http://127.0.0.1:#{@walletd_rpc_port}/json_rpc"
+    headers = [{"Content-Type", "application/json"}]
+
+    case HTTPoison.post(url, body, headers, recv_timeout: 10_000) do
       {:ok, %{body: response_body}} ->
-        case Jason.decode(response_body) do
-          {:ok, %{"error" => nil}} ->
-            :ok
+        {:ok, response_body}
+
+      {:error, %HTTPoison.Error{reason: reason}} ->
+        {:error, reason}
+    end
+  end
+
+  def get_balance(_auth) do
+    case walletd_rpc("getbalance", %{}) do
+      {:ok, body} -> BoxWallet.Coins.Zano.GetBalance.from_json(body)
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  def get_receive_address(_auth) do
+    case walletd_rpc("getaddress", %{}) do
+      {:ok, body} ->
+        case BoxWallet.Coins.Zano.GetAddress.from_json(body) do
+          {:ok, %{result: %{address: address}}} when is_binary(address) ->
+            {:ok, %{result: address}}
+
+          other ->
+            other
+        end
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  def get_new_address(auth), do: get_receive_address(auth)
+
+  def get_wallet_info(auth) do
+    with {:ok, balance_resp} <- get_balance(auth),
+         {:ok, addr_resp} <- get_receive_address(auth) do
+      atomic = 1_000_000_000_000
+      r = balance_resp.result || %BoxWallet.Coins.Zano.GetBalance.Result{}
+
+      result = %BoxWallet.Coins.Zano.GetWalletInfo.Result{
+        active_wallet: wallet_file_path(),
+        balance: (r.balance || 0) / atomic,
+        unconfirmed_balance: (r.awaiting_in || 0) / atomic,
+        immature_balance: max((r.balance || 0) - (r.unlocked_balance || 0), 0) / atomic,
+        address: addr_resp.result || "",
+        encryption_status: "unlocked"
+      }
+
+      {:ok, %BoxWallet.Coins.Zano.GetWalletInfo{result: result, error: nil, id: 0}}
+    end
+  end
+
+  def list_transactions(_auth, current_height \\ 0) do
+    params = %{offset: 0, count: 10, update_provision_info: false}
+
+    case walletd_rpc("get_recent_txs_and_info", params) do
+      {:ok, body} ->
+        BoxWallet.Coins.Zano.GetRecentTxs.from_json(body, current_height)
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  def validate_address(address) when is_binary(address) do
+    # Zano standard addresses start with "Zx" and are ~97 chars long.
+    # Integrated addresses start with "iZ" and are slightly longer.
+    cond do
+      String.starts_with?(address, "Zx") and String.length(address) in 95..100 -> true
+      String.starts_with?(address, "iZ") and String.length(address) in 105..115 -> true
+      true -> false
+    end
+  end
+
+  def validate_address(_), do: false
+
+  def send_to_address(_auth, address, amount) when is_number(amount) do
+    atomic = round(amount * 1_000_000_000_000)
+    # ~0.01 ZANO default fee
+    fee = 10_000_000_000
+
+    params = %{
+      destinations: [%{address: address, amount: atomic}],
+      fee: fee,
+      mixin: 10,
+      payment_id: ""
+    }
+
+    case walletd_rpc("transfer", params) do
+      {:ok, body} ->
+        case Jason.decode(body) do
+          {:ok, %{"result" => %{"tx_hash" => tx_hash}}} ->
+            {:ok, tx_hash}
 
           {:ok, %{"error" => %{"message" => message}}} ->
             {:error, message}
 
-          {:ok, %{"error" => error}} ->
+          {:ok, %{"error" => error}} when not is_nil(error) ->
             {:error, inspect(error)}
 
-          {:error, _} ->
-            {:error, "Failed to parse response"}
+          _ ->
+            {:error, "Unexpected response from transfer: #{body}"}
         end
 
-      {:error, %HTTPoison.Error{reason: reason}} ->
-        {:error, %HTTPoison.Error{reason: reason}}
+      {:error, reason} ->
+        {:error, inspect(reason)}
     end
   end
 
-  def wallet_unlock(auth, password) do
-    body =
-      Jason.encode!(%{
-        jsonrpc: "1.0",
-        id: "curltext",
-        method: "walletpassphrase",
-        params: ["#{password}", 0]
-      })
+  # --- Block-height oracle ---
 
-    url = "http://127.0.0.1:#{auth.rpc_port}"
+  def get_block_height do
+    url = "https://explorer.zano.org/api/get_info"
 
-    headers = [
-      {"Content-Type", "text/plain"},
-      {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
-    ]
+    case Req.get(url) do
+      {:ok, %{status: 200, body: %{"height" => count}}} when is_integer(count) ->
+        {:ok, count}
 
-    Logger.info("[#{@coin_name_abbrev}] Attempting to Unlock wallet")
-
-    case HTTPoison.post(url, body, headers) do
-      {:ok, %{body: response_body}} ->
-        case Jason.decode(response_body) do
-          {:ok, %{"error" => nil}} ->
-            :ok
-
-          {:ok, %{"error" => %{"message" => message}}} ->
-            {:error, message}
-
-          {:ok, %{"error" => error}} ->
-            {:error, inspect(error)}
-
-          {:error, _} ->
-            {:error, "Failed to parse response"}
+      {:ok, %{status: 200, body: body}} when is_binary(body) ->
+        case Integer.parse(body) do
+          {count, _} -> {:ok, count}
+          :error -> {:error, "Could not parse height from #{body}"}
         end
 
-      {:error, %HTTPoison.Error{reason: reason}} ->
-        {:error, %HTTPoison.Error{reason: reason}}
+      {:ok, %{status: status}} ->
+        {:error, "API returned status code: #{status}"}
+
+      {:error, exception} ->
+        {:error, exception}
     end
   end
-
-  def wallet_unlock_fs(auth, password) do
-    body =
-      Jason.encode!(%{
-        jsonrpc: "1.0",
-        id: "curltext",
-        method: "walletpassphrase",
-        params: ["#{password}", 9_999_999, true]
-      })
-
-    url = "http://127.0.0.1:#{auth.rpc_port}"
-
-    headers = [
-      {"Content-Type", "text/plain"},
-      {"Authorization", "Basic #{Base.encode64("#{auth.rpc_user}:#{auth.rpc_password}")}"}
-    ]
-
-    Logger.info("[#{@coin_name_abbrev}] Attempting to Unlock wallet for staking")
-
-    case HTTPoison.post(url, body, headers) do
-      {:ok, %{body: response_body}} ->
-        case Jason.decode(response_body) do
-          {:ok, %{"error" => nil}} ->
-            :ok
-
-          {:ok, %{"error" => %{"message" => message}}} ->
-            {:error, message}
-
-          {:ok, %{"error" => error}} ->
-            {:error, inspect(error)}
-
-          {:error, _} ->
-            {:error, "Failed to parse response"}
-        end
-
-      {:error, %HTTPoison.Error{reason: reason}} ->
-        {:error, %HTTPoison.Error{reason: reason}}
-    end
-  end
-
-  # def get_sync_info do
-  #   try do
-  #     headers = [
-  #       {"Authorization",
-  #        "Basic " <>
-  #          Base.encode64("#{@rpc_credentials[:username]}:#{@rpc_credentials[:password]}")}
-  #     ]
-
-  #     body = Jason.encode!(%{"jsonrpc" => "2.0", "method" => "getblockchaininfo", "id" => 1})
-  #     {:ok, response} = HTTPoison.post(@rpc_url, body, headers)
-  #     %{"result" => %{"blocks" => blocks, "headers" => headers}} = Jason.decode!(response.body)
-  #     %{blocks: blocks, headers: headers, progress: trunc(blocks / max(headers, 1) * 100)}
-  #   rescue
-  #     _ -> %{blocks: 0, headers: 0, progress: 0}
-  #   end
-  # end
 end
