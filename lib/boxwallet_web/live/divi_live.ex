@@ -92,6 +92,15 @@ defmodule BoxwalletWeb.DiviLive do
     {:noreply, socket}
   end
 
+  def handle_info({:divi_start_error, reason}, socket) do
+    Process.send_after(self(), :clear_flash, 8_000)
+
+    {:noreply,
+     socket
+     |> put_flash(:error, "Failed to start #{socket.assigns.coin_name} Daemon: #{reason}")
+     |> assign(coin_daemon_starting: false, coin_daemon_stopped: true)}
+  end
+
   def handle_info(:clear_flash, socket) do
     {:noreply, clear_flash(socket)}
   end
@@ -266,7 +275,14 @@ defmodule BoxwalletWeb.DiviLive do
             :ok ->
               address = socket.assigns.pending_send_address
               amount_str = socket.assigns.pending_send_amount
-              socket = assign(socket, wallet_encryption_status: :wes_unlocked, pending_send_address: nil, pending_send_amount: nil)
+
+              socket =
+                assign(socket,
+                  wallet_encryption_status: :wes_unlocked,
+                  pending_send_address: nil,
+                  pending_send_amount: nil
+                )
+
               {:noreply, send_socket} = do_send(socket, address, amount_str)
               send_socket
 
@@ -331,12 +347,18 @@ defmodule BoxwalletWeb.DiviLive do
       {:noreply,
        socket
        |> assign(testnet_enabled: new_value, coin_daemon_stopping: true)
-       |> put_flash(:info, "Testnet #{if new_value, do: "enabled", else: "disabled"}. Stopping #{socket.assigns.coin_name} Daemon...")}
+       |> put_flash(
+         :info,
+         "Testnet #{if new_value, do: "enabled", else: "disabled"}. Stopping #{socket.assigns.coin_name} Daemon..."
+       )}
     else
       {:noreply,
        socket
        |> assign(testnet_enabled: new_value)
-       |> put_flash(:info, "Testnet #{if new_value, do: "enabled", else: "disabled"}. Restart the daemon for changes to take effect.")}
+       |> put_flash(
+         :info,
+         "Testnet #{if new_value, do: "enabled", else: "disabled"}. Restart the daemon for changes to take effect."
+       )}
     end
   end
 
@@ -349,7 +371,10 @@ defmodule BoxwalletWeb.DiviLive do
          {:ok, txid} <- Divi.send_to_address(coin_auth, address, amount) do
       {:noreply,
        socket
-       |> put_flash(:info, "Sent #{amount_str} #{socket.assigns.coin_name_abbrev} successfully. TX: #{txid}")
+       |> put_flash(
+         :info,
+         "Sent #{amount_str} #{socket.assigns.coin_name_abbrev} successfully. TX: #{txid}"
+       )
        |> assign(send_address: "", address_valid: :empty)}
     else
       false ->
@@ -364,7 +389,10 @@ defmodule BoxwalletWeb.DiviLive do
   end
 
   defp testnet_enabled?(coin_module) do
-    case BoxWallet.Coins.ConfigManager.get_label_value(coin_module.get_conf_file_location(), "testnet") do
+    case BoxWallet.Coins.ConfigManager.get_label_value(
+           coin_module.get_conf_file_location(),
+           "testnet"
+         ) do
       {:ok, "1"} -> true
       _ -> false
     end
@@ -593,7 +621,7 @@ defmodule BoxwalletWeb.DiviLive do
           <span>Downloading and installing Divi... Please wait.</span>
         </div>
       <% end %>
-
+      
     <!-- Success alert -->
       <%= if @download_complete do %>
         <div role="alert" class="alert alert-success mb-4">
@@ -731,13 +759,31 @@ defmodule BoxwalletWeb.DiviLive do
                 on_update="download_coin"
               />
             <% :transactions -> %>
-              <.coin_transactions color="text-divired" coin_daemon_started={@coin_daemon_started} transactions={@transactions} />
+              <.coin_transactions
+                color="text-divired"
+                coin_daemon_started={@coin_daemon_started}
+                transactions={@transactions}
+              />
             <% :receive -> %>
-              <.coin_receive color="text-divired" coin_daemon_started={@coin_daemon_started} receive_address={@receive_address} />
+              <.coin_receive
+                color="text-divired"
+                coin_daemon_started={@coin_daemon_started}
+                receive_address={@receive_address}
+              />
             <% :send -> %>
-              <.coin_send color="text-divired" coin_daemon_started={@coin_daemon_started} address_valid={@address_valid} send_address={@send_address} coin_name_abbrev={@coin_name_abbrev} />
+              <.coin_send
+                color="text-divired"
+                coin_daemon_started={@coin_daemon_started}
+                address_valid={@address_valid}
+                send_address={@send_address}
+                coin_name_abbrev={@coin_name_abbrev}
+              />
             <% _ -> %>
-              <.coin_transactions color="text-divired" coin_daemon_started={@coin_daemon_started} transactions={@transactions} />
+              <.coin_transactions
+                color="text-divired"
+                coin_daemon_started={@coin_daemon_started}
+                transactions={@transactions}
+              />
           <% end %>
         </div>
       </div>

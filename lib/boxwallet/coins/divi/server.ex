@@ -13,6 +13,7 @@ defmodule Boxwallet.Coins.Divi.Server do
   @transactions_interval_fast 3_000
   @transactions_interval_slow 15_000
   @disk_usage_interval 60_000
+  @start_attempts_max 15
 
   # --- Public API ---
 
@@ -94,7 +95,8 @@ defmodule Boxwallet.Coins.Divi.Server do
       transactions_timer: nil,
       polling_paused: false,
       disk_used_bytes: disk_used_bytes,
-      disk_total_bytes: disk_total_bytes
+      disk_total_bytes: disk_total_bytes,
+      start_attempts: 0
     }
 
     # Check if daemon is already running
@@ -135,13 +137,30 @@ defmodule Boxwallet.Coins.Divi.Server do
 
   @impl true
   def handle_cast(:start_daemon, state) do
-    Divi.start_daemon()
-    Logger.info("Divi daemon starting...")
-    state = %{state | daemon_status: :starting}
-    broadcast(state)
-    Process.send_after(self(), :poll_get_info, 2_000)
-    Process.send_after(self(), :poll_block_height, 5_000)
-    {:noreply, state}
+    case state.coin_auth do
+      {:ok, _auth} ->
+        case Divi.start_daemon() do
+          :ok ->
+            Logger.info("Divi daemon starting...")
+            state = %{state | daemon_status: :starting, start_attempts: 0}
+            broadcast(state)
+            Process.send_after(self(), :poll_get_info, 2_000)
+            Process.send_after(self(), :poll_block_height, 5_000)
+            {:noreply, state}
+
+          {:error, reason} ->
+            broadcast_start_error(state, reason)
+            {:noreply, state}
+        end
+
+      _ ->
+        broadcast_start_error(
+          state,
+          "Missing or invalid RPC credentials in divi.conf"
+        )
+
+        {:noreply, state}
+    end
   end
 
   def handle_cast(:stop_daemon, state) do
@@ -359,7 +378,11 @@ defmodule Boxwallet.Coins.Divi.Server do
 
     state = %{
       state
-      | daemon_status: if(state.daemon_status in [:starting, :running], do: :running, else: state.daemon_status),
+      | daemon_status:
+          if(state.daemon_status in [:starting, :running],
+            do: :running,
+            else: state.daemon_status
+          ),
         connections: response.result.connections || 0,
         staking_status: response.result.staking_status || "Staking Not Active",
         version: response.result.version || "v..."
@@ -385,9 +408,38 @@ defmodule Boxwallet.Coins.Divi.Server do
     {:noreply, state}
   end
 
+  def handle_info({:get_info_result, {:error, reason}}, %{daemon_status: :starting} = state) do
+    attempts = state.start_attempts + 1
+
+    if attempts >= @start_attempts_max do
+      timeout_secs = div(@start_attempts_max * @get_info_interval, 1_000)
+
+      Logger.error(
+        "Divi daemon did not respond within #{timeout_secs}s (last error: #{inspect(reason)})"
+      )
+
+      state = %{state | daemon_status: :stopped, start_attempts: 0}
+
+      broadcast_start_error(
+        state,
+        "Daemon did not respond within #{timeout_secs} seconds. Last error: #{inspect(reason)}"
+      )
+
+      {:noreply, state}
+    else
+      Logger.warning(
+        "Divi get_info poll failed (attempt #{attempts}/#{@start_attempts_max}), retrying..."
+      )
+
+      state = %{state | start_attempts: attempts}
+      maybe_reschedule(state, :poll_get_info, @get_info_interval)
+      {:noreply, state}
+    end
+  end
+
   def handle_info({:get_info_result, {:error, _reason}}, state) do
     Logger.warning("Divi get_info poll failed, retrying...")
-    maybe_reschedule(state, :poll_get_info, 2_000)
+    maybe_reschedule(state, :poll_get_info, @get_info_interval)
     {:noreply, state}
   end
 
@@ -395,13 +447,11 @@ defmodule Boxwallet.Coins.Divi.Server do
     state = %{
       state
       | blocks_synced: response.result.blocks || 0,
-        blocks:
-          Number.Delimit.number_to_delimited(response.result.blocks, precision: 0) || 0,
+        blocks: Number.Delimit.number_to_delimited(response.result.blocks, precision: 0) || 0,
         difficulty:
           Number.Delimit.number_to_delimited(response.result.difficulty, precision: 0) || 0,
         headers_synced: response.result.headers || 0,
-        headers:
-          Number.Delimit.number_to_delimited(response.result.headers, precision: 0) || 0
+        headers: Number.Delimit.number_to_delimited(response.result.headers, precision: 0) || 0
     }
 
     broadcast(state)
@@ -470,7 +520,10 @@ defmodule Boxwallet.Coins.Divi.Server do
     {:noreply, state}
   end
 
-  def handle_info({:peer_info_result, {:ok, %{max_synced_headers: _, max_synced_blocks: _}}}, state) do
+  def handle_info(
+        {:peer_info_result, {:ok, %{max_synced_headers: _, max_synced_blocks: _}}},
+        state
+      ) do
     broadcast(state)
     maybe_reschedule(state, :poll_peer_info, @peer_info_interval)
     {:noreply, state}
@@ -614,6 +667,12 @@ defmodule Boxwallet.Coins.Divi.Server do
     Process.send_after(self(), :poll_peer_info, 1_000)
     Process.send_after(self(), :poll_block_height, 1_200)
     Process.send_after(self(), :poll_transactions, 1_400)
+  end
+
+  defp broadcast_start_error(state, reason) do
+    Logger.error("Divi daemon failed to start: #{reason}")
+    broadcast(state)
+    Phoenix.PubSub.broadcast(Boxwallet.PubSub, "divi:status", {:divi_start_error, reason})
   end
 
   defp broadcast(state) do
