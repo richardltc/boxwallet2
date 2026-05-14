@@ -20,8 +20,8 @@ defmodule BoxwalletWeb.CoinSettings do
       <h3 class="text-xl font-bold mb-6">
         <.icon name="hero-cog-6-tooth" class={"w-6 h-6 inline-block mr-2 " <> @color} /> Settings
       </h3>
-
-      <!-- Update section -->
+      
+    <!-- Update section -->
       <div class="flex items-center justify-between p-4 bg-base-100 rounded-xl mb-4">
         <div>
           <h4 class="font-semibold text-lg">Update</h4>
@@ -36,8 +36,7 @@ defmodule BoxwalletWeb.CoinSettings do
           title={"Update #{@coin_name} core files"}
         >
           <%= if @downloading do %>
-            <span class="loading loading-spinner loading-sm"></span>
-            Updating...
+            <span class="loading loading-spinner loading-sm"></span> Updating...
           <% else %>
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -57,8 +56,8 @@ defmodule BoxwalletWeb.CoinSettings do
           <% end %>
         </button>
       </div>
-
-      <!-- Update success alert -->
+      
+    <!-- Update success alert -->
       <%= if @download_complete do %>
         <div role="alert" class="alert alert-success mb-4">
           <svg
@@ -77,8 +76,8 @@ defmodule BoxwalletWeb.CoinSettings do
           <span>Update completed successfully!</span>
         </div>
       <% end %>
-
-      <!-- Update error alert -->
+      
+    <!-- Update error alert -->
       <%= if @download_error do %>
         <div role="alert" class="alert alert-error mb-4">
           <svg
@@ -97,8 +96,8 @@ defmodule BoxwalletWeb.CoinSettings do
           <span>{@download_error}</span>
         </div>
       <% end %>
-
-      <!-- Update confirmation modal -->
+      
+    <!-- Update confirmation modal -->
       <dialog id="update_modal" class="modal">
         <div class="modal-box">
           <h3 class="font-bold text-lg">Confirm Update</h3>
@@ -123,8 +122,8 @@ defmodule BoxwalletWeb.CoinSettings do
           </div>
         </div>
       </dialog>
-
-      <!-- Test Net section -->
+      
+    <!-- Test Net section -->
       <div class="flex items-center justify-between p-4 bg-base-100 rounded-xl">
         <div>
           <h4 class="font-semibold text-lg">Test Net</h4>
@@ -140,8 +139,8 @@ defmodule BoxwalletWeb.CoinSettings do
           onclick="testnet_modal.showModal(); this.checked = !this.checked;"
         />
       </div>
-
-      <!-- Pruning section -->
+      
+    <!-- Pruning section -->
       <%= if @on_prune_toggle do %>
         <div class="flex items-center justify-between p-4 bg-base-100 rounded-xl mt-4">
           <div>
@@ -158,7 +157,6 @@ defmodule BoxwalletWeb.CoinSettings do
                 name="prune_size"
                 min="600"
                 value={@prune_size}
-
                 class="input input-bordered input-sm w-32"
                 phx-debounce="300"
               />
@@ -177,8 +175,8 @@ defmodule BoxwalletWeb.CoinSettings do
             />
           </div>
         </div>
-
-        <!-- Pruning toggle confirmation modal -->
+        
+    <!-- Pruning toggle confirmation modal -->
         <dialog id="prune_toggle_modal" class="modal">
           <div class="modal-box">
             <h3 class="font-bold text-lg">Confirm Pruning Change</h3>
@@ -209,8 +207,8 @@ defmodule BoxwalletWeb.CoinSettings do
             </div>
           </div>
         </dialog>
-
-        <!-- Prune size confirmation modal -->
+        
+    <!-- Prune size confirmation modal -->
         <%= if @pruning_enabled do %>
           <dialog id="prune_size_modal" class="modal">
             <div class="modal-box">
@@ -237,8 +235,8 @@ defmodule BoxwalletWeb.CoinSettings do
           </dialog>
         <% end %>
       <% end %>
-
-      <!-- Confirmation modal -->
+      
+    <!-- Confirmation modal -->
       <dialog id="testnet_modal" class="modal">
         <div class="modal-box">
           <h3 class="font-bold text-lg">Confirm Network Change</h3>

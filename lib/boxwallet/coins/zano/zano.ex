@@ -333,48 +333,48 @@ defmodule Boxwallet.Coins.Zano do
 
     # Determine the file path and URL based on OS and architecture
     case :os.type() do
-        {:unix, :linux} ->
-          cond do
-            String.contains?(sys_info, "arm71") ->
-              {:ok, @download_file_arm32}
+      {:unix, :linux} ->
+        cond do
+          String.contains?(sys_info, "arm71") ->
+            {:ok, @download_file_arm32}
 
-            String.contains?(sys_info, "aarch64") ->
-              {:ok, @download_file_arm32}
+          String.contains?(sys_info, "aarch64") ->
+            {:ok, @download_file_arm32}
 
-            String.contains?(sys_info, "i386") ->
-              {:error, "linux 386 is not currently supported for: #{@coin_name}"}
+          String.contains?(sys_info, "i386") ->
+            {:error, "linux 386 is not currently supported for: #{@coin_name}"}
 
-            String.contains?(sys_info, "x86_64") ->
-              {:ok, @download_file_linux}
+          String.contains?(sys_info, "x86_64") ->
+            {:ok, @download_file_linux}
 
-            true ->
-              IO.puts("Unsupported system: #{:erlang.system_info(:system_architecture)}")
-              {:error, "Unsupported Linux architecture: #{sys_info}"}
-          end
+          true ->
+            IO.puts("Unsupported system: #{:erlang.system_info(:system_architecture)}")
+            {:error, "Unsupported Linux architecture: #{sys_info}"}
+        end
 
-        {:unix, :darwin} ->
-          cond do
-            String.contains?(sys_info, "aarch64") ->
-              {:ok, @download_file_mac64}
+      {:unix, :darwin} ->
+        cond do
+          String.contains?(sys_info, "aarch64") ->
+            {:ok, @download_file_mac64}
 
-            String.contains?(sys_info, "i386") ->
-              {:error, "mac 386 is not currently supported for: #{@coin_name}"}
+          String.contains?(sys_info, "i386") ->
+            {:error, "mac 386 is not currently supported for: #{@coin_name}"}
 
-            String.contains?(sys_info, "x86_64") ->
-              {:ok, @download_file_mac64}
+          String.contains?(sys_info, "x86_64") ->
+            {:ok, @download_file_mac64}
 
-            true ->
-              IO.puts("Unsupported system: #{:erlang.system_info(:system_architecture)}")
-              {:error, "Unsupported macOS architecture: #{sys_info}"}
-          end
+          true ->
+            IO.puts("Unsupported system: #{:erlang.system_info(:system_architecture)}")
+            {:error, "Unsupported macOS architecture: #{sys_info}"}
+        end
 
-        # Covers Windows
-        {:win32, :nt} ->
-          {:ok, @download_file_windows}
+      # Covers Windows
+      {:win32, :nt} ->
+        {:ok, @download_file_windows}
 
-        _ ->
-          {:error, "Unsupported operating system"}
-      end
+      _ ->
+        {:error, "Unsupported operating system"}
+    end
   end
 
   def get_info(auth) do

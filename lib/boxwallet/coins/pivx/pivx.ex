@@ -41,7 +41,9 @@ defmodule Boxwallet.Coins.Pivx do
   defp copy_extracted_files() do
     cli_filename =
       case get_cli_filename() do
-        {:ok, name} -> name
+        {:ok, name} ->
+          name
+
         {:error, reason} ->
           Logger.error("[#{@coin_name_abbrev}] Error: #{reason}")
           ""
@@ -49,7 +51,9 @@ defmodule Boxwallet.Coins.Pivx do
 
     daemon_filename =
       case get_daemon_filename() do
-        {:ok, name} -> name
+        {:ok, name} ->
+          name
+
         {:error, reason} ->
           Logger.error("[#{@coin_name_abbrev}] Error: #{reason}")
           ""
@@ -106,7 +110,9 @@ defmodule Boxwallet.Coins.Pivx do
       Logger.warning("[#{@coin_name_abbrev}] #{@install_params} not found, skipping")
       {:error, "install-params.sh not found"}
     else
-      Logger.info("[#{@coin_name_abbrev}] Running #{@install_params} to download sapling parameters...")
+      Logger.info(
+        "[#{@coin_name_abbrev}] Running #{@install_params} to download sapling parameters..."
+      )
 
       {cmd, args} =
         case :os.type() do
@@ -157,7 +163,9 @@ defmodule Boxwallet.Coins.Pivx do
 
     file_name =
       case get_download_filename() do
-        {:ok, name} -> name
+        {:ok, name} ->
+          name
+
         {:error, reason} ->
           Logger.error("[#{@coin_name_abbrev}] Error: #{reason}")
           ""
@@ -196,7 +204,9 @@ defmodule Boxwallet.Coins.Pivx do
   def files_exist() do
     daemon_filename =
       case get_daemon_filename() do
-        {:ok, name} -> name
+        {:ok, name} ->
+          name
+
         {:error, reason} ->
           Logger.error("[#{@coin_name_abbrev}] Error: #{reason}")
           ""
@@ -364,7 +374,7 @@ defmodule Boxwallet.Coins.Pivx do
         cond do
           String.contains?(response_body, "Loading") or
             String.contains?(response_body, "Rescanning") or
-            String.contains?(response_body, "Verifying") ->
+              String.contains?(response_body, "Verifying") ->
             Logger.info("[#{@coin_name_abbrev}] Daemon is loading")
             {:warming_up, :loading}
 
@@ -463,7 +473,9 @@ defmodule Boxwallet.Coins.Pivx do
   def start_daemon do
     daemon_filename =
       case get_daemon_filename() do
-        {:ok, name} -> name
+        {:ok, name} ->
+          name
+
         {:error, reason} ->
           Logger.error("[#{@coin_name_abbrev}] Error: #{reason}")
           ""

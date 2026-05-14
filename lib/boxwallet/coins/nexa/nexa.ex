@@ -40,7 +40,9 @@ defmodule Boxwallet.Coins.Nexa do
   defp copy_extracted_files() do
     cli_filename =
       case get_cli_filename() do
-        {:ok, name} -> name
+        {:ok, name} ->
+          name
+
         {:error, reason} ->
           Logger.error("[#{@coin_name_abbrev}] Error: #{reason}")
           ""
@@ -48,7 +50,9 @@ defmodule Boxwallet.Coins.Nexa do
 
     daemon_filename =
       case get_daemon_filename() do
-        {:ok, name} -> name
+        {:ok, name} ->
+          name
+
         {:error, reason} ->
           Logger.error("[#{@coin_name_abbrev}] Error: #{reason}")
           ""
@@ -117,7 +121,9 @@ defmodule Boxwallet.Coins.Nexa do
 
     file_name =
       case get_download_filename() do
-        {:ok, name} -> name
+        {:ok, name} ->
+          name
+
         {:error, reason} ->
           Logger.error("[#{@coin_name_abbrev}] Error: #{reason}")
           ""
@@ -156,7 +162,9 @@ defmodule Boxwallet.Coins.Nexa do
   def files_exist() do
     daemon_filename =
       case get_daemon_filename() do
-        {:ok, name} -> name
+        {:ok, name} ->
+          name
+
         {:error, reason} ->
           Logger.error("[#{@coin_name_abbrev}] Error: #{reason}")
           ""
@@ -324,7 +332,7 @@ defmodule Boxwallet.Coins.Nexa do
         cond do
           String.contains?(response_body, "Loading") or
             String.contains?(response_body, "Rescanning") or
-            String.contains?(response_body, "Verifying") ->
+              String.contains?(response_body, "Verifying") ->
             Logger.info("[#{@coin_name_abbrev}] Daemon is loading")
             {:warming_up, :loading}
 
@@ -423,7 +431,9 @@ defmodule Boxwallet.Coins.Nexa do
   def start_daemon do
     daemon_filename =
       case get_daemon_filename() do
-        {:ok, name} -> name
+        {:ok, name} ->
+          name
+
         {:error, reason} ->
           Logger.error("[#{@coin_name_abbrev}] Error: #{reason}")
           ""

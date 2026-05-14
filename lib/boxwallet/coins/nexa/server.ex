@@ -271,16 +271,12 @@ defmodule Boxwallet.Coins.Nexa.Server do
           ),
         daemon_warmup_status: nil,
         blocks_synced: result["blocks"] || 0,
-        blocks:
-          Number.Delimit.number_to_delimited(result["blocks"] || 0, precision: 0),
-        difficulty:
-          Number.Delimit.number_to_delimited(result["difficulty"] || 0, precision: 0),
+        blocks: Number.Delimit.number_to_delimited(result["blocks"] || 0, precision: 0),
+        difficulty: Number.Delimit.number_to_delimited(result["difficulty"] || 0, precision: 0),
         headers_synced: result["headers"] || 0,
-        headers:
-          Number.Delimit.number_to_delimited(result["headers"] || 0, precision: 0),
+        headers: Number.Delimit.number_to_delimited(result["headers"] || 0, precision: 0),
         verification_progress: result["verificationprogress"] || 0.0,
-        blockchain_is_synced:
-          (result["verificationprogress"] || 0) >= 0.9999
+        blockchain_is_synced: (result["verificationprogress"] || 0) >= 0.9999
     }
 
     # Start wallet polling once daemon is confirmed up

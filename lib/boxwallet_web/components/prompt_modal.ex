@@ -61,7 +61,10 @@ defmodule BoxwalletWeb.PromptModal do
                 required
                 class="input input-bordered w-full mt-3"
               />
-              <p :if={not @passwords_match and (@answer_value != "" or @confirm_value != "")} class="text-error text-sm mt-2">
+              <p
+                :if={not @passwords_match and (@answer_value != "" or @confirm_value != "")}
+                class="text-error text-sm mt-2"
+              >
                 Passwords do not match.
               </p>
             <% end %>
@@ -75,7 +78,10 @@ defmodule BoxwalletWeb.PromptModal do
               type="submit"
               form={"#{@id}-form"}
               class="btn btn-primary"
-              disabled={@show_confirm and (not @passwords_match or (@answer_value == "" and @confirm_value == ""))}
+              disabled={
+                @show_confirm and
+                  (not @passwords_match or (@answer_value == "" and @confirm_value == ""))
+              }
             >
               {@confirm_label}
             </button>

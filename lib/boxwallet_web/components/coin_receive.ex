@@ -26,7 +26,11 @@ defmodule BoxwalletWeb.CoinReceive do
 
       <%= if @receive_coming_soon do %>
         <div class="flex justify-center mt-4">
-          <button class="btn btn-outline btn-boxwalletgreen px-8 cursor-not-allowed" disabled title="Coming soon">
+          <button
+            class="btn btn-outline btn-boxwalletgreen px-8 cursor-not-allowed"
+            disabled
+            title="Coming soon"
+          >
             <.icon name="hero-arrow-down-tray" class="w-6 h-6" /> Receive
             <span class="badge badge-sm ml-1">Coming soon</span>
           </button>

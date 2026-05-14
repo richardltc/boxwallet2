@@ -177,13 +177,17 @@ defmodule BoxWallet.Coins.ConfigManager do
 
       cond do
         # Stop if we hit any section header
-        String.starts_with?(trimmed, "[") -> {:halt, nil}
+        String.starts_with?(trimmed, "[") ->
+          {:halt, nil}
+
         String.starts_with?(trimmed, "#{label}=") ->
           case String.split(trimmed, "=", parts: 2) do
             [_, value] -> {:halt, String.trim(value)}
             _ -> {:cont, nil}
           end
-        true -> {:cont, nil}
+
+        true ->
+          {:cont, nil}
       end
     end)
   end

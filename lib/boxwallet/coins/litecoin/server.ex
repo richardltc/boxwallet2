@@ -338,19 +338,20 @@ defmodule Boxwallet.Coins.Litecoin.Server do
 
     state = %{
       state
-      | daemon_status: if(state.daemon_status in [:starting, :running], do: :running, else: state.daemon_status),
+      | daemon_status:
+          if(state.daemon_status in [:starting, :running],
+            do: :running,
+            else: state.daemon_status
+          ),
         daemon_warmup_status: nil,
         blocks_synced: response.result.blocks || 0,
-        blocks:
-          Number.Delimit.number_to_delimited(response.result.blocks, precision: 0) || 0,
+        blocks: Number.Delimit.number_to_delimited(response.result.blocks, precision: 0) || 0,
         difficulty:
           Number.Delimit.number_to_delimited(response.result.difficulty, precision: 0) || 0,
         headers_synced: response.result.headers || 0,
-        headers:
-          Number.Delimit.number_to_delimited(response.result.headers, precision: 0) || 0,
+        headers: Number.Delimit.number_to_delimited(response.result.headers, precision: 0) || 0,
         verification_progress: response.result.verificationprogress || 0.0,
-        blockchain_is_synced:
-          (response.result.verificationprogress || 0) >= 0.9999
+        blockchain_is_synced: (response.result.verificationprogress || 0) >= 0.9999
     }
 
     broadcast(state)
@@ -374,7 +375,11 @@ defmodule Boxwallet.Coins.Litecoin.Server do
 
     state = %{
       state
-      | daemon_status: if(state.daemon_status in [:starting, :running], do: :running, else: state.daemon_status),
+      | daemon_status:
+          if(state.daemon_status in [:starting, :running],
+            do: :running,
+            else: state.daemon_status
+          ),
         wallet_encryption_status: wallet_encryption_status,
         balance: response.result.balance,
         unconfirmed_balance: response.result.unconfirmed_balance || 0.0,
@@ -472,7 +477,7 @@ defmodule Boxwallet.Coins.Litecoin.Server do
       Logger.info("[LTC] Litecoin wallet already loaded")
       state = %{state | wallet_loaded: true}
       maybe_reschedule(state, :poll_wallet_info, 1_000)
-  
+
       state = schedule_transactions_poll(state, 3_000)
       {:noreply, state}
     else

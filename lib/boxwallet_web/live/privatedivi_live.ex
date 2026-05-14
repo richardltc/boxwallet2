@@ -112,7 +112,8 @@ defmodule BoxwalletWeb.PrivateDiviLive do
             socket
             |> assign(:get_blockchain_info_response, response)
             |> assign(:blocks_synced, response.result.blocks || 0)
-            |> assign(:difficulty,
+            |> assign(
+              :difficulty,
               Number.Delimit.number_to_delimited(response.result.difficulty, precision: 0) || 0
             )
             |> assign(:headers_synced, response.result.headers || 0)
@@ -455,12 +456,18 @@ defmodule BoxwalletWeb.PrivateDiviLive do
       {:noreply,
        socket
        |> assign(testnet_enabled: new_value, coin_daemon_stopping: true)
-       |> put_flash(:info, "Testnet #{if new_value, do: "enabled", else: "disabled"}. Stopping #{socket.assigns.coin_name} Daemon...")}
+       |> put_flash(
+         :info,
+         "Testnet #{if new_value, do: "enabled", else: "disabled"}. Stopping #{socket.assigns.coin_name} Daemon..."
+       )}
     else
       {:noreply,
        socket
        |> assign(testnet_enabled: new_value)
-       |> put_flash(:info, "Testnet #{if new_value, do: "enabled", else: "disabled"}. Restart the daemon for changes to take effect.")}
+       |> put_flash(
+         :info,
+         "Testnet #{if new_value, do: "enabled", else: "disabled"}. Restart the daemon for changes to take effect."
+       )}
     end
   end
 
@@ -479,7 +486,10 @@ defmodule BoxwalletWeb.PrivateDiviLive do
   end
 
   defp testnet_enabled?(coin_module) do
-    case BoxWallet.Coins.ConfigManager.get_label_value(coin_module.get_conf_file_location(), "testnet") do
+    case BoxWallet.Coins.ConfigManager.get_label_value(
+           coin_module.get_conf_file_location(),
+           "testnet"
+         ) do
       {:ok, "1"} -> true
       _ -> false
     end
@@ -730,7 +740,7 @@ defmodule BoxwalletWeb.PrivateDiviLive do
           <span>Downloading and installing PrivateDivi... Please wait.</span>
         </div>
       <% end %>
-
+      
     <!-- Success alert -->
       <%= if @download_complete do %>
         <div role="alert" class="alert alert-success mb-4">
@@ -750,7 +760,7 @@ defmodule BoxwalletWeb.PrivateDiviLive do
           <span>Download and installation completed successfully!</span>
         </div>
       <% end %>
-
+      
     <!-- Error alert -->
       <%= if @download_error do %>
         <div role="alert" class="alert alert-error mb-4">
@@ -842,7 +852,11 @@ defmodule BoxwalletWeb.PrivateDiviLive do
             <% :receive -> %>
               <.coin_receive color="text-red-400" receive_coming_soon={true} />
             <% :send -> %>
-              <.coin_send color="text-red-400" coin_daemon_started={@coin_daemon_started} coin_name_abbrev={@coin_name_abbrev} />
+              <.coin_send
+                color="text-red-400"
+                coin_daemon_started={@coin_daemon_started}
+                coin_name_abbrev={@coin_name_abbrev}
+              />
             <% _ -> %>
               <.coin_transactions color="text-red-400" />
           <% end %>
