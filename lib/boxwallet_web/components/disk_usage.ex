@@ -38,7 +38,7 @@ defmodule BoxwalletWeb.DiskUsage do
       </h3>
       <div
         class={["radial-progress", @color]}
-        style={"--value:#{@pct}; --size:6rem;"}
+        style={"--value:#{@pct}; --size:7rem; --thickness:0.35rem;"}
         aria-valuenow={@pct}
         role="progressbar"
       >
