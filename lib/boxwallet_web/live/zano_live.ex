@@ -100,6 +100,14 @@ defmodule BoxwalletWeb.ZanoLive do
           {:ok, %{result: address}} when is_binary(address) ->
             {:noreply, assign(socket, :receive_address, address)}
 
+          {:error, :econnrefused} ->
+            Logger.info("Zano wallet daemon not yet running; skipping receive address fetch.")
+            {:noreply, socket}
+
+          {:error, %HTTPoison.Error{reason: :econnrefused}} ->
+            Logger.info("Zano wallet daemon not yet running; skipping receive address fetch.")
+            {:noreply, socket}
+
           {:error, reason} ->
             Logger.error("Failed to get Zano receive address: #{inspect(reason)}")
             Process.send_after(self(), :clear_flash, 4_000)
@@ -154,7 +162,7 @@ defmodule BoxwalletWeb.ZanoLive do
 
     socket =
       if tab == :receive and socket.assigns.receive_address == "" and
-           socket.assigns.coin_daemon_started do
+           socket.assigns.wallet_encryption_status in [:wes_unlocked, :wes_unlocked_for_staking] do
         send(self(), :fetch_receive_address)
         socket
       else
@@ -658,6 +666,7 @@ defmodule BoxwalletWeb.ZanoLive do
                 color="text-zanoblue"
                 coin_daemon_started={@coin_daemon_started}
                 receive_address={@receive_address}
+                wallet_encryption_status={@wallet_encryption_status}
               />
             <% :send -> %>
               <.coin_send

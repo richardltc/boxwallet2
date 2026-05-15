@@ -7,6 +7,7 @@ defmodule BoxwalletWeb.CoinReceive do
   attr :coin_daemon_started, :boolean, default: false
   attr :receive_address, :string, default: ""
   attr :receive_coming_soon, :boolean, default: false
+  attr :wallet_encryption_status, :atom, default: :wes_unlocked
 
   def coin_receive(assigns) do
     qr_svg =
@@ -76,11 +77,18 @@ defmodule BoxwalletWeb.CoinReceive do
           </div>
         <% else %>
           <div class="flex flex-col items-center mt-8">
-            <%= if @coin_daemon_started do %>
-              <span class={"loading loading-spinner loading-lg " <> @color}></span>
-              <p class="text-gray-400 mt-4">Fetching address...</p>
-            <% else %>
-              <p class="text-gray-400">Daemon not running</p>
+            <%= cond do %>
+              <% !@coin_daemon_started -> %>
+                <p class="text-gray-400">Daemon not running</p>
+              <% @wallet_encryption_status == :wes_unencrypted -> %>
+                <.icon name="hero-lock-closed" class={"w-10 h-10 " <> @color} />
+                <p class="text-gray-400 mt-4">Create a wallet to receive coins.</p>
+              <% @wallet_encryption_status == :wes_locked -> %>
+                <.icon name="hero-lock-closed" class={"w-10 h-10 " <> @color} />
+                <p class="text-gray-400 mt-4">Unlock your wallet to see your receive address.</p>
+              <% true -> %>
+                <span class={"loading loading-spinner loading-lg " <> @color}></span>
+                <p class="text-gray-400 mt-4">Fetching address...</p>
             <% end %>
           </div>
         <% end %>
