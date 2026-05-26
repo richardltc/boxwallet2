@@ -239,7 +239,15 @@ defmodule Boxwallet.Coins.Zano.Server do
     server = self()
 
     spawn(fn ->
-      result = Zano.download_coin()
+      result =
+        try do
+          Zano.download_coin()
+        rescue
+          e ->
+            Logger.error("Zano download crashed: #{Exception.message(e)}")
+            {:error, Exception.message(e)}
+        end
+
       send(server, {:download_result, result})
     end)
 

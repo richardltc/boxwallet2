@@ -35,11 +35,12 @@ defmodule Boxwallet.Coins.Zano do
   @home_dir_mac "Zano"
   @home_dir_win "Zano"
 
-  @core_version "2.1.15.457"
+  @core_version "2.1.17.469"
   def core_version, do: @core_version
 
-  @download_file_linux "zano-linux-x64-release-v" <> @core_version <> "%5B8621a68%5D.AppImage"
-  @download_file_windows "zano-win-x64-release-v" <> @core_version <> "%5B8621a68%5D.zip"
+  # Reference: https://build.zano.org/builds/zano-linux-x64-release-v2.1.17.469[1b1cc03].AppImage
+  @download_file_linux "zano-linux-x64-release-v" <> @core_version <> "[1b1cc03].AppImage"
+  @download_file_windows "zano-win-x64-release-v" <> @core_version <> "[1b1cc03].zip"
 
   @extracted_dir_linux "squashfs-root"
 
@@ -530,6 +531,8 @@ defmodule Boxwallet.Coins.Zano do
 
       case HTTPoison.post(url, body, headers) do
         {:ok, %{body: response_body}} ->
+          Logger.info("[#{@coin_name_abbrev}] GetInfo response: #{response_body}")
+
           case BoxWallet.Coins.Zano.GetInfo.from_json(response_body) do
             {:ok, response} ->
               {:halt, {:ok, response}}
