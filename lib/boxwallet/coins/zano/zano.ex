@@ -315,6 +315,20 @@ defmodule Boxwallet.Coins.Zano do
 
   # --- Node daemon (zanod) lifecycle ---
 
+  @doc """
+  Starts `zanod`.
+
+  On Unix the daemon is launched via an Erlang `Port` (owned by the caller, which
+  is `Boxwallet.Coins.Zano.Server`) so its stdout/stderr can be streamed live —
+  this is how we surface blockchain pre-download progress, which is printed to the
+  console as `Received X of Y MiB ( P %)` lines and is *not* exposed over RPC.
+  `--no-predownload` is intentionally **not** passed, so zanod fetches a compiled
+  blockchain snapshot instead of syncing block-by-block. The snapshot download
+  resumes itself across restarts (the daemon prints `(offset:N)` on retry).
+
+  Returns `{:ok, port}` on Unix, `{:ok, :no_port}` on Windows (launched detached,
+  no live output capture), or `{:error, reason}`.
+  """
   def start_daemon do
     case get_daemon_filename() do
       {:error, reason} ->
@@ -325,17 +339,20 @@ defmodule Boxwallet.Coins.Zano do
         full_path_daemon = Path.join([BoxWallet.App.home_folder(), daemon_filename])
 
         if File.exists?(full_path_daemon) do
-          spawn(fn ->
-            case :os.type() do
-              {:win32, _} ->
-                System.cmd("cmd.exe", ["/C", "start", "/b", full_path_daemon])
+          case :os.type() do
+            {:win32, _} ->
+              spawn(fn -> System.cmd("cmd.exe", ["/C", "start", "/b", full_path_daemon]) end)
+              {:ok, :no_port}
 
-              _ ->
-                System.cmd(full_path_daemon, ["--no-console", "--no-predownload"])
-            end
-          end)
+            _ ->
+              port =
+                Port.open(
+                  {:spawn_executable, full_path_daemon},
+                  [:binary, :exit_status, :stderr_to_stdout, {:args, ["--no-console"]}]
+                )
 
-          :ok
+              {:ok, port}
+          end
         else
           msg = "Daemon executable not found at #{full_path_daemon}"
           Logger.error("[#{@coin_name_abbrev}] #{msg}")
@@ -531,8 +548,6 @@ defmodule Boxwallet.Coins.Zano do
 
       case HTTPoison.post(url, body, headers) do
         {:ok, %{body: response_body}} ->
-          Logger.info("[#{@coin_name_abbrev}] GetInfo response: #{response_body}")
-
           case BoxWallet.Coins.Zano.GetInfo.from_json(response_body) do
             {:ok, response} ->
               {:halt, {:ok, response}}
