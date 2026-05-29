@@ -35,6 +35,9 @@ defmodule BoxwalletWeb.ZanoLive do
         download_complete: server_state.download_complete,
         download_error: server_state.download_error,
         downloading: server_state.downloading,
+        predownload_percent: server_state.predownload_percent,
+        predownload_received_mib: server_state.predownload_received_mib,
+        predownload_total_mib: server_state.predownload_total_mib,
         coin_daemon_starting: server_state.daemon_status == :starting,
         coin_daemon_started: server_state.daemon_status == :running,
         coin_daemon_stopping: server_state.daemon_status == :stopping,
@@ -292,6 +295,19 @@ defmodule BoxwalletWeb.ZanoLive do
     {:noreply, assign(socket, coin_daemon_starting: true, coin_daemon_stopped: false)}
   end
 
+  def handle_event("cancel_predownload", _, socket) do
+    # Aborting the snapshot download = stopping the daemon. zanod writes the
+    # partial .pak with a resumable offset, so a later Start picks up where it
+    # left off rather than restarting the download.
+    ZanoServer.stop_daemon()
+    Process.send_after(self(), :clear_flash, 4_000)
+
+    {:noreply,
+     socket
+     |> put_flash(:info, "Cancelling #{socket.assigns.coin_name} blockchain download...")
+     |> assign(:coin_daemon_stopping, true)}
+  end
+
   def handle_event("stop_coin_daemon", _, socket) do
     ZanoServer.stop_daemon()
     Process.send_after(self(), :clear_flash, 4_000)
@@ -531,6 +547,36 @@ defmodule BoxwalletWeb.ZanoLive do
         input_type="password"
         placeholder="Enter password..."
       />
+      <!-- Blockchain snapshot pre-download progress (Zano-only) -->
+      <%= if @coin_daemon_starting and is_number(@predownload_percent) do %>
+        <div role="alert" class="alert alert-info mb-4 flex-col items-start">
+          <div class="flex items-center gap-2 w-full">
+            <span class="hero-arrow-down-tray h-6 w-6 shrink-0" />
+            <span class="flex-1">
+              {if @predownload_percent >= 100,
+                do: "Importing Zano blockchain database…",
+                else: "Downloading Zano blockchain snapshot…"}
+              <%= if @predownload_received_mib && @predownload_total_mib do %>
+                <span class="font-mono text-sm">
+                  ({@predownload_received_mib} / {@predownload_total_mib} MiB)
+                </span>
+              <% end %>
+            </span>
+            <span class="font-mono text-sm">
+              {:erlang.float_to_binary(@predownload_percent, decimals: 1)}%
+            </span>
+          </div>
+          <progress
+            class="progress progress-info w-full"
+            value={@predownload_percent}
+            max="100"
+          >
+          </progress>
+          <button class="btn btn-sm btn-error mt-1" phx-click="cancel_predownload">
+            <span class="hero-x-mark h-4 w-4" /> Cancel download
+          </button>
+        </div>
+      <% end %>
       <!-- Download in progress alert -->
       <%= if @downloading do %>
         <div role="alert" class="alert alert-info mb-4">

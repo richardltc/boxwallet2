@@ -12,6 +12,15 @@ defmodule Boxwallet.Coins.Zano.Server do
   @disk_usage_interval 60_000
   @walletd_call_timeout 25_000
 
+  # Matches zanod pre-download progress lines, e.g.
+  #   "Received 198 of 14632 MiB ( 1.3 %)"
+  @predownload_re ~r/Received\s+(\d+)\s+of\s+(\d+)\s+MiB\s*\(\s*([\d.]+)\s*%\)/
+
+  # Earliest sign the snapshot download is starting, printed before any bytes
+  # arrive, e.g. "Attempt 1/30 to get https://…/zano_lmdb_95_3451000.pak (offset:0)".
+  # Lets us show the banner immediately rather than waiting for the first chunk.
+  @predownload_start_re ~r/Attempt\s+\d+\/\d+\s+to get.*\.pak/
+
   # --- Public API ---
 
   def start_link(_opts) do
@@ -52,6 +61,11 @@ defmodule Boxwallet.Coins.Zano.Server do
       downloading: false,
       download_complete: false,
       download_error: nil,
+      daemon_port: nil,
+      predownload_percent: nil,
+      predownload_received_mib: nil,
+      predownload_total_mib: nil,
+      predownload_buffer: "",
       connections: 0,
       blocks_synced: 0,
       headers_synced: 0,
@@ -148,9 +162,19 @@ defmodule Boxwallet.Coins.Zano.Server do
   @impl true
   def handle_cast(:start_daemon, state) do
     case Zano.start_daemon() do
-      :ok ->
+      {:ok, port} ->
         Logger.info("Zano daemon starting...")
-        state = %{state | daemon_status: :starting}
+
+        state = %{
+          state
+          | daemon_status: :starting,
+            daemon_port: if(is_port(port), do: port, else: nil),
+            predownload_percent: nil,
+            predownload_received_mib: nil,
+            predownload_total_mib: nil,
+            predownload_buffer: ""
+        }
+
         broadcast(state)
         Process.send_after(self(), :poll_get_info, 2_000)
         Process.send_after(self(), :poll_block_height, 5_000)
@@ -330,6 +354,22 @@ defmodule Boxwallet.Coins.Zano.Server do
 
   def handle_info(:poll_block_height, state), do: {:noreply, state}
 
+  # --- Daemon stdout (pre-download progress) ---
+
+  def handle_info({port, {:data, data}}, %{daemon_port: port} = state) when is_port(port) do
+    {:noreply, handle_daemon_output(state, data)}
+  end
+
+  def handle_info({port, {:exit_status, status}}, %{daemon_port: port} = state)
+      when is_port(port) do
+    Logger.info("Zano daemon process exited with status #{status}")
+    {:noreply, %{state | daemon_port: nil}}
+  end
+
+  # Messages from a stale port (e.g. after a restart) — ignore.
+  def handle_info({port, {:data, _}}, state) when is_port(port), do: {:noreply, state}
+  def handle_info({port, {:exit_status, _}}, state) when is_port(port), do: {:noreply, state}
+
   # --- RPC results ---
 
   def handle_info({:get_info_result, {:ok, response}}, state) do
@@ -347,6 +387,7 @@ defmodule Boxwallet.Coins.Zano.Server do
         true -> :wes_unencrypted
       end
 
+    # RPC is answering, so pre-download/import is finished — drop the snapshot bar.
     state = %{
       state
       | daemon_status: :running,
@@ -355,7 +396,10 @@ defmodule Boxwallet.Coins.Zano.Server do
         headers_synced: blocks_synced,
         block_height: block_height,
         blockchain_is_synced: block_height > 0 and blocks_synced >= block_height,
-        wallet_encryption_status: wallet_encryption_status
+        wallet_encryption_status: wallet_encryption_status,
+        predownload_percent: nil,
+        predownload_received_mib: nil,
+        predownload_total_mib: nil
     }
 
     broadcast(state)
@@ -462,6 +506,11 @@ defmodule Boxwallet.Coins.Zano.Server do
       state
       | daemon_status: :stopped,
         walletd_status: :stopped,
+        daemon_port: nil,
+        predownload_percent: nil,
+        predownload_received_mib: nil,
+        predownload_total_mib: nil,
+        predownload_buffer: "",
         connections: 0,
         blocks_synced: 0,
         headers_synced: 0,
@@ -560,6 +609,54 @@ defmodule Boxwallet.Coins.Zano.Server do
 
   # --- Private helpers ---
 
+  # Scans streamed daemon output for the latest pre-download progress line and
+  # updates state. A small tail of the buffer is retained so a progress line
+  # split across two chunks is still matched on the next chunk.
+  defp handle_daemon_output(state, data) do
+    # Set config :boxwallet, :zano_log_daemon_output, true to see raw zanod output
+    # (useful for confirming the pre-download progress line format on a fresh sync).
+    if Application.get_env(:boxwallet, :zano_log_daemon_output, false) do
+      Logger.debug("[ZANO] daemon: #{String.trim(data)}")
+    end
+
+    buffer = (state.predownload_buffer || "") <> data
+
+    keep = min(byte_size(buffer), 256)
+    tail = binary_part(buffer, byte_size(buffer) - keep, keep)
+    state = %{state | predownload_buffer: tail}
+
+    case List.last(Regex.scan(@predownload_re, buffer)) do
+      [_, received, total, pct] ->
+        state = %{
+          state
+          | predownload_percent: parse_float(pct),
+            predownload_received_mib: String.to_integer(received),
+            predownload_total_mib: String.to_integer(total)
+        }
+
+        broadcast(state)
+        state
+
+      _ ->
+        # No byte-progress yet: if the download has just *started*, surface the
+        # banner at 0% now instead of waiting for the first chunk.
+        if is_nil(state.predownload_percent) and Regex.match?(@predownload_start_re, buffer) do
+          state = %{state | predownload_percent: 0.0}
+          broadcast(state)
+          state
+        else
+          state
+        end
+    end
+  end
+
+  defp parse_float(str) do
+    case Float.parse(str) do
+      {f, _} -> f
+      :error -> nil
+    end
+  end
+
   defp maybe_reschedule(%{polling_paused: true}, _msg, _i), do: :ok
 
   defp maybe_reschedule(%{daemon_status: status}, _msg, _i)
@@ -608,6 +705,9 @@ defmodule Boxwallet.Coins.Zano.Server do
       downloading: state.downloading,
       download_complete: state.download_complete,
       download_error: state.download_error,
+      predownload_percent: state.predownload_percent,
+      predownload_received_mib: state.predownload_received_mib,
+      predownload_total_mib: state.predownload_total_mib,
       connections: state.connections,
       blocks_synced: state.blocks_synced,
       headers_synced: state.headers_synced,
