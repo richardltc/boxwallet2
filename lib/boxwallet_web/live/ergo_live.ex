@@ -25,9 +25,6 @@ defmodule BoxwalletWeb.ErgoLive do
 
     server_state = Ergo.Server.get_state()
 
-    # Per the design decision, Java is detected when the user opens this page.
-    java_available = Ergo.java_installed?()
-
     socket =
       assign(socket,
         color_class: @color,
@@ -70,8 +67,6 @@ defmodule BoxwalletWeb.ErgoLive do
         address_valid: :empty,
         pending_send_address: nil,
         pending_send_amount: nil,
-        java_available: java_available,
-        java_instructions: Ergo.java_install_instructions(),
         # Seed-phrase create/restore modal
         show_wallet_setup: false,
         wallet_setup_mode: :menu,
@@ -359,13 +354,8 @@ defmodule BoxwalletWeb.ErgoLive do
   end
 
   def handle_event("start_coin_daemon", _, socket) do
-    if socket.assigns.java_available do
-      Ergo.Server.start_daemon()
-      {:noreply, assign(socket, coin_daemon_starting: true, coin_daemon_stopped: false)}
-    else
-      Process.send_after(self(), :clear_flash, 6_000)
-      {:noreply, put_flash(socket, :error, socket.assigns.java_instructions)}
-    end
+    Ergo.Server.start_daemon()
+    {:noreply, assign(socket, coin_daemon_starting: true, coin_daemon_stopped: false)}
   end
 
   def handle_event("stop_coin_daemon", _, socket) do
@@ -550,11 +540,6 @@ defmodule BoxwalletWeb.ErgoLive do
         input_type="password"
         placeholder="Enter password..."
       />
-
-      <div :if={!@java_available} role="alert" class="alert alert-warning mb-4">
-        <.icon name="hero-exclamation-triangle" class="h-6 w-6 shrink-0" />
-        <span>{@java_instructions}</span>
-      </div>
 
       <div :if={@downloading} role="alert" class="alert alert-info mb-4">
         <span class="loading loading-spinner loading-sm"></span>

@@ -2,15 +2,16 @@ defmodule Boxwallet.Coins.Ergo do
   @moduledoc """
   Interaction with the Ergo (ERG) node daemon.
 
-  Unlike the Bitcoin-Core forks in BoxWallet, Ergo is a JVM application
-  distributed as a single fat JAR (`ergo-<version>.jar`) that requires a Java
-  runtime. The node is launched in the foreground via an Erlang `Port`
+  Unlike the Bitcoin-Core forks in BoxWallet, Ergo is a JVM application. We
+  download the official per-platform "ergo-node" bundle, which ships the node
+  jar (`ergo-<version>.jar`) alongside a bundled OpenJDK JRE, so no system Java
+  is required. The node is launched in the foreground via an Erlang `Port`
   (it does not fork like `*coind`), exposes a REST API (not JSON-RPC), and
   authenticates protected endpoints with an `api_key` HTTP header.
 
   Key differences handled here:
 
-    * Distribution: download the jar only (no archive/extract step).
+    * Distribution: download the platform bundle (node jar + JRE) and extract it.
     * Auth: fixed `api_key` shipped in source; the node config stores only the
       Blake2b256 hash of the key. The node binds to 127.0.0.1 only.
     * Config: HOCON `ergo.conf` written from a template (the key=value
@@ -36,10 +37,13 @@ defmodule Boxwallet.Coins.Ergo do
   @core_version "6.0.2"
   def core_version, do: @core_version
 
+  # The node ships as `ergo-<version>.jar` inside each platform's bundle.
   @jar_file "ergo-#{@core_version}.jar"
   def jar_file, do: @jar_file
 
-  @download_url "https://github.com/ergoplatform/ergo/releases/download/v#{@core_version}/#{@jar_file}"
+  # GitHub release that carries the per-platform "ergo-node" bundles (each is
+  # the node jar plus a bundled OpenJDK 21 JRE, so no system Java is required).
+  @release_base "https://github.com/ergoplatform/ergo/releases/download/v#{@core_version}"
 
   @conf_file "ergo.conf"
 
@@ -58,39 +62,75 @@ defmodule Boxwallet.Coins.Ergo do
 
   @daemon_rpc_attempts 25
 
-  # --- Java runtime detection (checked when the Ergo page is opened) ---
+  # --- Bundle (node jar + JRE) location and download selection ---
 
-  @doc "Returns true if a `java` executable is on the PATH."
-  def java_installed? do
-    System.find_executable("java") != nil
+  # BoxWallet downloads the official per-platform "ergo-node" bundle, which
+  # carries `ergo-<version>.jar` alongside a known-good OpenJDK JRE. Running the
+  # node therefore needs no system Java. Everything is extracted under this dir.
+  defp bundle_dir, do: Path.join(BoxWallet.App.home_folder(), "ergo-node")
+
+  @doc """
+  Path to the `java` executable inside the downloaded bundle, or `nil` if the
+  bundle is not present. Located by search so it tolerates the slightly
+  different JRE layouts the platform archives use.
+  """
+  def bundled_java do
+    exe = if match?({:win32, _}, :os.type()), do: "java.exe", else: "java"
+
+    bundle_dir()
+    |> find_files(exe)
+    |> Enum.find(fn path -> Path.basename(Path.dirname(path)) == "bin" end)
   end
 
-  @doc "OS-specific instructions shown to the user when Java is missing."
-  def java_install_instructions do
+  @doc "Path to the node jar inside the downloaded bundle, or `nil` if absent."
+  def bundled_jar do
+    bundle_dir()
+    |> find_files(@jar_file)
+    |> List.first()
+  end
+
+  # Recursively collect files with the given basename under `dir`.
+  defp find_files(dir, basename) do
+    Path.wildcard(Path.join([dir, "**", basename]))
+  end
+
+  # Per-platform bundle asset. Returns `{url, :tar | :zip}`.
+  defp bundle_asset do
+    {platform, ext, kind} =
+      case :os.type() do
+        {:unix, :linux} -> {"linux", "tar.gz", :tar}
+        {:unix, :darwin} -> {"macos", "tar.gz", :tar}
+        {:win32, _} -> {"windows", "zip", :zip}
+      end
+
+    name = "ergo-node-v#{@core_version}-#{platform}-#{bundle_arch()}.#{ext}"
+    {"#{@release_base}/#{name}", kind}
+  end
+
+  # Map the host architecture to the bundle's arch suffix ("x64" or "aarch64").
+  defp bundle_arch do
     case :os.type() do
-      {:unix, :darwin} ->
-        "Ergo needs a Java runtime. Install one with `brew install openjdk`, or download from https://adoptium.net/, then reopen this page."
-
-      {:unix, :linux} ->
-        "Ergo needs a Java runtime. Install one with e.g. `sudo apt install default-jre` (Debian/Ubuntu) or download from https://adoptium.net/, then reopen this page."
-
       {:win32, _} ->
-        "Ergo needs a Java runtime. Download and install one from https://adoptium.net/, make sure `java` is on your PATH, then reopen this page."
+        arch =
+          System.get_env("PROCESSOR_ARCHITEW6432") ||
+            System.get_env("PROCESSOR_ARCHITECTURE") || ""
+
+        if arch =~ ~r/arm64/i, do: "aarch64", else: "x64"
 
       _ ->
-        "Ergo needs a Java runtime. Install one from https://adoptium.net/, then reopen this page."
+        arch = to_string(:erlang.system_info(:system_architecture))
+        if arch =~ "aarch64" or arch =~ "arm", do: "aarch64", else: "x64"
     end
   end
 
   # --- Files / paths ---
 
   def files_exist do
-    jar_path = jar_path()
-    Logger.info("[#{@coin_name_abbrev}] Checking for file: #{jar_path}")
-    File.exists?(jar_path)
+    jar = bundled_jar()
+    java = bundled_java()
+    Logger.info("[#{@coin_name_abbrev}] Checking bundle: jar=#{inspect(jar)}, java=#{inspect(java)}")
+    jar != nil and java != nil
   end
-
-  defp jar_path, do: Path.join(BoxWallet.App.home_folder(), @jar_file)
 
   def get_conf_file_location do
     Path.join(get_coin_home_dir(), @conf_file)
@@ -130,22 +170,55 @@ defmodule Boxwallet.Coins.Ergo do
   # --- Download + config ---
 
   def download_coin do
-    app_home_dir = BoxWallet.App.home_folder()
-    File.mkdir_p!(app_home_dir)
-    jar_path = jar_path()
-    Logger.info("[#{@coin_name_abbrev}] Downloading #{@download_url} to #{jar_path}")
+    File.mkdir_p!(bundle_dir())
+    {url, kind} = bundle_asset()
+    archive_path = Path.join(bundle_dir(), Path.basename(url))
+    Logger.info("[#{@coin_name_abbrev}] Downloading #{url}")
 
-    case Req.get(@download_url, into: File.stream!(jar_path)) do
+    case Req.get(url, into: File.stream!(archive_path)) do
       {:ok, %Req.Response{status: 200}} ->
-        Logger.info("[#{@coin_name_abbrev}] Download complete, writing config")
-        populate_conf_file()
-        {:ok}
+        Logger.info("[#{@coin_name_abbrev}] Download complete, extracting bundle")
+
+        case extract_bundle(archive_path, kind) do
+          :ok ->
+            File.rm(archive_path)
+            ensure_java_executable()
+            populate_conf_file()
+            {:ok}
+
+          {:error, reason} ->
+            {:error, "Extract failed: #{inspect(reason)}"}
+        end
 
       {:ok, %Req.Response{status: status}} ->
         {:error, "HTTP error: #{status}"}
 
       {:error, reason} ->
         {:error, reason}
+    end
+  end
+
+  defp extract_bundle(archive_path, :tar) do
+    :erl_tar.extract(String.to_charlist(archive_path), [
+      :compressed,
+      {:cwd, String.to_charlist(bundle_dir())}
+    ])
+  end
+
+  defp extract_bundle(archive_path, :zip) do
+    case :zip.extract(String.to_charlist(archive_path), [
+           {:cwd, String.to_charlist(bundle_dir())}
+         ]) do
+      {:ok, _files} -> :ok
+      other -> other
+    end
+  end
+
+  # Extraction does not always preserve the exec bit, so make sure java can run.
+  defp ensure_java_executable do
+    case bundled_java() do
+      nil -> :ok
+      java -> File.chmod(java, 0o755)
     end
   end
 
@@ -184,13 +257,13 @@ defmodule Boxwallet.Coins.Ergo do
   end
 
   def start_daemon do
-    case System.find_executable("java") do
+    case bundled_java() do
       nil ->
-        Logger.error("[#{@coin_name_abbrev}] Java runtime not found; cannot start node")
+        Logger.error("[#{@coin_name_abbrev}] Bundled Java runtime not found; cannot start node")
         {:error, :java_not_found}
 
       java ->
-        jar_path = jar_path()
+        jar_path = bundled_jar()
         conf_path = get_conf_file_location()
 
         # Ergo runs in the foreground, so manage it via a Port (avoids unbounded
