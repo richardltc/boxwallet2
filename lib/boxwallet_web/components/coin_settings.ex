@@ -13,6 +13,10 @@ defmodule BoxwalletWeb.CoinSettings do
   attr :pruning_enabled, :boolean, default: false
   attr :prune_size, :integer, default: 600
   attr :on_prune_toggle, :string, default: nil
+  # Coins whose config is not the Bitcoin-Core key=value format (e.g. Ergo's
+  # HOCON) set this false to hide the Test Net toggle, which would otherwise
+  # corrupt their config.
+  attr :show_testnet, :boolean, default: true
 
   def coin_settings(assigns) do
     ~H"""
@@ -124,7 +128,10 @@ defmodule BoxwalletWeb.CoinSettings do
       </dialog>
       
     <!-- Test Net section -->
-      <div class="flex items-center justify-between p-4 bg-base-100 rounded-xl">
+      <div
+        :if={@show_testnet}
+        class="flex items-center justify-between p-4 bg-base-100 rounded-xl"
+      >
         <div>
           <h4 class="font-semibold text-lg">Test Net</h4>
           <p class="text-sm text-gray-400">
@@ -237,7 +244,7 @@ defmodule BoxwalletWeb.CoinSettings do
       <% end %>
       
     <!-- Confirmation modal -->
-      <dialog id="testnet_modal" class="modal">
+      <dialog :if={@show_testnet} id="testnet_modal" class="modal">
         <div class="modal-box">
           <h3 class="font-bold text-lg">Confirm Network Change</h3>
           <%= if @testnet_enabled do %>
@@ -274,5 +281,6 @@ defmodule BoxwalletWeb.CoinSettings do
   defp toggle_color("text-divired"), do: "toggle-error"
   defp toggle_color("text-rddred"), do: "toggle-error"
   defp toggle_color("text-litecoinblue"), do: "toggle-info"
+  defp toggle_color("text-ergoorange"), do: "toggle-warning"
   defp toggle_color(_), do: "toggle-error"
 end

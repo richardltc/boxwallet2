@@ -26,6 +26,7 @@ defmodule BoxwalletWeb.Router do
     live "/bitcoinz", BitcoinzLive
     live "/nexa", NexaLive
     live "/pivx", PivxLive
+    live "/ergo", ErgoLive
   end
 
   # Other scopes may use custom stacks.
