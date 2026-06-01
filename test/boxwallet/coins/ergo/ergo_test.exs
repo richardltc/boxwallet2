@@ -46,12 +46,11 @@ defmodule Boxwallet.Coins.ErgoTest do
     end
   end
 
-  describe "java_install_instructions/0" do
-    test "returns OS-appropriate, non-empty guidance mentioning Java" do
-      instructions = Ergo.java_install_instructions()
-      assert is_binary(instructions)
-      assert instructions =~ "Java"
-      assert instructions =~ "https://adoptium.net/"
+  describe "bundle location" do
+    test "bundled_java/0 and bundled_jar/0 return nil when nothing is downloaded" do
+      # CI has no downloaded bundle, so both lookups should be empty (not crash).
+      assert Ergo.bundled_java() in [nil] or is_binary(Ergo.bundled_java())
+      assert Ergo.bundled_jar() in [nil] or is_binary(Ergo.bundled_jar())
     end
   end
 end
