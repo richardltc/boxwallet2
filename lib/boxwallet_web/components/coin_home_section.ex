@@ -20,6 +20,14 @@ defmodule BoxwalletWeb.CoinHomeSection do
   attr :disk_used_bytes, :any, default: nil
   attr :disk_total_bytes, :any, default: nil
   attr :verification_progress, :float, default: nil
+  # Label + event for the wallet button in the `:wes_unencrypted` state. Coins
+  # like Ergo, where the wallet is created/restored from a seed phrase rather
+  # than "encrypted", override these (e.g. "Create Wallet" -> "show_wallet_setup").
+  attr :unencrypted_label, :string, default: "Encrypt"
+  attr :on_unencrypted, :string, default: "show_encrypt_prompt"
+  # Whether the locked-wallet dropdown offers "Unlock for staking" (PoW coins
+  # like Ergo set this false).
+  attr :show_unlock_for_staking, :boolean, default: true
 
   def coin_home_section(assigns) do
     ~H"""
@@ -123,7 +131,7 @@ defmodule BoxwalletWeb.CoinHomeSection do
           disabled={!@coin_daemon_started}
           phx-click={
             case @wallet_encryption_status do
-              :wes_unencrypted -> "show_encrypt_prompt"
+              :wes_unencrypted -> @on_unencrypted
               :wes_unlocked -> "lock_wallet"
               :wes_unlocked_for_staking -> "lock_wallet"
               _ -> nil
@@ -137,7 +145,7 @@ defmodule BoxwalletWeb.CoinHomeSection do
               _ -> "hero-lock-open h-6 w-6"
             end
           } /> {case @wallet_encryption_status do
-            :wes_unencrypted -> "Encrypt"
+            :wes_unencrypted -> @unencrypted_label
             :wes_unlocked -> "Lock"
             :wes_unlocked_for_staking -> "Lock"
             _ -> "Unlock"
@@ -153,7 +161,7 @@ defmodule BoxwalletWeb.CoinHomeSection do
                 <span class="hero-lock-open h-5 w-5 inline-block" /> Unlock
               </a>
             </li>
-            <li>
+            <li :if={@show_unlock_for_staking}>
               <a phx-click="show_unlock_staking_prompt">
                 <span class="hero-bolt h-5 w-5 inline-block" />Unlock for staking
               </a>

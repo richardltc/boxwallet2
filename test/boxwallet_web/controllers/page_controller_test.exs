@@ -3,6 +3,10 @@ defmodule BoxwalletWeb.PageControllerTest do
 
   test "GET /", %{conn: conn} do
     conn = get(conn, ~p"/")
-    assert html_response(conn, 200) =~ "Peace of mind from prototype to production"
+    body = html_response(conn, 200)
+    assert body =~ "multi-coin wallet"
+    # The Ergo coin card links to /ergo.
+    assert body =~ ~s(href="/ergo")
+    assert body =~ "Ergo"
   end
 end
