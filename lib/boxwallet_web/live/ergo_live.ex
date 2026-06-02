@@ -561,7 +561,7 @@ defmodule BoxwalletWeb.ErgoLive do
         <div class="card bg-base-200 w-full max-w-6xl shadow-xl shadow-ergoorange/30 p-8">
           <div class="flex flex-col md:flex-row items-start gap-6 mb-6">
             <img
-              src="/images/erg_logo.png"
+              src="/images/erg_logo.svg"
               alt="Ergo logo"
               class="h-30 w-30 rounded-xl object-contain p-2"
             />
